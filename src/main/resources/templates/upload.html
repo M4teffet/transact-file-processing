@@ -1,0 +1,201 @@
+{#include layout}
+
+{#title}Upload Batch - Orange Bank{/title}
+
+{#head}
+<style>
+    /* Styles Spécifiques à la Page Upload (Coordonnés avec le Layout) */
+
+    .stats-card { @apply shadow-md border border-gray-200 transition-all duration-300 hover:shadow-lg; }
+    .stats-icon { @apply text-brand-primary; }
+
+    /* Bouton Primaire (Orange) */
+.chimp-primary-btn {
+inline-flex items-center text-white bg-brand-primary hover:bg-brand-dark border border-transparent
+               focus:ring-4 focus:ring-brand-medium shadow-sm font-medium rounded-base text-sm px-4 py-2.5
+               transition-colors duration-200;
+    }
+    /* Zone de Drag and Drop (Couleurs Orange) */
+    .drag-over { @apply ring-4 ring-brand-primary/40 border-brand-primary bg-brand-light/50; }
+
+    /* Éléments de Champ (Field Item) */
+    .field-item { @apply flex items-center justify-between px-6 py-3 bg-white border border-gray-300 rounded-xl cursor-move hover:border-brand-primary hover:shadow-sm transition-all duration-200 font-medium text-sm; }
+    .field-item.dragging { @apply opacity-50 scale-105 border-brand-primary bg-brand-light; }
+</style>
+{/head}
+
+{#aside}
+<aside class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-lg border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
+       id="sidebar">
+    <div class="p-6 border-b border-gray-200 text-center flex-shrink-0">
+        <a class="inline-flex items-center justify-center h-10 w-auto hover:opacity-80 transition-opacity" href="/" title="Orange Bank">
+            <picture class="h-full w-auto"><img alt="Orange Bank Logo" class="h-full w-auto max-h-10 object-contain"
+                                                loading="lazy"
+                                                onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'; this.onerror=null;"
+                                                src="/images/Logo_Orange_Bank.svg">
+            </picture>
+        </a>
+        <h1 class="mt-4 px-1 font-semibold text-gray-600 text-sm">Utilitaire Batch</h1>
+    </div>
+    <nav class="flex-1 px-4 py-6 space-y-2">
+        <a class="flex items-center px-4 py-3 text-brand-dark transition rounded-lg bg-brand-light font-semibold" href="/upload">
+            <i class="w-5 h-5 mr-3" data-lucide="cloud-upload"></i> Upload
+        </a>
+        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-brand-primary hover:bg-gray-100 transition rounded-lg"
+           href="/batches">
+            <i class="w-5 h-5 mr-3" data-lucide="list-checks"></i> Batches Uploadés
+        </a>
+        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-brand-primary hover:bg-gray-100 transition rounded-lg" href="#">
+            <i class="w-5 h-5 mr-3" data-lucide="help-circle"></i> Support
+        </a>
+    </nav>
+    <div class="absolute bottom-0 left-0 right-0 p-3 border-t border-gray-200 bg-gray-100 flex-shrink-0">
+        <span class="text-sm text-gray-700 text-center block">&copy; 2025 Orange Bank</span>
+    </div>
+</aside>
+{/aside}
+
+{#default}
+<div class="max-w-7xl mx-auto space-y-8">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="stats-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Chargés</p>
+                    <p class="text-2xl font-bold text-brand-primary" id="uploadedCount">0</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="w-4 h-4" data-lucide="upload-cloud"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Validés</p>
+                    <p class="text-2xl font-bold text-emerald-600" id="validatedCount">0</p>
+                </div>
+                <div class="stats-icon bg-green-100">
+                    <i class="w-4 h-4 text-green-600" data-lucide="check-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3"><i class="w-5 h-5 text-brand-primary"
+                                                                                    data-lucide="cloud-upload"></i> Générateur
+            Template</h3>
+        <select class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4" id="appSelect" onchange="loadFields(this.value)">
+            <option value="">Choisir app...</option>
+        </select>
+        <div class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" id="fieldsSection">
+            <div class="space-y-2">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Obligatoires</p>
+                <h4 class="text-lg font-semibold mb-2">App: <span id="appName"></span></h4> <!-- FIXED: Ajouté #appName -->
+                <div class="space-y-2 min-h-[100px] border-2 border-dashed border-gray-300 rounded-lg p-3" id="mandatory-fields"></div>
+            </div>
+            <div class="space-y-2">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Optionnels</p>
+                <div class="space-y-2 min-h-[100px] border-2 border-dashed border-gray-300 rounded-lg p-3" id="optional-fields"></div>
+            </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-2 italic text-center"><i class="inline w-3 h-3 mr-1" data-lucide="info"></i> Glissez-déposez pour
+            ajuster.</p>
+    </div>
+    <div class="hidden bg-white p-8 rounded-xl shadow-sm border border-gray-200" id="headerSection">
+        <h4 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3"><i class="w-5 h-5 text-brand-primary"
+                                                                                    data-lucide="database"></i> En-tête CSV</h4>
+        <p class="text-sm text-gray-600 mb-4">Copiez pour votre fichier :</p>
+        <div class="relative bg-gray-50 p-4 rounded-lg font-mono text-sm border border-gray-200">
+            <code class="break-all font-semibold block" id="csv-header"></code>
+            <button class="absolute top-2 right-2 flex items-center chimp-primary-btn text-xs" onclick="copyHeader()"><i
+                    class="w-3 h-3 mr-1"
+                    data-lucide="copy"></i>
+                Copier
+            </button>
+        </div>
+    </div>
+    <div class="hidden bg-white p-8 rounded-xl shadow-sm border border-gray-200" id="uploadSection">
+        <label class="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4 block">Importer CSV</label>
+        <div class="mb-6 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50 hover:border-brand-primary/50 transition cursor-pointer"
+             id="csvDropZone"
+             onclick="document.getElementById('csvInput').click()">
+            <i class="mx-auto h-12 w-12 mb-3 text-gray-400" data-lucide="upload"></i>
+            <p class="text-lg font-semibold text-gray-700">Glissez CSV ici</p>
+            <p class="text-sm text-gray-500">ou <span class="text-brand-primary underline">cliquez</span></p>
+            <input accept=".csv" class="hidden" id="csvInput" type="file">
+        </div>
+    </div>
+    <div class="hidden bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" id="csvPreviewSection">
+        <div class="p-6 border-b border-gray-200"><h4 class="text-xl font-bold text-gray-900 flex items-center gap-3"><i
+                class="w-5 h-5 text-brand-primary"
+                data-lucide="table"></i>
+            Aperçu CSV</h4></div>
+        <div class="overflow-x-auto px-8">
+            <table class="min-w-full text-xs">
+                <thead class="bg-gray-50" id="previewHeader">
+                <tr></tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="previewBody"></tbody>
+            </table>
+        </div>
+        <div class="p-6 border-t border-gray-200 flex justify-between items-center gap-3">
+
+
+            <button class="hidden
+               inline-flex items-center justify-center
+               text-brand-primary bg-white
+               hover:bg-brand-light border border-gray-300
+               font-medium rounded-base text-sm
+               px-4 py-2.5
+               transition-colors duration-200
+               flex-1 max-w-xs"
+                    id="fullPreviewBtn"
+                    type="button">
+                <i class="w-4 h-4 mr-2" data-lucide="maximize-2"></i> Afficher tout
+            </button>
+
+            <div class="flex gap-3 flex-1 justify-end">
+                <button class="inline-flex items-center justify-center
+                   text-white bg-brand-primary hover:bg-brand-dark border border-transparent
+                   focus:ring-4 focus:ring-brand-medium shadow-sm font-medium rounded-base
+                   text-sm px-4 py-2.5
+                   transition-colors duration-200"
+                        id="sendCsvBtn"
+                        type="button">
+                    <i class="w-4 h-4 mr-2" data-lucide="send"></i> Envoyer
+                </button>
+
+                <button class="inline-flex items-center justify-center
+                   text-white bg-red-600 hover:bg-red-700 border border-transparent
+                   font-medium rounded-base text-sm
+                   px-4 py-2.5
+                   transition-colors duration-200"
+                        id="deleteCsvBtn"
+                        type="button">
+                    <i class="w-4 h-4 mr-2" data-lucide="trash-2"></i> Supprimer
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="hidden text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200" id="success">
+        <i class="mx-auto w-20 h-20 text-green-500 mb-4" data-lucide="check-circle"></i>
+        <h3 class="text-2xl font-bold text-green-700 mb-2">Succès !</h3>
+        <p class="text-lg text-gray-600 mb-4">ID Batch : <code class="bg-gray-100 px-3 py-1 rounded text-sm font-mono font-bold"
+                                                               id="batchId"></code></p>
+        <p class="text-sm text-gray-500">Suivez le traitement.</p>
+    </div>
+</div>
+{/default}
+
+{#script}
+<script src="/shared.js"></script>
+<script src="/script.js"></script>
+{/script}
+
+{/include}

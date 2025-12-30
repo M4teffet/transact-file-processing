@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>{#insert title}Utilitaire Batch Orange Bank{/insert}</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        /* Styles Globaux */
+        html { font-size: 0.93rem; } body { font-family: 'Inter', sans-serif; }
+        /* Positionnement du Snackbar (déplacé à droite pour éviter la sidebar) */
+        #snackbar-container { position: fixed; bottom: 1rem; right: 1rem; left: unset; width: 100%; max-width: 20rem; display: flex; flex-direction: column; gap: 0.5rem; z-index: 50; }
+
+        /* Composants cohérents */
+        .stats-card { @apply bg-white p-6 rounded-xl shadow-md border border-gray-200; } /* Mis à jour à shadow-md */
+        .stats-icon { @apply w-8 h-8 rounded-full bg-brand-light flex items-center justify-center text-brand-primary; } /* Assure que l'icône utilise brand-primary */
+        .batch-status { @apply px-3 py-1 rounded-full text-xs font-semibold; } /* Utilisation de font-semibold */
+        .status-pending { @apply bg-yellow-100 text-yellow-700; } /* Cohérence */
+        .status-validated { @apply bg-green-100 text-green-700; } /* Cohérence */
+        .status-error { @apply bg-red-100 text-red-700; } /* Cohérence */
+        @media (max-width: 480px) { .login-container { padding: 2rem 1.5rem; margin: 0.5rem; } }
+
+        /* Style pour l'indicateur de chargement (utile dans les modales) */
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .loading-spin { animation: spin 1s linear infinite; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                    colors: {
+                        /* CHARTE COULEURS ORANGE BANK */
+                        'brand-primary': '#ff7900',
+                        'brand-light': '#fff7ed',
+                        'brand-dark': '#a55600',
+                        'brand-medium': '#ffc885',
+                        /* FIN NOUVELLES COULEURS */
+                        'gray-chimp': '#374151'
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    borderRadius: { 'base': '0.5rem' },
+                    boxShadow: {
+                        'xs': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+                        'sm': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+                        'xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                    }
+                }}
+        };
+    </script>
+    {#insert head}{/insert}
+</head>
+
+<body class="bg-gray-200 antialiased min-h-screen flex text-sm">
+<div class="fixed inset-0 z-40 bg-black/50 lg:hidden hidden transition-opacity duration-200" id="mobile-overlay"></div>
+
+{#insert aside}{/insert}
+
+<div class="flex-1 flex flex-col overflow-hidden lg:ml-64">
+    <header class="bg-black border-b border-gray-200 shadow-sm flex-shrink-0">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <button aria-label="Menu"
+                        class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 transition-colors"
+                        id="sidebar-toggle">
+                    <i class="w-5 h-5" data-lucide="menu"></i>
+                </button>
+                <h2 class="text-xl font-bold text-gray-50">Utilitaire Batch Orange Bank</h2>
+            </div>
+            <a class="flex items-center gap-2 text-sm font-medium text-red-400 hover:text-red-600 transition" href="#" id="logoutBtn"
+               onclick="logoutUser()">
+                <i class="w-5 h-5" data-lucide="log-out"></i> Déconnexion
+            </a>
+        </div>
+    </header>
+    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50/50 p-6">
+        {#insert default}{/insert}
+    </main>
+</div>
+{#insert script}{/insert}
+
+<div class="fixed inset-0 z-50 hidden bg-black/60 flex items-center justify-center" id="deleteConfirmationModal">
+    <div class="bg-white rounded-xl shadow-xl p-6 max-w-md mx-4">
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Confirmer suppression</h3>
+        <p class="text-gray-700 mb-6">Voulez-vous vraiment supprimer ce batch ? Cette action est irréversible.</p>
+        <div class="flex justify-end space-x-3">
+            <button class="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300" onclick="cancelDelete()">Annuler</button>
+            <button class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700" onclick="confirmDelete()">Supprimer</button>
+        </div>
+    </div>
+</div>
+
+<div class="fixed inset-0 hidden items-center justify-center z-50" id="batchDetailsModal"
+     onclick="if(event.target === this) closeModal('batchDetailsModal')">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative bg-white w-11/12 max-w-6xl rounded-xl shadow-xl p-6 z-10 overflow-y-auto max-h-[90vh]">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Détails Batch</h2>
+            <button class="p-1 rounded hover:bg-gray-100 transition" onclick="closeModal('batchDetailsModal')">
+                <i class="w-6 h-6 text-gray-700 hover:text-red-500" data-lucide="x"></i></button>
+        </div>
+        <div id="batchDetailsContent"></div>
+    </div>
+</div>
+
+
+<div class="fixed inset-0 hidden items-center justify-center z-50 bg-black/60" id="batchSummaryModal">
+    <div class="relative bg-white w-11/12 max-w-4xl rounded-xl shadow-xl p-6 z-10 overflow-y-auto min-h-[90vh]">
+        <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-bold text-gray-900" id="batchSummaryTitle">Résumé Batch</h3>
+            <button onclick="closeModal('batchSummaryModal')">
+                <i class="w-5 h-5 text-gray-700" data-lucide="x"></i>
+            </button>
+        </div>
+
+        <div class="p-6 overflow-auto text-sm text-gray-700" id="batchSummaryContent">
+        </div>
+    </div>
+</div>
+
+<div id="snackbar-container"></div>
+
+<script>
+    document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('-translate-x-full');
+        document.getElementById('mobile-overlay').classList.toggle('hidden');
+    });
+    document.getElementById('mobile-overlay')?.addEventListener('click', () => {
+        document.getElementById('sidebar').classList.add('-translate-x-full');
+        document.getElementById('mobile-overlay').classList.add('hidden');
+    });
+    lucide.createIcons();
+</script>
+</body>
+</html>

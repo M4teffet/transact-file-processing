@@ -1,0 +1,233 @@
+{#include layout}
+{#title}Administration - Batch Manager{/title}
+
+{#head}
+<style>
+    .stats-card { @apply bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-lg; }
+    .stats-icon { @apply w-10 h-10 rounded-full bg-brand-light flex items-center justify-center text-brand-primary; }
+    .stats-value { @apply text-3xl font-bold text-gray-900; }
+    .stats-label { @apply text-sm font-medium text-gray-600 mt-1; }
+</style>
+{/head}
+
+{#aside}
+<aside class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-lg border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
+       id="sidebar">
+    <div class="p-6 border-b border-gray-200 text-center flex-shrink-0">
+        <a class="inline-flex items-center justify-center h-10 w-auto hover:opacity-80 transition-opacity" href="/" title="Orange Bank">
+            <picture class="h-full w-auto"><img alt="Orange Bank Logo" class="h-full w-auto max-h-10 object-contain"
+                                                loading="lazy"
+                                                onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'; this.onerror=null;"
+                                                src="/images/Logo_Orange_Bank.svg">
+            </picture>
+        </a>
+        <h1 class="mt-4 px-1 font-semibold text-gray-600 text-sm">Utilitaire Batch</h1>
+    </div>
+    <nav class="flex-1 px-4 py-6 space-y-2">
+        <a class="flex items-center px-4 py-3 text-brand-dark transition rounded-lg bg-brand-light font-semibold" href="/dashboard">
+            <i class="w-5 h-5 mr-3" data-lucide="shield"></i> Administration
+        </a>
+    </nav>
+    <div class="p-4 border-t border-gray-200 bg-gray-50 text-center text-xs text-gray-600">
+        &copy; 2025 Orange Bank
+    </div>
+</aside>
+{/aside}
+
+{#default}
+<div class="max-w-7xl mx-auto space-y-8">
+    <!-- Barre d'actions redesignée -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-gray-200">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">Panneau d'Administration</h2>
+            <p class="text-sm text-gray-600 mt-1">Gérez les fonctionnalités et suivez les statistiques en temps réel</p>
+        </div>
+
+        <div class="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
+            <!-- Bouton Actualiser -->
+            <button class="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-300 hover:border-brand-primary hover:shadow-sm transition-all duration-200 group"
+                    id="refreshStats">
+                <i class="w-4 h-4 text-gray-600 group-hover:text-brand-primary transition-all duration-300" data-lucide="refresh-cw"
+                   id="refreshIcon"></i>
+                <span class="text-sm font-medium text-gray-700">Actualiser</span>
+            </button>
+
+            <!-- Séparateur -->
+            <div class="h-8 w-px bg-gray-300"></div>
+
+            <!-- Auto-refresh toggle -->
+            <div class="flex items-center gap-3">
+                <span class="text-sm text-gray-600 font-medium">Auto-refresh</span>
+                <button aria-pressed="true"
+                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2"
+                        id="toggleAutoRefresh">
+                    <span class="absolute inset-0 rounded-full bg-brand-primary transition-colors" id="autoRefreshBg"></span>
+                    <span class="absolute left-0.5 top-0.5 h-5 w-5 transform rounded-full bg-white shadow-md transition-transform translate-x-5"
+                          id="autoRefreshKnob"></span>
+                </button>
+                <span class="text-sm font-semibold text-brand-primary" id="autoRefreshIndicator">ON</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques Globales -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="stats-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="stats-label">Total Batches</p>
+                    <p class="stats-value" id="stat-total-batches">0</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="w-6 h-6" data-lucide="database"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="stats-label">En Attente</p>
+                    <p class="stats-value text-yellow-600" id="stat-pending">0</p>
+                </div>
+                <div class="stats-icon bg-yellow-100">
+                    <i class="w-6 h-6 text-yellow-700" data-lucide="clock"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stats-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="stats-label">Traité</p>
+                    <p class="stats-value text-emerald-600" id="stat-validated">0</p>
+                </div>
+                <div class="stats-icon bg-green-100">
+                    <i class="w-6 h-6 text-green-700" data-lucide="check-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Détail des Statuts -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
+            <i class="w-6 h-6 text-brand-primary" data-lucide="bar-chart-3"></i>
+            Détail des Statuts de Batches
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <p class="font-medium text-gray-600">Uploadés</p>
+                <p class="text-2xl font-bold text-brand-primary" id="detail-uploaded">0</p>
+            </div>
+            <div class="text-center p-3 bg-yellow-50 rounded-lg">
+                <p class="font-medium text-gray-600">En validation</p>
+                <p class="text-2xl font-bold text-yellow-600" id="detail-validated">0</p>
+            </div>
+            <div class="text-center p-3 bg-blue-50 rounded-lg">
+                <p class="font-medium text-gray-600">En traitement</p>
+                <p class="text-2xl font-bold text-blue-600" id="detail-processing">0</p>
+            </div>
+            <div class="text-center p-3 bg-green-50 rounded-lg">
+                <p class="font-medium text-gray-600">Traité OK</p>
+                <p class="text-2xl font-bold text-green-600" id="detail-processed">0</p>
+            </div>
+            <div class="text-center p-3 bg-red-50 rounded-lg col-span-2 md:col-span-4">
+                <p class="font-medium text-gray-600">Traité avec Erreurs</p>
+                <p class="text-2xl font-bold text-red-600" id="detail-errors">0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gestion des Fonctionnalités -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+        <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+            <i class="w-6 h-6 text-brand-primary" data-lucide="settings"></i>
+            Gestion des Fonctionnalités
+        </h3>
+        <p class="text-sm text-gray-600 mb-6">
+            Activez ou désactivez les fonctionnalités du système.
+        </p>
+
+        <div class="flex items-center gap-2 text-brand-primary mb-4" id="featuresLoader">
+            <i class="w-5 h-5 animate-spin" data-lucide="loader-2"></i>
+            <span>Chargement des fonctionnalités...</span>
+        </div>
+
+        <div class="space-y-4" id="featuresList"></div>
+
+        <div class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm" id="featuresError">
+            Impossible de charger les fonctionnalités. Réessayez plus tard.
+        </div>
+    </div>
+
+    <!-- Logs de Traitement des Batches -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-900 flex items-center gap-3">
+                <i class="w-6 h-6 text-brand-primary" data-lucide="file-text"></i>
+                Logs de Traitement
+            </h3>
+            <div class="flex items-center gap-3">
+                <!-- Sélecteur de batch -->
+                <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary transition"
+                        id="batchSelector">
+                    <option value="">Tous les batches récents</option>
+                </select>
+
+                <!-- NOUVEAU : Filtre par niveau -->
+                <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary transition"
+                        id="levelFilter">
+                    <option value="">Tous les niveaux</option>
+                    <option value="ERROR">ERROR</option>
+                    <option value="WARN">WARN</option>
+                    <option value="INFO">INFO</option>
+                </select>
+
+                <!-- Bouton rafraîchir -->
+                <button class="p-2 text-gray-600 hover:text-brand-primary hover:bg-gray-100 rounded-lg transition" id="refreshLogsBtn">
+                    <i class="w-5 h-5" data-lucide="refresh-cw"></i>
+                </button>
+            </div>
+        </div>
+        <p class="text-sm text-gray-600 mb-6">
+            Suivez les logs détaillés du traitement des fichiers CSV (erreurs, succès, lignes traitées).
+        </p>
+
+        <div class="flex items-center gap-2 text-brand-primary mb-4" id="processingLogsLoader">
+            <i class="w-5 h-5 animate-spin" data-lucide="loader-2"></i>
+            <span>Chargement des logs...</span>
+        </div>
+
+        <div class="max-h-96 overflow-y-auto bg-gray-50 rounded-lg border border-gray-200" id="processingLogsContainer">
+            <div class="p-4 space-y-2 text-sm font-mono" id="processingLogsList"></div>
+        </div>
+
+        <div class="text-center text-gray-500 text-sm py-12 hidden" id="processingLogsEmpty">
+            <i class="w-12 h-12 mx-auto mb-3 text-gray-300" data-lucide="file-search"></i>
+            <p>Aucun log de traitement disponible</p>
+            <p class="text-xs mt-2">Sélectionnez un batch ou attendez qu’un traitement démarre.</p>
+        </div>
+
+        <div class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm" id="processingLogsError">
+            Impossible de charger les logs de traitement.
+        </div>
+
+        <!-- Bouton Exporter CSV stylé -->
+        <div class="mt-6 flex justify-end">
+            <button class="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-primary hover:bg-brand-dark text-white font-medium text-sm rounded-lg transition-all duration-200 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2"
+                    id="exportLogsBtn">
+                <i class="w-4 h-4" data-lucide="download"></i>
+                Exporter en CSV
+            </button>
+        </div>
+    </div>
+</div>
+{/default}
+
+{#script}
+<script src="/shared.js"></script>
+<script src="/admin.js"></script>
+<script>
+    lucide.createIcons();
+</script>
+{/script}
+{/include}
