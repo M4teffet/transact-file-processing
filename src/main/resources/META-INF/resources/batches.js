@@ -46,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 const loadUploadedBatches = async () => {
     try {
-        const response = await fetch(`${API_BASE}/batches?size=999`);
+        const response = await secureFetch(`${API_BASE}/batches?size=999`);
+        if (!response) return;
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const result = await response.json();
@@ -103,8 +104,8 @@ const renderUploadedBatches = () => {
                 <tbody class="divide-y divide-gray-100">
                     ${uploadedBatches.map(b => `
                     <tr class="hover:bg-brand-light/30 transition-colors">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${b.batchId}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 font-mono text-xs">${b.application || 'N/A'}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-800">${b.batchId}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 font-mono">${b.application || 'N/A'}</td>
                         <td class="px-6 py-4 text-sm text-gray-500">
                             ${b.uploadedAt ? new Date(b.uploadedAt).toLocaleString('fr-FR') : 'Date inconnue'}
                         </td>
@@ -146,7 +147,8 @@ const cancelDelete = () => {
 const confirmDelete = async () => {
     if (!batchIdToDelete) return;
     try {
-        const response = await fetch(`${API_BASE}/batches/${batchIdToDelete}`, { method: 'DELETE' });
+        const response = await secureFetch(`${API_BASE}/batches/${batchIdToDelete}`, { method: 'DELETE' });
+        if (!response) return;
         if (!response.ok) throw new Error("Erreur serveur");
 
         showSnackbar('Batch supprimé avec succès', 'success');

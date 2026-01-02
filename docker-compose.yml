@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: transact-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  transact-file-processing:
+    image: transact-file-processing
+    container_name: transact-app
+    depends_on:
+      - mongo
+    ports:
+      - "8080:8080"
+    environment:
+      QUARKUS_MONGODB_CONNECTION_STRING: mongodb://mongo:27017/transactdb
+      QUARKUS_PROFILE: dev
+
+volumes:
+  mongo_data:

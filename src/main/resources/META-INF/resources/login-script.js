@@ -76,6 +76,11 @@ const parseErrorResponse = async (res) => {
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('error') === 'session_expired') {
+            showError('Votre session a expiré. Veuillez vous reconnecter.');
+    }
+
     // Prevent auth loop on login page
     if (window.location.pathname === '/login') {
         sessionStorage.removeItem('role');

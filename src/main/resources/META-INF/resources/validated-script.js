@@ -42,7 +42,8 @@ const loadValidatedBatches = async () => {
         const statuses = ['VALIDATED', 'PROCESSING', 'PROCESSED', 'PROCESSED_WITH_ERROR', 'PROCESSED_FAILED'];
         const queryParams = statuses.map(s => `status=${s}`).join('&');
 
-        const res = await fetch(`${API_BASE}/batches?${queryParams}`);
+        const res = await secureFetch(`${API_BASE}/batches?${queryParams}`);
+        if (!res) return;
         if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
 
         const result = await res.json();
@@ -87,8 +88,8 @@ const renderValidatedBatches = () => {
                 <tbody class="divide-y divide-gray-100">
                     ${validatedBatches.map(b => `
                         <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">${b.batchId}</td>
-                            <td class="px-6 py-4 text-sm text-gray-600 font-mono text-xs">${b.application}</td>
+                            <td class="px-6 py-4 text-sm font-medium text-gray-800">${b.batchId}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 font-mono">${b.application}</td>
                             <td class="px-6 py-4 text-sm text-gray-500">${new Date(b.uploadedAt).toLocaleString('fr-FR')}</td>
                             <td class="px-6 py-4">${getStatusBadge(b.status)}</td>
                             <td class="px-6 py-4 flex justify-end items-center gap-3">
@@ -116,7 +117,8 @@ const renderValidatedBatches = () => {
 const viewBatchSummary = async (batchId) => {
     try {
         // Fetch the batch data from the API
-        const res = await fetch(`${API_BASE}/batches/${batchId}`);
+        const res = await secureFetch(`${API_BASE}/batches/${batchId}`);
+        if (!res) return;
         if (!res.ok) throw new Error("Erreur lors de la récupération du résumé");
 
         const batch = await res.json();
@@ -255,7 +257,8 @@ const viewBatchSummary = async (batchId) => {
  */
 const downloadExecutionReport = async (batchId) => {
     try {
-        const res = await fetch(`${API_BASE}/batches/${batchId}`);
+        const res = await secureFetch(`${API_BASE}/batches/${batchId}`);
+        if (!res) return;
         if (!res.ok) throw new Error("Impossible de récupérer les données du batch.");
         const batch = await res.json();
 

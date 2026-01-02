@@ -86,10 +86,10 @@ public class FundsTransferProcessor {
                 .where("_id", batchId);
 
         List<BatchData> rows = BatchData.findByBatchId(batchId);
+
         for (BatchData row : rows) {
             processRow(row, workerId, batchId);
         }
-
         finalizeBatch(batchId);
     }
 
@@ -157,7 +157,7 @@ public class FundsTransferProcessor {
         }
     }
 
-    private void completeRow(ObjectId batchId, BatchData row, String ref) {
+    public void completeRow(ObjectId batchId, BatchData row, String ref) {
         try {
             new RowResult(batchId, row.lineNumber, "SUCCESS", ref, null).persist();
         } catch (Exception ignored) {
@@ -205,7 +205,6 @@ public class FundsTransferProcessor {
         Log.infof("[%s] FINALIZED: Status=%s | Success=%d | Fail=%d",
                 batchId, status, stats.successCount, stats.failureCount);
     }
-
 
     private String extractErrorMessage(Throwable t) {
         if (t instanceof WebApplicationException w && w.getResponse() != null) {

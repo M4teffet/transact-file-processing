@@ -24,9 +24,7 @@ public class BatchData extends PanacheMongoEntity {
         return list("batchId", batchId);
     }
 
-    /**
-     * Atomically claims a row only if it's still PENDING.
-     */
+
     public static boolean claimRow(ObjectId rowId, String workerId) {
         // USE Parameters: This makes the code readable and ensures types are handled correctly
         long updated = update("processingStatus = 'CLAIMED', workerId = :workerId")

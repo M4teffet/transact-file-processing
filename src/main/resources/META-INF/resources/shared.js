@@ -11,9 +11,9 @@ const showSnackbar = (msg, type = "info") => {
     }
     const div = document.createElement("div");
     const colors = {
-        error: "bg-red-100/80 border-red-700 text-red-800",
-        success: "bg-green-100/80 border-green-700 text-green-800",
-        info: "bg-blue-100/80 border-blue-700 text-blue-800"
+        error: "bg-red-50 border-red-700 text-red-800",
+        success: "bg-green-50 border-green-700 text-green-800",
+        info: "bg-blue-50 border-blue-700 text-blue-800"
     };
     div.className = `
         p-3 rounded shadow text-sm my-2 border
@@ -34,13 +34,40 @@ const showSnackbar = (msg, type = "info") => {
 };
 
 
+/**
+ * GLOBAL SECURITY WRAPPER
+ * Intercepts 401/403 errors to redirect to login
+ */
+const secureFetch = async (url, options = {}) => {
+    try {
+        const response = await fetch(url, options);
+
+        // Check for Unauthorized or Forbidden
+        if (response.status === 401 || response.status === 403) {
+            console.error("Session Expired: Redirecting...");
+            sessionStorage.clear(); // Wipe local credentials
+            window.location.href = "/login?error=session_expired";
+            return null; // Stop the execution chain
+        }
+
+        return response;
+    } catch (error) {
+        if (typeof showSnackbar === 'function') {
+            showSnackbar("Erreur de connexion réseau", "error");
+        }
+        throw error;
+    }
+};
+
+
 // -----------------------------
 // LOAD STATS
 // -----------------------------
 const loadStats = async (mapping) => {
     try {
-        const res = await fetch(`${API_BASE}/batches/counts?size=999`);
-        if (!res.ok) throw new Error("Failed to fetch stats");
+        const res = await secureFetch(`${API_BASE}/batches/counts?size=999`);
+        if (!res) return; // Exit if redirected
+        if (!res.ok) return; // Exit if redirected
 
         const stats = await res.json();
         const totals = {};
@@ -67,24 +94,23 @@ const loadStats = async (mapping) => {
 // STATUS BADGES
 // -----------------------------
 const getStatusBadge = (status) => {
-const types = {
-    UPLOADED: ["bg-yellow-50 text-yellow-800", "clock"],
-    VALIDATED: ["bg-green-50 text-green-800", "check-circle"],
-    PROCESSED: ["bg-blue-50 text-blue-800", "check-square"],
-    UPLOADED_FAILED: ["bg-red-50 text-red-800", "alert-triangle"],
-    VALIDATED_FAILED: ["bg-red-50 text-red-800", "x-circle"],
-    PROCESSING: ["bg-amber-50 text-amber-800", "refresh-cw"],
-    PROCESSED_WITH_ERROR: ["bg-orange-50 text-orange-800", "alert-circle"],
-    PROCESSED_FAILED: ["bg-red-100 text-red-900", "circle-slash"]
-};
+    const types = {
+        UPLOADED: { color: "bg-gray-100 text-gray-700 border-gray-200", icon: "clock", label: "En Attente" },
+        VALIDATED: { color: "bg-blue-50 text-blue-700 border-blue-200", icon: "user-check", label: "Signé" },
+        PROCESSING: { color: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: "refresh-cw", label: "Traitement" },
+        PROCESSED: { color: "bg-emerald-100 text-emerald-800 border-emerald-200", icon: "check-circle", label: "Succès" },
+        PROCESSED_WITH_ERROR: { color: "bg-orange-100 text-orange-800 border-orange-200", icon: "alert-triangle", label: "Anomalies" },
+        UPLOADED_FAILED: { color: "bg-red-50 text-red-700 border-red-100", icon: "alert-octagon", label: "Échec Upload" },
+        VALIDATED_FAILED: { color: "bg-red-50 text-red-700 border-red-100", icon: "x-octagon", label: "Échec Signature" },
+        PROCESSED_FAILED: { color: "bg-red-100 text-red-900 border-red-200", icon: "x-circle", label: "Échec Total" }
+    };
 
-    const displayLabel = status.replace(/_/g, ' ');
-    const [classes, icon] = types[status] || ["bg-gray-100 text-gray-700", "help-circle"];
+    const def = types[status] || { color: "bg-gray-100 text-gray-700 border-gray-200", icon: "help-circle", label: status.replace(/_/g, ' ') };
 
     return `
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${classes}">
-            ${icon ? `<i data-lucide="${icon}" class="w-3.5 h-3.5"></i>` : ""}
-            ${displayLabel}
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border uppercase tracking-tighter shadow-sm ${def.color}">
+            <i data-lucide="${def.icon}" class="w-3.5 h-3.5 ${status === 'PROCESSING' ? 'animate-spin' : ''}"></i>
+            ${def.label}
         </span>
     `;
 };
@@ -95,7 +121,8 @@ const types = {
 // -----------------------------
 const viewBatchDetails = async (batchId, modalId = "batchDetailsModal", contentId = "batchDetailsContent") => {
     try {
-        const res = await fetch(`${API_BASE}/batches/${batchId}`);
+        const res = await secureFetch(`${API_BASE}/batches/${batchId}`);
+        if (!res) return;
         if (!res.ok) throw new Error("Erreur API");
 
         const { details, batchId: id, totalRecords } = await res.json();
@@ -161,7 +188,8 @@ const viewBatchDetails = async (batchId, modalId = "batchDetailsModal", contentI
 // -----------------------------
 const downloadBatchNonNull = async (batchId) => {
     try {
-        const res = await fetch(`${API_BASE}/batches/${batchId}`);
+        const res = await secureFetch(`${API_BASE}/batches/${batchId}`);
+        if (!res) return;
         if (!res.ok) throw new Error(`HTTP ${res.status}: Erreur API`);
 
         const { details } = await res.json(); // use 'details' instead of 'data'
@@ -232,6 +260,7 @@ window.downloadBatchNonNull = downloadBatchNonNull;
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.logoutUser = logoutUser;
+window.secureFetch = secureFetch;
 
 document.addEventListener("DOMContentLoaded", () => {
     lucide.createIcons();

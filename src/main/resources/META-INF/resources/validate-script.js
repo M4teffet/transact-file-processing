@@ -42,7 +42,8 @@ const refreshDashboard = () => {
 const loadUploadedBatches = async () => {
     const container = document.getElementById('uploadedBatchesContainer');
     try {
-        const response = await fetch(`${API_BASE}/batches?status=UPLOADED`);
+        const response = await secureFetch(`${API_BASE}/batches?status=UPLOADED`);
+        if (!response) return;
         if (!response.ok) throw new Error("Erreur lors de la récupération des batches");
 
         const result = await response.json();
@@ -88,8 +89,8 @@ const renderUploadedBatches = () => {
                 <tbody class="divide-y divide-gray-100">
                     ${uploadedBatches.map(b => `
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${b.batchId}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 font-mono text-xs">${b.application}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-800">${b.batchId}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 font-mono">${b.application}</td>
                         <td class="px-6 py-4 text-sm text-gray-500">${new Date(b.uploadedAt).toLocaleString('fr-FR')}</td>
                         <td class="px-6 py-4">${getStatusBadge(b.status)}</td>
                         <td class="px-6 py-4 flex justify-end items-center gap-3">
@@ -119,11 +120,13 @@ const renderUploadedBatches = () => {
  */
 const validateBatchNow = async (id) => {
     try {
-        const response = await fetch(`${API_BASE}/batches/${id}`, {
+        const response = await secureFetch(`${API_BASE}/batches/${id}`, {
             method: 'PUT',
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: "VALIDATED" })
         });
+
+        if (!response) return;
 
         if (response.ok) {
             showSnackbar('Batch validé et envoyé pour traitement !', 'success');

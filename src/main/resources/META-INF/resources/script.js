@@ -64,7 +64,8 @@ async function loadApplications() {
     if (!el) return;
     el.innerHTML = '<option value="">Chargement...</option>';
     try {
-        const res = await fetch(`${DEV_API_BASE}/applications`);
+        const res = await secureFetch(`${DEV_API_BASE}/applications`);
+        if (!res) return;
         if (!res.ok) throw new Error("Erreur serveur");
         const apps = await res.json();
         el.innerHTML = '<option value="">Choisir une application...</option>';
@@ -321,7 +322,8 @@ async function handleUpload() {
     try {
         btn.disabled = true;
         btn.innerHTML = "⏳ Envoi...";
-        const res = await fetch(`${DEV_API_BASE}/inputter/upload`, { method: "POST", body: formData });
+        const res = await secureFetchsecureFetch(`${DEV_API_BASE}/inputter/upload`, { method: "POST", body: formData });
+        if (!res) return;
         if (!res.ok) throw new Error(await res.text());
         const result = await res.json();
         elements.batchIdElement().textContent = result.batchId;

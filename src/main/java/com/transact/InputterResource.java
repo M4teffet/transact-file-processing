@@ -22,6 +22,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import org.bson.types.ObjectId;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
@@ -29,8 +30,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -42,6 +42,9 @@ import java.util.Map;
 @Tag(name = "File Upload", description = "Upload and validate CSV files")
 @RolesAllowed("INPUTTER") // 🔑 FIX: Enforce security validation for the entire resource
 public class InputterResource {
+
+    @ConfigProperty(name = "com.transact.upload.max-lines", defaultValue = "100")
+    int maxLines;
 
     @Inject
     FileParser fileParser;
@@ -74,6 +77,8 @@ public class InputterResource {
             @RestForm("applicationName") @Parameter(required = true) String applicationName,
             @RestForm("file") @Parameter(required = true) FileUpload fileUpload
     ) {
+
+        // 1. Initial Validation
         if (applicationName == null || applicationName.trim().isBlank()) {
             return badRequest("applicationName is required");
         }
@@ -86,23 +91,30 @@ public class InputterResource {
             return badRequest("Application not found: " + applicationName);
         }
 
-        byte[] fileBytes;
-        try {
-            fileBytes = Files.readAllBytes(fileUpload.filePath());
-        } catch (IOException e) {
-            return badRequest("Failed to read file");
-        } catch (OutOfMemoryError e) {
-            return payloadTooLarge();
-        }
+        // 2. Stream directly from the file path
+        // This prevents loading the entire file into the JVM heap at once
+        try (InputStream inputStream = Files.newInputStream(fileUpload.filePath())) {
 
-        try (var memoryStream = new ByteArrayInputStream(fileBytes)) {
-            List<Map<String, String>> rawData = fileParser.parseCsv(memoryStream);
+            // Ensure your fileParser.parseCsv can accept an InputStream
+            List<Map<String, String>> rawData = fileParser.parseCsv(inputStream);
+
             if (rawData == null || rawData.isEmpty()) {
                 throw new ValidationException(List.of(
                         new ValidationError(1, null, "CSV file is empty or contains only headers")
                 ));
             }
 
+            // 3. Size validation
+            if (rawData.size() > maxLines) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(new JsonObject()
+                                .put("error", "File too large")
+                                .put("message", "Max lines: " + maxLines)
+                                .encode())
+                        .build();
+            }
+
+            // 4. Processing
             List<Map<String, Object>> validatedData = fileValidator.validateAndConvert(rawData, appConfig);
             FileBatch batch = createSuccessBatch(appConfig, validatedData);
             return successResponse(batch, validatedData.size());

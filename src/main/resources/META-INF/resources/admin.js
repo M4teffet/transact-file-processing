@@ -67,7 +67,8 @@ class AdminDashboard {
 
     async loadStats() {
         try {
-            const response = await fetch('/api/batches/counts');
+            const response = await secureFetch('/api/batches/counts');
+            if (!response) return;
             if (!response.ok) throw new Error('Erreur réseau');
             const counts = await response.json();
 
@@ -98,7 +99,8 @@ class AdminDashboard {
         this.elements.featuresError.classList.add('hidden');
 
         try {
-            const response = await fetch('/api/admin/features');
+            const response = await secureFetch('/api/admin/features');
+            if (!response) return;
             if (!response.ok) throw new Error('Erreur réseau');
             const features = await response.json();
 
@@ -176,7 +178,8 @@ class AdminDashboard {
 
     async loadRecentBatchesForSelector() {
         try {
-            const response = await fetch('/api/batches/recent-batches');
+            const response = await secureFetch('/api/batches/recent-batches');
+            if (!response) return;
             if (!response.ok) return;
             const batches = await response.json();
 
@@ -206,7 +209,8 @@ class AdminDashboard {
             const url = batchId
                 ? `/api/batches/processing-logs?batchId=${batchId}`
                 : '/api/batches/processing-logs';
-            const response = await fetch(url);
+            const response = await secureFetch(url);
+            if (!response) return;
             if (!response.ok) throw new Error('Erreur réseau');
             const logs = await response.json();
 
