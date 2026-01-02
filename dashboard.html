@@ -1,0 +1,41 @@
+<!-- Updated content with various element enhancements and modular script configurations -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <!-- Modular script configurations -->
+    <script src="scripts/module1.js" defer></script>
+    <script src="scripts/module2.js" defer></script>
+    <link rel="stylesheet" href="styles/dashboard.css">
+</head>
+<body>
+    <header>
+        <h1>Welcome to the Dashboard</h1>
+    </header>
+
+    <main>
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>Your recent activities and summary will appear here.</p>
+        </section>
+
+        <section id="details">
+            <h2>Details</h2>
+            <p>Explore detailed insights and reports.</p>
+            <button id="loadMore">Load More</button>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Your Company. All rights reserved.</p>
+    </footer>
+
+    <script>
+        document.getElementById('loadMore').addEventListener('click', () => {
+            alert('Loading more details...');
+        });
+    </script>
+</body>
+</html>
