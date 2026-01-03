@@ -42,23 +42,26 @@ const secureFetch = async (url, options = {}) => {
     try {
         const response = await fetch(url, options);
 
-        // Check for Unauthorized or Forbidden
+        // If the server says "Unauthorized", we must leave the current page
         if (response.status === 401 || response.status === 403) {
-            console.error("Session Expired: Redirecting...");
-            sessionStorage.clear(); // Wipe local credentials
+            console.warn("Auth required. Redirecting to login...");
+
+            // 1. Clear local data to prevent loops
+            sessionStorage.clear();
+
+            // 2. Force a HARD redirect (this changes the URL in the bar)
             window.location.href = "/login?error=session_expired";
-            return null; // Stop the execution chain
+
+            // 3. Return a pending promise that never resolves to stop further execution
+            return new Promise(() => {});
         }
 
         return response;
     } catch (error) {
-        if (typeof showSnackbar === 'function') {
-            showSnackbar("Erreur de connexion réseau", "error");
-        }
+        console.error("Fetch error:", error);
         throw error;
     }
 };
-
 
 // -----------------------------
 // LOAD STATS
@@ -99,7 +102,7 @@ const getStatusBadge = (status) => {
         VALIDATED: { color: "bg-blue-50 text-blue-700 border-blue-200", icon: "user-check", label: "Signé" },
         PROCESSING: { color: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: "refresh-cw", label: "Traitement" },
         PROCESSED: { color: "bg-emerald-100 text-emerald-800 border-emerald-200", icon: "check-circle", label: "Succès" },
-        PROCESSED_WITH_ERROR: { color: "bg-orange-100 text-orange-800 border-orange-200", icon: "alert-triangle", label: "Anomalies" },
+        PROCESSED_WITH_ERROR: { color: "bg-orange-100 text-orange-800 border-orange-200", icon: "alert-triangle", label: "Traité avec Anomalies" },
         UPLOADED_FAILED: { color: "bg-red-50 text-red-700 border-red-100", icon: "alert-octagon", label: "Échec Upload" },
         VALIDATED_FAILED: { color: "bg-red-50 text-red-700 border-red-100", icon: "x-octagon", label: "Échec Signature" },
         PROCESSED_FAILED: { color: "bg-red-100 text-red-900 border-red-200", icon: "x-circle", label: "Échec Total" }
@@ -108,7 +111,7 @@ const getStatusBadge = (status) => {
     const def = types[status] || { color: "bg-gray-100 text-gray-700 border-gray-200", icon: "help-circle", label: status.replace(/_/g, ' ') };
 
     return `
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border uppercase tracking-tighter shadow-sm ${def.color}">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border uppercase tracking-tighter shadow-xs ${def.color}">
             <i data-lucide="${def.icon}" class="w-3.5 h-3.5 ${status === 'PROCESSING' ? 'animate-spin' : ''}"></i>
             ${def.label}
         </span>
