@@ -42,23 +42,30 @@ const secureFetch = async (url, options = {}) => {
     try {
         const response = await fetch(url, options);
 
-        // If the server says "Unauthorized", we must leave the current page
-        if (response.status === 401 || response.status === 403) {
-            console.warn("Auth required. Redirecting to login...");
+        // CASE 1: Server explicitly sends 401/403
+        // CASE 2: fetch followed a redirect and the final URL is the login page
+        // CASE 3: The response was marked as redirected by the browser
+        if (
+            response.status === 401 ||
+            response.status === 403 ||
+            response.status === 302 ||
+            response.redirected ||
+            response.url.includes('/login')
+        ) {
+            console.error("Auth Failure or Redirect detected. Forcing navigation...");
 
-            // 1. Clear local data to prevent loops
             sessionStorage.clear();
 
-            // 2. Force a HARD redirect (this changes the URL in the bar)
+            // USE href FORCIBLY - this breaks out of the AJAX "sandbox"
             window.location.href = "/login?error=session_expired";
 
-            // 3. Return a pending promise that never resolves to stop further execution
+            // Stop all further .then() or await code from running
             return new Promise(() => {});
         }
 
         return response;
     } catch (error) {
-        console.error("Fetch error:", error);
+        console.error("Network Error:", error);
         throw error;
     }
 };
@@ -102,7 +109,7 @@ const getStatusBadge = (status) => {
         VALIDATED: { color: "bg-blue-50 text-blue-700 border-blue-200", icon: "user-check", label: "Signé" },
         PROCESSING: { color: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: "refresh-cw", label: "Traitement" },
         PROCESSED: { color: "bg-emerald-100 text-emerald-800 border-emerald-200", icon: "check-circle", label: "Succès" },
-        PROCESSED_WITH_ERROR: { color: "bg-orange-100 text-orange-800 border-orange-200", icon: "alert-triangle", label: "Traité avec Anomalies" },
+        PROCESSED_WITH_ERROR: { color: "bg-orange-100 text-orange-800 border-orange-200", icon: "alert-triangle", label: "Traité avec Erreurs" },
         UPLOADED_FAILED: { color: "bg-red-50 text-red-700 border-red-100", icon: "alert-octagon", label: "Échec Upload" },
         VALIDATED_FAILED: { color: "bg-red-50 text-red-700 border-red-100", icon: "x-octagon", label: "Échec Signature" },
         PROCESSED_FAILED: { color: "bg-red-100 text-red-900 border-red-200", icon: "x-circle", label: "Échec Total" }

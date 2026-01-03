@@ -322,7 +322,7 @@ async function handleUpload() {
     try {
         btn.disabled = true;
         btn.innerHTML = "⏳ Envoi...";
-        const res = await secureFetchsecureFetch(`${DEV_API_BASE}/inputter/upload`, { method: "POST", body: formData });
+        const res = await secureFetch(`${DEV_API_BASE}/inputter/upload`, { method: "POST", body: formData });
         if (!res) return;
         if (!res.ok) throw new Error(await res.text());
         const result = await res.json();

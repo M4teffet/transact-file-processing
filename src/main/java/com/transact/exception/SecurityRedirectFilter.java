@@ -43,7 +43,7 @@ public class SecurityRedirectFilter implements ContainerResponseFilter {
                 }
 
                 responseContext.setStatus(302);
-                responseContext.getHeaders().putSingle("Location", "/login");
+                responseContext.getHeaders().putSingle("Location", "/login?error=session_expired");
             }
         }
     }
