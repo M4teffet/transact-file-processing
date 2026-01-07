@@ -34,21 +34,25 @@ public class FundsTransferProcessor {
 
     private static final String FEATURE_KEY = "FUNDS_TRANSFER";
     private static final int MAX_RETRY = 3;
+
     @Inject
     @RestClient
     ProcessingFt processingFt;
+
     @Inject
     ObjectMapper objectMapper;
+
     @Inject
     ManagedExecutor managedExecutor;
 
     @Scheduled(every = "1m", identity = "ft-processor", concurrentExecution = SKIP)
-
     @ActivateRequestContext
     public void run() {
         Application app = Application.findByName(FEATURE_KEY);
         if (app == null) {
             Log.errorf("[FT] Application config missing");
+            // Optional: Log global error to DB if needed, though usually requires a batchId context
+            ProcessingLogEntry.log("ERROR", "[FT] Application config missing");
             return;
         }
 
@@ -63,13 +67,14 @@ public class FundsTransferProcessor {
         Log.infof("[FT] %d batch(es) detected for processing", batches.size());
 
         for (FileBatch batch : batches) {
-
             try {
                 processBatch(batch.id);
             } catch (Exception e) {
-                Log.errorf("[%s] CRITICAL_BATCH_FAILURE: %s", batch.id, e.getMessage());
+                String msg = String.format("CRITICAL_BATCH_FAILURE: %s", e.getMessage());
+                Log.errorf("[%s] %s", batch.id, msg);
+                // DB Log
+                ProcessingLogEntry.log(batch.id, "ERROR", msg);
             }
-
         }
     }
 
@@ -100,7 +105,10 @@ public class FundsTransferProcessor {
                         Parameters.with("batchId", batchId));
 
         if (reset > 0) {
-            Log.warnf("[%s] Recovery: %d row(s) reset", batchId, reset);
+            String msg = String.format("Recovery: %d row(s) reset", reset);
+            Log.warnf("[%s] %s", batchId, msg);
+            // DB Log
+            ProcessingLogEntry.log(batchId, "WARN", msg);
         }
 
         // Moving poisoned rows to permanent failure
@@ -109,14 +117,17 @@ public class FundsTransferProcessor {
                         Parameters.with("batchId", batchId).and("max", MAX_RETRY));
 
         if (poisoned > 0) {
-            Log.errorf("[%s] Poison pill: %d row(s) exceeded retry limit", batchId, poisoned);
+            String msg = String.format("Poison pill: %d row(s) exceeded retry limit", poisoned);
+            Log.errorf("[%s] %s", batchId, msg);
+            // DB Log
+            ProcessingLogEntry.log(batchId, "ERROR", msg);
         }
     }
 
     private void processRow(BatchData row, String workerId, ObjectId batchId) {
 
         if (!BatchData.claimRow(row.id, workerId)) {
-            Log.debugf("[%s|Row:%d] SKIPPED: Already claimed or ID mismatch", batchId, row.lineNumber);
+            Log.debugf("[%s|Row:%d] SKIPPED: Already claimed", batchId, row.lineNumber);
             return;
         }
 
@@ -124,33 +135,61 @@ public class FundsTransferProcessor {
         String correlationId = batchId + "-" + row.lineNumber;
 
         TransactionRequest req = mapToRequest(row.data);
-        Response response = null;
 
+        // 1. Serialize payload for logging
+        String payloadJson = serializePayload(req);
+
+        // 2. Initial DB Log: Start processing with payload
+        ProcessingLogEntry.log(batchId, "INFO",
+                String.format("Row %d: Starting processing. Payload: %s", row.lineNumber, payloadJson));
+
+        Response response = null;
         try {
             response = processingFt.processTransaction(req, correlationId);
             int status = response.getStatus();
             String body = response.readEntity(String.class);
 
             if (status >= 400) {
-                Log.errorf("%s T24_HTTP_ERR: %d | %s", ctx, status, body);
-                failRow(batchId, row, "HTTP " + status + ": " + body);
+                String errorMsg = String.format("HTTP %d: %s", status, body);
+                Log.errorf("%s T24_HTTP_ERR: %s", ctx, errorMsg);
+
+                // Detailed DB Log on Failure
+                ProcessingLogEntry.log(batchId, "ERROR",
+                        String.format("Row %d Failed. HTTP %d. Response: %s | Sent Payload: %s",
+                                row.lineNumber, status, body, payloadJson));
+
+                failRow(batchId, row, errorMsg);
                 return;
             }
 
             ProcessingResponse res = objectMapper.readValue(body, ProcessingResponse.class);
             if (res.isSuccessful()) {
-                String ref = (res.header != null) ? res.header.id : null;
+                String ref = (res.header != null) ? res.header.id : "N/A";
                 Log.infof("%s SUCCESS: T24 Ref %s", ctx, ref);
+
+                ProcessingLogEntry.log(batchId, "INFO",
+                        String.format("Row %d: SUCCESS. T24 Ref: %s", row.lineNumber, ref));
+
                 completeRow(batchId, row, ref);
             } else {
                 String err = res.getErrorMessage();
                 Log.warnf("%s BUSINESS_REJECT: %s", ctx, err);
+
+                ProcessingLogEntry.log(batchId, "WARN",
+                        String.format("Row %d: BUSINESS REJECT. Reason: %s | Sent Payload: %s",
+                                row.lineNumber, err, payloadJson));
+
                 failRow(batchId, row, err);
             }
 
         } catch (Exception ex) {
             String err = extractErrorMessage(ex);
             Log.errorf("%s PROCESS_ERR: %s", ctx, err);
+
+            ProcessingLogEntry.log(batchId, "ERROR",
+                    String.format("Row %d: CRITICAL EXCEPTION. Error: %s | Sent Payload: %s",
+                            row.lineNumber, err, payloadJson));
+
             failRow(batchId, row, err);
         } finally {
             if (response != null) response.close();
@@ -194,6 +233,7 @@ public class FundsTransferProcessor {
         } else {
             status = FileBatch.STATUS_PROCESSED_FAILED;
         }
+
         // ... update FileBatch and stats ...
         FileBatch.update("status = ?1, processingTimestamp = ?2", status, Instant.now())
                 .where("_id", batchId);
@@ -202,8 +242,11 @@ public class FundsTransferProcessor {
         stats.lastUpdatedAt = Instant.now();
         stats.persistOrUpdate();
 
-        Log.infof("[%s] FINALIZED: Status=%s | Success=%d | Fail=%d",
-                batchId, status, stats.successCount, stats.failureCount);
+        String summary = String.format("Status=%s | Success=%d | Fail=%d", status, stats.successCount, stats.failureCount);
+        Log.infof("[%s] FINALIZED: %s", batchId, summary);
+
+        // DB Log
+        ProcessingLogEntry.log(batchId, "INFO", "Batch Finalized. " + summary);
     }
 
     private String extractErrorMessage(Throwable t) {
@@ -238,6 +281,14 @@ public class FundsTransferProcessor {
             });
         }
         return r;
+    }
+
+    private String serializePayload(TransactionRequest req) {
+        try {
+            return objectMapper.writeValueAsString(req);
+        } catch (Exception e) {
+            return "[Serialization Error: " + e.getMessage() + "]";
+        }
     }
 
     private void populateField(TransactionRequest r, String k, String v) {
@@ -278,4 +329,5 @@ public class FundsTransferProcessor {
             return null;
         }
     }
+
 }

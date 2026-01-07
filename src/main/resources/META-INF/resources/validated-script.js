@@ -65,7 +65,7 @@ const renderValidatedBatches = () => {
 
     if (!validatedBatches.length) {
         container.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-12 text-gray-500 bg-white rounded-xl border border-dashed">
+            <div class="flex flex-col items-center justify-center py-12 text-gray-500 bg-white rounded-md border border-dashed">
                 <i data-lucide="info" class="w-12 h-12 mb-3 opacity-20"></i>
                 <p>Aucun batch validé ou en cours de traitement.</p>
             </div>`;
@@ -75,14 +75,14 @@ const renderValidatedBatches = () => {
 
     const html = `
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 bg-white rounded-xl shadow-sm border border-gray-100">
+            <table class="min-w-full divide-y divide-gray-200 bg-white rounded-md shadow-sm border border-gray-100">
                 <thead class="bg-gray-50/50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">ID</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Application</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Statut</th>
-                        <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -92,7 +92,7 @@ const renderValidatedBatches = () => {
                             <td class="px-6 py-4 text-sm text-gray-600 font-mono">${b.application}</td>
                             <td class="px-6 py-4 text-sm text-gray-500">${new Date(b.uploadedAt).toLocaleString('fr-FR')}</td>
                             <td class="px-6 py-4">${getStatusBadge(b.status)}</td>
-                            <td class="px-6 py-4 flex justify-end items-center gap-3">
+                            <td class="px-6 py-4 flex justify-start items-center gap-3">
                                 <button onclick="viewBatchDetails('${b.batchId}')" class="p-1.5 hover:bg-blue-50 rounded-full transition" title="Voir données">
                                     <i data-lucide="eye" class="w-5 h-5 text-blue-500"></i>
                                 </button>
@@ -183,21 +183,21 @@ const viewBatchSummary = async (batchId) => {
         const dashboardHtml = `
             <div class="space-y-6">
                 <div class="grid grid-cols-3 gap-3">
-                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100 text-center">
+                    <div class="p-3 bg-gray-50 rounded-md border border-gray-100 text-center">
                         <p class="text-[10px] uppercase font-bold text-gray-400">Total</p>
                         <p class="text-xl font-black text-gray-800">${totalRecords}</p>
                     </div>
-                    <div class="p-3 bg-green-50 rounded-xl border border-green-100 text-center">
+                    <div class="p-3 bg-green-50 rounded-md border border-green-100 text-center">
                         <p class="text-[10px] uppercase font-bold text-green-500">Succès</p>
                         <p class="text-xl font-black text-green-700">${success}</p>
                     </div>
-                    <div class="p-3 bg-red-50 rounded-xl border border-red-100 text-center">
+                    <div class="p-3 bg-red-50 rounded-md border border-red-100 text-center">
                         <p class="text-[10px] uppercase font-bold text-red-500">Échecs</p>
                         <p class="text-xl font-black text-red-700">${failure}</p>
                     </div>
                 </div>
 
-                <div class="bg-indigo-600 rounded-xl p-5 text-white shadow-lg relative overflow-hidden">
+                <div class="bg-indigo-600 rounded-md p-5 text-white shadow-lg relative overflow-hidden">
                     <div class="relative z-10">
                         <p class="text-indigo-100 text-xs font-bold uppercase tracking-widest mb-1">Volume Financier</p>
                         <p class="text-3xl font-black tracking-tight">
@@ -222,11 +222,11 @@ const viewBatchSummary = async (batchId) => {
 
                 <div class="flex gap-3 pt-4">
                     <button onclick="downloadExecutionReport('${batchId}')"
-                            class="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
+                            class="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-md text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
                         <i data-lucide="download" class="w-4 h-4"></i> Rapport CSV
                     </button>
                     <button onclick="closeModal('batchSummaryModal')"
-                            class="px-6 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-bold hover:bg-black transition-all">
+                            class="px-6 py-2.5 bg-gray-900 text-white rounded-md text-sm font-bold hover:bg-black transition-all">
                         Fermer
                     </button>
                 </div>

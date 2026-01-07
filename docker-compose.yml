@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   mongo:
     image: mongo:7
@@ -6,17 +8,43 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      # Ensures Mongo is fully ready before the app starts
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   transact-file-processing:
     image: transact-file-processing
     container_name: transact-app
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.jvm
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
-      QUARKUS_MONGODB_CONNECTION_STRING: mongodb://mongo:27017/transactdb
-      QUARKUS_PROFILE: dev
+      # Database connection (Points to the 'mongo' service name)
+      - MONGO_URL=mongodb://mongo:27017
+      
+      # External Funds Transfer API
+      - FUNDS_TRANSFER_API_URL=http://192.168.1.2:8085/omerchant/api/v1.0.0/order/payments
+      - FT_API_USER=INPUTTER
+      - FT_API_PASS=123456
+      
+      # App Logic & Logging
+      - MAX_UPLOAD_LINES=1000
+      - REST_LOG_LEVEL=DEBUG
+      - REST_CLIENT_LOG_SCOPE=request-response
+      - QUARKUS_PROFILE=dev
+
+    volumes:
+      # Mount your local keys into the container so the app can find them
+      - ./src/main/resources/jwt:/deployments/jwt:ro
 
 volumes:
   mongo_data:

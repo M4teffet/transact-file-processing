@@ -40,11 +40,23 @@ const showSnackbar = (msg, type = "info") => {
  */
 const secureFetch = async (url, options = {}) => {
     try {
-        const response = await fetch(url, options);
+        const response = await fetch(url, {
+            ...options,
+            // Always include credentials if you're using sessions/cookies
+            credentials: 'same-origin',
 
-        // CASE 1: Server explicitly sends 401/403
-        // CASE 2: fetch followed a redirect and the final URL is the login page
-        // CASE 3: The response was marked as redirected by the browser
+            // Add cache-control headers to the REQUEST
+            // This tells the server (and any proxies) that we don't want cached responses
+            headers: {
+                ...options.headers,
+                'Cache-Control': 'no-cache, no-store, must-revalidate, private',
+                'Pragma': 'no-cache',
+                // Not strictly needed, but helps with older proxies
+                'Expires': '0',
+            },
+        });
+
+        // Detect authentication issues or unwanted redirects
         if (
             response.status === 401 ||
             response.status === 403 ||
@@ -52,20 +64,22 @@ const secureFetch = async (url, options = {}) => {
             response.redirected ||
             response.url.includes('/login')
         ) {
-            console.error("Auth Failure or Redirect detected. Forcing navigation...");
+            console.warn("Authentication failure or redirect to login detected. Clearing session and redirecting...");
 
+            // Clear client-side storage
             sessionStorage.clear();
+            localStorage.removeItem('auth_valid_until'); // if you're using the timestamp method
 
-            // USE href FORCIBLY - this breaks out of the AJAX "sandbox"
+            // Force full page navigation to login
             window.location.href = "/login?error=session_expired";
 
-            // Stop all further .then() or await code from running
+            // Prevent any further processing in promise chain
             return new Promise(() => {});
         }
 
         return response;
     } catch (error) {
-        console.error("Network Error:", error);
+        console.error("Network error in secureFetch:", error);
         throw error;
     }
 };
@@ -105,14 +119,14 @@ const loadStats = async (mapping) => {
 // -----------------------------
 const getStatusBadge = (status) => {
     const types = {
-        UPLOADED: { color: "bg-gray-100 text-gray-700 border-gray-200", icon: "clock", label: "En Attente" },
-        VALIDATED: { color: "bg-blue-50 text-blue-700 border-blue-200", icon: "user-check", label: "Signé" },
-        PROCESSING: { color: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: "refresh-cw", label: "Traitement" },
-        PROCESSED: { color: "bg-emerald-100 text-emerald-800 border-emerald-200", icon: "check-circle", label: "Succès" },
-        PROCESSED_WITH_ERROR: { color: "bg-orange-100 text-orange-800 border-orange-200", icon: "alert-triangle", label: "Traité avec Erreurs" },
+        UPLOADED: { color: "bg-gray-100 text-gray-700 border-gray-200", icon: "clock", label: "Importé" },
+        VALIDATED: { color: "bg-blue-50 text-blue-700 border-blue-200", icon: "user-check", label: "Validé" },
+        PROCESSING: { color: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: "refresh-cw", label: "En cours" },
+        PROCESSED: { color: "bg-emerald-100 text-emerald-800 border-emerald-200", icon: "check-circle", label: "Terminé" },
+        PROCESSED_WITH_ERROR: { color: "bg-orange-100 text-orange-800 border-orange-200", icon: "alert-triangle", label: "Terminé (Alertes)" },
         UPLOADED_FAILED: { color: "bg-red-50 text-red-700 border-red-100", icon: "alert-octagon", label: "Échec Upload" },
         VALIDATED_FAILED: { color: "bg-red-50 text-red-700 border-red-100", icon: "x-octagon", label: "Échec Signature" },
-        PROCESSED_FAILED: { color: "bg-red-100 text-red-900 border-red-200", icon: "x-circle", label: "Échec Total" }
+        PROCESSED_FAILED: { color: "bg-red-100 text-red-900 border-red-200", icon: "x-circle", label: "Échec" }
     };
 
     const def = types[status] || { color: "bg-gray-100 text-gray-700 border-gray-200", icon: "help-circle", label: status.replace(/_/g, ' ') };

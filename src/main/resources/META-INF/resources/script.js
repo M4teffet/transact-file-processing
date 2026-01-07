@@ -182,7 +182,7 @@ function openFullCsvPreview() {
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 focus';
     modal.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="bg-white rounded-md shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
             <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
                 <h3 class="font-bold text-gray-800">Données complètes (${state.fullCsvData.data.length} lignes)</h3>
                 <button id="closeModal" class="p-2 hover:bg-gray-200 rounded-full transition-colors text-2xl line-height-0">&times;</button>
@@ -281,16 +281,16 @@ function renderSummary(summary, appCode) {
     const statusColor = summary.mismatch ? 'border-red-500 bg-red-50/30' : 'border-green-500 bg-green-50/30';
 
     summaryDiv.innerHTML = `
-    <div class="p-5 bg-white rounded-xl border-2 shadow-sm ${statusColor} transition-all duration-300">
+    <div class="p-5 bg-white rounded-md border-2 shadow-sm ${statusColor} transition-all duration-300">
         <h4 class="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider flex items-center gap-2">
             <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Résumé des Transactions
         </h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div class="text-center p-4 bg-white rounded-lg border border-red-200">
+            <div class="text-center p-4 bg-white rounded-md border border-red-200">
                 <p class="text-[10px] font-bold text-red-500 uppercase mb-1">Total Débit</p>
                 <p class="text-2xl font-black text-red-600">${fmt(summary.totalDebit)}</p>
             </div>
-            <div class="text-center p-4 bg-white rounded-lg border border-green-200">
+            <div class="text-center p-4 bg-white rounded-md border border-green-200">
                 <p class="text-[10px] font-bold text-green-500 uppercase mb-1">Total Crédit</p>
                 <p class="text-2xl font-black text-green-600">${fmt(summary.totalCredit)}</p>
             </div>

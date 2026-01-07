@@ -4,10 +4,10 @@
 <style>
     /* Utilisation du style cohérent pour les cartes de liste */
     .batch-item {
-        @apply bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200;
+        @apply bg-white rounded-md shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200;
     }
     /* Styles cohérents (répétés ici pour s'assurer que les classes sont disponibles si le layout les omettait) */
-    .stats-card { @apply bg-white p-6 rounded-xl shadow-md border border-gray-200 transition-all duration-300 hover:shadow-lg; }
+    .stats-card { @apply bg-white p-6 rounded-md shadow-md border border-gray-200 transition-all duration-300 hover:shadow-lg; }
     .stats-icon { @apply w-8 h-8 rounded-full bg-brand-light flex items-center justify-center text-brand-primary; }
     /* Mise à jour des couleurs des icônes de stats pour cohérence */
     .stats-icon.bg-green-100 { @apply bg-green-100 text-green-600; }
@@ -31,17 +31,17 @@
     </div>
 
     <nav class="flex-1 px-4 py-6 space-y-2">
-        <a class="flex items-center px-4 py-3 text-brand-dark transition rounded-lg bg-brand-light font-semibold"
+        <a class="flex items-center px-4 py-3 text-brand-dark transition rounded-md bg-brand-light font-semibold"
            href="/batches">
             <i class="w-5 h-5 mr-3" data-lucide="list-checks"></i> Batches Uploadés
         </a>
 
-        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-brand-primary hover:bg-gray-100 transition rounded-lg"
+        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-brand-primary hover:bg-gray-100 transition rounded-md"
            href="/validated">
             <i class="w-5 h-5 mr-3" data-lucide="check-circle"></i> Batches Validés
         </a>
 
-        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-brand-primary hover:bg-gray-100 transition rounded-lg" href="#">
+        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-brand-primary hover:bg-gray-100 transition rounded-md" href="#">
             <i class="w-5 h-5 mr-3" data-lucide="help-circle"></i> Support
         </a>
     </nav>
@@ -72,7 +72,7 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+    <div class="bg-white rounded-md shadow-md border border-gray-200 overflow-hidden">
         <div class="p-6 border-b border-gray-200">
             <h3 class="text-xl font-bold text-gray-900 flex items-center gap-3">
                 <i class="w-5 h-5 text-brand-primary" data-lucide="list"></i>

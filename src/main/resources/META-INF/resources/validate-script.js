@@ -66,7 +66,7 @@ const renderUploadedBatches = () => {
 
     if (!uploadedBatches.length) {
         container.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-12 text-gray-500 bg-white rounded-xl border border-dashed">
+            <div class="flex flex-col items-center justify-center py-12 text-gray-500 bg-white rounded-md border border-dashed">
                 <i data-lucide="file-check" class="w-12 h-12 mb-3 opacity-20"></i>
                 <p>Aucun batch en attente de validation.</p>
             </div>`;
@@ -76,14 +76,14 @@ const renderUploadedBatches = () => {
 
     const html = `
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 bg-white rounded-xl shadow-sm border border-gray-100">
+            <table class="min-w-full divide-y divide-gray-200 bg-white rounded-md shadow-sm border border-gray-100">
                 <thead class="bg-gray-50/50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">ID Batch</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Application</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date Import</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Statut</th>
-                        <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -93,7 +93,7 @@ const renderUploadedBatches = () => {
                         <td class="px-6 py-4 text-sm text-gray-600 font-mono">${b.application}</td>
                         <td class="px-6 py-4 text-sm text-gray-500">${new Date(b.uploadedAt).toLocaleString('fr-FR')}</td>
                         <td class="px-6 py-4">${getStatusBadge(b.status)}</td>
-                        <td class="px-6 py-4 flex justify-end items-center gap-3">
+                        <td class="px-6 py-4 flex justify-startd items-center gap-3">
                             <button onclick="viewBatchDetails('${b.batchId}')" class="p-1.5 hover:bg-blue-50 rounded-full transition" title="Détails">
                                 <i data-lucide="eye" class="w-5 h-5 text-blue-500"></i>
                             </button>
@@ -101,7 +101,7 @@ const renderUploadedBatches = () => {
                                 <i data-lucide="trash-2" class="w-5 h-5 text-red-400"></i>
                             </button>
                             <button onclick="validateBatchNow('${b.batchId}')"
-                                    class="px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-green-500 hover:bg-green-600 transition-all flex items-center gap-2 shadow-sm">
+                                    class="px-4 py-1.5 rounded-md text-xs font-bold text-white bg-green-500 hover:bg-green-600 transition-all flex items-center gap-2 shadow-sm">
                                 <i data-lucide="check-circle" class="w-4 h-4"></i>
                                 VALIDER
                             </button>

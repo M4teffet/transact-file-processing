@@ -1,25 +1,28 @@
 package com.transact.processor.model;
 
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.Indexes;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
+import io.quarkus.runtime.StartupEvent;
+import jakarta.enterprise.event.Observes;
 import org.bson.types.ObjectId;
 
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 
 @MongoEntity(collection = "processing_logs")
 public class ProcessingLogEntry extends PanacheMongoEntity {
 
-    public ObjectId batchId;           // ID du batch concerné (nullable si log global)
-    public String level;           // "INFO", "WARN", "ERROR"
-    public String message;         // Message détaillé
-    public Instant timestamp;      // Date/heure du log
+    public ObjectId batchId;
+    public String level;
+    public String message;
+    public Instant timestamp;
 
-    // Constructeur par défaut requis par Panache
     public ProcessingLogEntry() {
         this.timestamp = Instant.now();
     }
 
-    // Constructeur pratique
     public ProcessingLogEntry(ObjectId batchId, String level, String message) {
         this.batchId = batchId;
         this.level = level != null ? level.toUpperCase() : "INFO";
@@ -27,19 +30,25 @@ public class ProcessingLogEntry extends PanacheMongoEntity {
         this.timestamp = Instant.now();
     }
 
+    // ── Add TTL index creation at startup ───────────────────────────────
+    public static void ensureIndexes(@Observes StartupEvent ev) {
+        // TTL index: documents expire 72 hours (259200 seconds) after timestamp
+        mongoCollection().createIndex(
+                Indexes.ascending("timestamp"),
+                new IndexOptions()
+                        .background(true)
+                        .expireAfter(24L * 60 * 60, TimeUnit.SECONDS) // 72 hours in seconds
+        );
+    }
 
-    // Méthode statique pour logger facilement
     public static void log(ObjectId batchId, String level, String message) {
         new ProcessingLogEntry(batchId, level, message).persist();
     }
 
-    // Log global (sans batchId)
     public static void log(String level, String message) {
         log(null, level, message);
     }
 
-
-    // Méthode d'instance pour persister (facultatif)
     public void save() {
         this.persist();
     }

@@ -8,7 +8,6 @@ import com.transact.processor.model.FileBatch;
 import com.transact.service.ApplicationService;
 import com.transact.service.FileParser;
 import com.transact.service.FileValidator;
-import io.quarkus.security.Authenticated;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import jakarta.annotation.security.RolesAllowed;
@@ -68,7 +67,7 @@ public class InputterResource {
     // The full path is now /api/inputter/upload
     // ========================================
     @POST
-    @Authenticated
+    @RolesAllowed("INPUTTER")
     @Path("/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_JSON)

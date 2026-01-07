@@ -1,6 +1,6 @@
 class AdminDashboard {
     constructor() {
-        this.REFRESH_INTERVAL = 30000;
+        this.REFRESH_INTERVAL = 60000;
         this.autoRefreshInterval = null;
         this.currentBatchId = null;
         this.currentLogs = [];

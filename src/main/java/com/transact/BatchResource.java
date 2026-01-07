@@ -31,6 +31,7 @@ public class BatchResource {
     @Inject
     SecurityIdentity identity;
 
+
     // --- GET /batches (List View) ---
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -87,6 +88,7 @@ public class BatchResource {
         return Response.ok(new BatchPageResponse(result, validatedPage, validatedSize, query.count(), query.pageCount())).build();
     }
 
+
     // ========================================
     // GET /batches/{id}
     // ========================================
@@ -140,7 +142,10 @@ public class BatchResource {
         )).build();
     }
 
-    // --- PUT /batches/{id} (Validate Batch) ---
+
+    // ========================================
+    // PUT /batches/{id}
+    // ========================================
     @PUT
     @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -181,7 +186,10 @@ public class BatchResource {
         )).build();
     }
 
-    // --- DELETE /batches/{id} ---
+
+    // ========================================
+    // DELETE /batches/{id}
+    // ========================================
     @DELETE
     @Path("/{id}")
     public Response deleteBatchById(@PathParam("id") String id) {
@@ -204,6 +212,57 @@ public class BatchResource {
         return Response.noContent().build();
     }
 
+
+    // ========================================
+    // GET /recent-batches
+    // ========================================
+    @GET
+    @Path("/recent-batches")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getRecentBatches() {
+
+        List<RecentBatchDTO> list = FileBatch.<FileBatch>findAll(Sort.descending("uploadTimestamp"))
+                .page(Page.of(0, 10))
+                .stream()
+                .map(batch -> new RecentBatchDTO(
+                        batch.id.toHexString(),
+                        batch.status,
+                        batch.uploadTimestamp
+                ))
+                .collect(Collectors.toList());
+
+        return Response.ok(list).build();
+    }
+
+
+    // ========================================
+    // GET /api/batches/processing-logs
+    // ========================================
+    @GET
+    @Path("/processing-logs")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get logs, filtered by batchId if provided")
+    public List<ProcessingLogEntry> getProcessingLogs(
+            @QueryParam("batchId") String batchId) {
+
+        if (batchId != null && !batchId.isBlank()) {
+            ObjectId bId = parseObjectId(batchId);
+            // Filter logs for a specific batch
+            return ProcessingLogEntry.find("batchId", Sort.by("timestamp").descending(), bId)
+                    .page(Page.of(0, 1000))
+                    .list();
+        } else {
+            // Return latest global logs if no batchId is selected
+            return ProcessingLogEntry.findAll(Sort.by("timestamp").descending())
+                    .page(Page.of(0, 100))
+                    .list();
+        }
+    }
+
+
+    // ========================================
+    // GET /count
+    // ========================================
     @GET
     @Path("/counts")
     @Produces(MediaType.APPLICATION_JSON)
@@ -231,7 +290,9 @@ public class BatchResource {
         return counts;
     }
 
+    // ========================================
     // --- Helpers ---
+    // ========================================
     private ObjectId parseObjectId(String id) {
         try {
             return new ObjectId(id);
@@ -250,7 +311,9 @@ public class BatchResource {
         return Response.ok(new BatchPageResponse(List.of(), page, size, 0, 0)).build();
     }
 
+    // ========================================
     // --- DTOs ---
+    // ========================================
     public record BatchViewDTO(String batchId, String application, String status, Instant uploadedAt, int totalRecords, int errorCount) {
     }
 
@@ -271,6 +334,14 @@ public class BatchResource {
             String status, // SUCCESS | FAILED | PENDING
             String t24Reference,
             String errorMessage
+    ) {
+    }
+
+    @Schema(name = "RecentBatchDTO")
+    public record RecentBatchDTO(
+            String id,
+            String status,
+            Instant uploadedAt
     ) {
     }
 

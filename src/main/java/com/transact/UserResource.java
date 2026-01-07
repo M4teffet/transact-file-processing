@@ -1,6 +1,7 @@
 package com.transact;
 
 import com.transact.processor.model.AppUser;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -14,6 +15,7 @@ import java.util.Set;
 public class UserResource {
 
     @POST
+    @RolesAllowed("ADMIN")
     @Produces(MediaType.TEXT_PLAIN)
     public Response addUser(@RestForm String username, @RestForm String password, @RestForm String role) {
         try {

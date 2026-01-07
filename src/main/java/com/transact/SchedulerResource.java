@@ -1,6 +1,7 @@
 package com.transact;
 
 import com.transact.processor.model.AppFeatureConfig;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -19,6 +20,7 @@ public class SchedulerResource {
     public static class FeatureToggleResource {
 
         @POST
+        @RolesAllowed("ADMIN")
         @Path("/toggle/{key}")
         public Response toggleFeature(@PathParam("key") String key, @QueryParam("enabled") boolean enabled) {
             AppFeatureConfig config = AppFeatureConfig.find("configKey", key).firstResult();
@@ -37,6 +39,7 @@ public class SchedulerResource {
         }
 
         @GET
+        @RolesAllowed("ADMIN")
         public List<AppFeatureConfig> getAllFeatures() {
             return AppFeatureConfig.listAll();
         }
