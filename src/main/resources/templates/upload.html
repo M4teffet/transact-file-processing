@@ -6,26 +6,28 @@
 <style>
     /* Styles Spécifiques à la Page Upload (Coordonnés avec le Layout) */
 
-    .stats-card { @apply shadow-md border border-gray-200 transition-all duration-300 hover:shadow-lg; }
+    .stats-card { @apply shadow-sm border border-gray-200 transition-all duration-300 hover:shadow-md; }
     .stats-icon { @apply text-brand-primary; }
 
     /* Bouton Primaire (Orange) */
 .chimp-primary-btn {
 inline-flex items-center text-white bg-brand-primary hover:bg-brand-dark border border-transparent
-               focus:ring-4 focus:ring-brand-medium shadow-sm font-medium rounded-base text-sm px-4 py-2.5
+               focus:ring-4 focus:ring-brand-medium shadow-xs font-medium rounded-base text-sm px-4 py-2.5
                transition-colors duration-200;
     }
     /* Zone de Drag and Drop (Couleurs Orange) */
     .drag-over { @apply ring-4 ring-brand-primary/40 border-brand-primary bg-brand-light/50; }
 
     /* Éléments de Champ (Field Item) */
-    .field-item { @apply flex items-center justify-between px-6 py-3 bg-white border border-gray-300 rounded-md cursor-move hover:border-brand-primary hover:shadow-sm transition-all duration-200 font-medium text-sm; }
+    .field-item { @apply flex items-center justify-between px-6 py-3 bg-white border border-gray-300 rounded-md cursor-move
+    hover:border-brand-primary hover:shadow-xs transition-all duration-200 font-medium text-sm; }
     .field-item.dragging { @apply opacity-50 scale-105 border-brand-primary bg-brand-light; }
 </style>
 {/head}
 
 {#aside}
-<aside class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-lg border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
+<aside
+        class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-md border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
        id="sidebar">
     <div class="p-6 border-b border-gray-200 text-center flex-shrink-0">
         <a class="inline-flex items-center justify-center h-10 w-auto hover:opacity-80 transition-opacity" href="/" title="Orange Bank">
@@ -58,33 +60,53 @@ inline-flex items-center text-white bg-brand-primary hover:bg-brand-dark border 
 {#default}
 <div class="max-w-7xl mx-auto space-y-8">
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="stats-card">
-            <div class="flex items-center justify-between">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+
+        <!-- Card 1 -->
+        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
+            <!-- Background pattern -->
+            <div class="absolute inset-0 opacity-[0.75]"
+                 style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
+            </div>
+            <!-- Content -->
+            <div class="relative bg-white/10 p-4 flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Total Chargés</p>
-                    <p class="text-2xl font-bold text-brand-primary" id="uploadedCount">0</p>
+                    <p class="text-sm text-gray-500">Total Chargés</p>
+                    <p class="text-xl font-semibold text-brand-primary" id="uploadedCount">0</p>
                 </div>
-                <div class="stats-icon">
-                    <i class="w-4 h-4" data-lucide="upload-cloud"></i>
-                </div>
+                <svg class="w-6 h-6 text-brand-primary" fill="none"
+                     stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 13v8"/>
+                    <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+                    <path d="m8 17 4-4 4 4"/>
+                </svg>
             </div>
         </div>
 
-        <div class="stats-card">
-            <div class="flex items-center justify-between">
+        <!-- Card 2 -->
+        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
+            <!-- Background pattern -->
+            <div class="absolute inset-0 opacity-[0.75]"
+                 style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
+            </div>
+
+            <!-- Content -->
+            <div class="relative bg-white/10 p-4 flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Total Validés</p>
-                    <p class="text-2xl font-bold text-emerald-600" id="validatedCount">0</p>
+                    <p class="text-sm text-gray-500">Total Validés</p>
+                    <p class="text-xl font-semibold text-emerald-600" id="validatedCount">0</p>
                 </div>
-                <div class="stats-icon bg-green-100">
-                    <i class="w-4 h-4 text-green-600" data-lucide="check-circle"></i>
-                </div>
+                <svg class="w-6 h-6 text-emerald-600" fill="none"
+                     stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21.801 10A10 10 0 1 1 17 3.335"/>
+                    <path d="m9 11 3 3L22 4"/>
+                </svg>
             </div>
         </div>
+
     </div>
 
-    <div class="bg-white rounded-md shadow-sm border border-gray-200 p-8">
+    <div class="bg-white rounded-md shadow-xs border border-gray-200 p-8">
         <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3"><i class="w-5 h-5 text-brand-primary"
                                                                                     data-lucide="cloud-upload"></i> Générateur
             Template</h3>
@@ -105,7 +127,7 @@ inline-flex items-center text-white bg-brand-primary hover:bg-brand-dark border 
         <p class="text-xs text-gray-500 mt-2 italic text-center"><i class="inline w-3 h-3 mr-1" data-lucide="info"></i> Glissez-déposez pour
             ajuster.</p>
     </div>
-    <div class="hidden bg-white p-8 rounded-md shadow-sm border border-gray-200" id="headerSection">
+    <div class="hidden bg-white p-8 rounded-md shadow-xs border border-gray-200" id="headerSection">
         <h4 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3"><i class="w-5 h-5 text-brand-primary"
                                                                                     data-lucide="database"></i> En-tête CSV</h4>
         <p class="text-sm text-gray-600 mb-4">Copiez pour votre fichier :</p>
@@ -118,18 +140,19 @@ inline-flex items-center text-white bg-brand-primary hover:bg-brand-dark border 
             </button>
         </div>
     </div>
-    <div class="hidden bg-white p-8 rounded-md shadow-sm border border-gray-200" id="uploadSection">
+    <div class="hidden bg-white p-8 rounded-md shadow-xs border border-gray-200" id="uploadSection">
         <label class="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4 block">Importer CSV</label>
         <div class="mb-6 border-2 border-dashed border-gray-300 rounded-md p-8 text-center bg-gray-50 hover:border-brand-primary/50 transition cursor-pointer"
              id="csvDropZone"
              onclick="document.getElementById('csvInput').click()">
             <i class="mx-auto h-12 w-12 mb-3 text-gray-400" data-lucide="upload"></i>
             <p class="text-lg font-semibold text-gray-700">Glissez ou cliquez pour uploader</p>
-            <p class="text-sm text-gray-500">ou <span class="text-brand-primary underline">Format supporté : CSV uniquement</span></p>
+            <p class="text-xs text-gray-500"><span class="text-brand-primary underline">Format supporté : CSV uniquement</span>
+            </p>
             <input accept=".csv" class="hidden" id="csvInput" type="file">
         </div>
     </div>
-    <div class="hidden bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden" id="csvPreviewSection">
+    <div class="hidden bg-white rounded-md shadow-xs border border-gray-200 overflow-hidden" id="csvPreviewSection">
         <div class="p-6 border-b border-gray-200"><h4 class="text-xl font-bold text-gray-900 flex items-center gap-3"><i
                 class="w-5 h-5 text-brand-primary"
                 data-lucide="table"></i>
@@ -161,7 +184,7 @@ inline-flex items-center text-white bg-brand-primary hover:bg-brand-dark border 
             <div class="flex gap-3 flex-1 justify-end">
                 <button class="inline-flex items-center justify-center
                    text-white bg-brand-primary hover:bg-brand-dark border border-transparent
-                   focus:ring-4 focus:ring-brand-medium shadow-sm font-medium rounded-base
+                   focus:ring-4 focus:ring-brand-medium shadow-xs font-medium rounded-base
                    text-sm px-4 py-2.5
                    transition-colors duration-200"
                         id="sendCsvBtn"
@@ -183,7 +206,7 @@ inline-flex items-center text-white bg-brand-primary hover:bg-brand-dark border 
         </div>
     </div>
 
-    <div class="hidden text-center py-12 bg-white rounded-md shadow-sm border border-gray-200" id="success">
+    <div class="hidden text-center py-12 bg-white rounded-md shadow-xs border border-gray-200" id="success">
         <i class="mx-auto w-20 h-20 text-green-500 mb-4" data-lucide="check-circle"></i>
         <h3 class="text-2xl font-bold text-green-700 mb-2">Succès !</h3>
         <p class="text-lg text-gray-600 mb-4">ID Batch : <code class="bg-gray-100 px-3 py-1 rounded text-sm font-mono font-bold"
@@ -194,8 +217,8 @@ inline-flex items-center text-white bg-brand-primary hover:bg-brand-dark border 
 {/default}
 
 {#script}
-<script src="/shared.js"></script>
-<script src="/script.js"></script>
+<script src="/javascript/shared.js"></script>
+<script src="/javascript/script.js"></script>
 {/script}
 
 {/include}

@@ -1,0 +1,231 @@
+{#include layout}
+{#title}Paramètres - Administration{/title}
+
+{#aside}
+<aside
+        class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-md border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
+        id="sidebar">
+    <div class="p-6 border-b border-gray-200 text-center flex-shrink-0">
+        <a class="inline-flex items-center justify-center h-10 w-auto hover:opacity-80 transition-opacity" href="/"
+           title="Orange Bank">
+            <picture class="h-full w-auto">
+                <img alt="Orange Bank Logo"
+                     class="h-full w-auto max-h-10 object-contain"
+                     loading="lazy"
+                     onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'; this.onerror=null;"
+                     src="/images/Logo_Orange_Bank.svg">
+            </picture>
+        </a>
+        <h1 class="mt-4 px-1 font-semibold text-gray-600 text-sm">Utilitaire Batch</h1>
+    </div>
+    <nav class="flex-1 px-4 py-6 space-y-2">
+        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-brand-primary hover:bg-gray-100 transition rounded-md"
+           href="/dashboard">
+            <i class="w-5 h-5 mr-3" data-lucide="shield"></i> Administration
+        </a>
+
+        <a class="flex items-center px-4 py-3 text-brand-dark transition rounded-md bg-brand-light font-semibold"
+           href="/settings">
+            <i class="w-5 h-5 mr-3" data-lucide="list-checks"></i> Settings
+        </a>
+    </nav>
+    <div class="p-4 border-t border-gray-200 bg-gray-50 text-center text-xs text-gray-600">
+        &copy; 2025 Orange Bank
+    </div>
+</aside>
+{/aside}
+
+{#default}
+<div class="max-w-6xl mx-auto space-y-8 pb-10">
+
+    <!-- Header -->
+    <div class="flex justify-between items-end border-b border-gray-200 pb-4">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">Paramètres</h2>
+            <p class="text-sm text-gray-600 mt-1">
+                Gestion des pays, utilisateurs et applications
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- Country Management -->
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col h-full">
+            <div class="p-5 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-lg font-bold flex items-center gap-2 text-gray-800">
+                    <i class="w-5 h-5 text-brand-primary" data-lucide="globe"></i>
+                    Gestion des Pays
+                </h3>
+            </div>
+
+            <div class="p-6 flex-grow">
+                <form class="space-y-4" id="countryForm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Code Pays <span
+                                    class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="h-4 w-4 text-gray-400" data-lucide="map-pin"></i>
+                                </div>
+                                <input class="appearance-none rounded-md relative block w-full pl-10 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" id="countryCode" placeholder="Ex: CI"
+                                       required>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Company ID <span
+                                    class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="h-4 w-4 text-gray-400" data-lucide="briefcase"></i>
+                                </div>
+                                <input class="appearance-none rounded-md relative block w-full pl-10 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" id="companyId" placeholder="Ex: CI001"
+                                       required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-primary hover:bg-brand-dark transition-all"
+                            type="submit">
+                        Ajouter le pays
+                    </button>
+                </form>
+
+                <div class="mt-6 border-t pt-4">
+                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Pays actifs</h4>
+                    <ul class="divide-y divide-gray-100 text-sm" id="countryList">
+                        <!-- Populated dynamically via JS -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Management -->
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col h-full">
+            <div class="p-5 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-lg font-bold flex items-center gap-2 text-gray-800">
+                    <i class="w-5 h-5 text-brand-primary" data-lucide="user-plus"></i>
+                    Nouvel Utilisateur
+                </h3>
+            </div>
+
+            <div class="p-6 flex-grow">
+                <form class="space-y-4" id="userForm">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Identifiant <span
+                                class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="h-4 w-4 text-gray-400" data-lucide="user"></i>
+                            </div>
+                            <input class="appearance-none rounded-md relative block w-full pl-10 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" id="username"
+                                   placeholder="3-50 caractères">
+                        </div>
+                        <p class="text-xs text-red-500 mt-1 hidden" id="error-username"></p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Mot de passe <span
+                                class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="h-4 w-4 text-gray-400" data-lucide="lock"></i>
+                            </div>
+                            <input class="appearance-none rounded-md relative block w-full pl-10 pr-10 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" id="password" placeholder="Min 8 caractères"
+                                   type="password">
+
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                                 onclick="togglePasswordVisibility()">
+                                <i class="h-4 w-4 text-gray-400 hover:text-gray-600" data-lucide="eye" id="eyeIcon"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-red-500 mt-1 hidden" id="error-password"></p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Rôle</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="h-4 w-4 text-gray-400" data-lucide="shield"></i>
+                                </div>
+                                <select class="appearance-none rounded-md relative block w-full pl-10 px-3 py-2 border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
+                                        id="role">
+                                    <option value="INPUTTER">INPUTTER</option>
+                                    <option value="AUTHORISER">AUTHORISER</option>
+                                    <option value="ADMIN">ADMIN</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Affectation</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="h-4 w-4 text-gray-400" data-lucide="flag"></i>
+                                </div>
+                                <select class="appearance-none rounded-md relative block w-full pl-10 px-3 py-2 border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
+                                        id="userCountry">
+                                    <!-- Populated dynamically via JS -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-primary hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary transition-all" id="createUserBtn"
+                            type="submit">
+                        Créer l’utilisateur
+                    </button>
+                </form>
+
+                <div class="mt-6 border-t pt-4">
+                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Utilisateurs enregistrés</h4>
+                    <ul class="divide-y divide-gray-100 text-sm" id="userList">
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Applications Section -->
+    <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div class="p-5 border-b border-gray-100 bg-gray-50">
+            <h3 class="text-lg font-bold flex items-center gap-2 text-gray-800">
+                <i class="w-5 h-5 text-brand-primary" data-lucide="layers"></i>
+                Applications Core Banking
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="border rounded-md">
+                    <ul class="divide-y divide-gray-100" id="appList"></ul>
+                </div>
+                <div class="md:col-span-2 space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Nom du module</label>
+                        <input class="bg-gray-100 w-full rounded-md border-gray-300 text-sm px-3 py-2" disabled
+                               id="appNameDisplay">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                        <textarea class="w-full rounded-md border-gray-300 text-sm focus:ring-brand-primary focus:border-brand-primary" id="appDescription"
+                                  rows="2"></textarea>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded border text-center text-sm text-gray-500">
+                        Visualisation du schéma JSON (Lecture seule pour l'admin)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{/default}
+
+{#script}
+<script src="/javascript/shared.js"></script>
+<script src="/javascript/settings.js"></script>
+{/script}
+{/include}

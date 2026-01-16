@@ -11,7 +11,7 @@
     <style>
         /* 1. Amélioration: Introduction des variables CSS pour la maintenabilité */
         :root {
-            --color-primary-light: #1d4ed8;
+            --color-primary-light: #1347db;
             --color-secondary-dark: #1e40af;
             --color-text-medium: #374151;
             --color-text-light: #6b7280;
@@ -27,12 +27,24 @@
         html { font-size: 0.94rem; } * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: linear-gradient(to bottom right, #0e365e, #000); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; color: #111827; }
         .login-container {
-            background: white; border: 1px solid #e2e8f0; border-radius: var(--border-radius-main);
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--border-radius-main);
             box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
-            width: 100%; max-width: 28rem; padding: 3rem 2.5rem;
-            position: relative; overflow: hidden;
+            width: 100%;
+            max-width: 28rem;
+            padding: 3rem 2.5rem;
+            position: relative;
+            overflow: hidden;
         }
-        .login-container::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(to right, var(--color-primary-light), var(--color-secondary-dark)); }
+        .login-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(to right, var(--color-primary-light), var(--color-secondary-dark)); }
         .login-header { text-align: center; margin-bottom: 2.5rem; }
         .login-logo-section { display: flex; flex-direction: column; align-items: center; gap: 1rem; margin-bottom: 1rem; }
         .login-logo { max-width: 10rem; height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); transition: transform 0.3s ease; }
@@ -154,7 +166,7 @@
         <p style="margin-top: 0.5rem;">&copy; 2025 Orange Bank. Tous droits réservés.</p>
     </div>
 </div>
-<script src="/login-script.js"></script>
+<script src="/javascript/login-script.js"></script>
 <script>lucide.createIcons();</script>
 </body>
 </html>

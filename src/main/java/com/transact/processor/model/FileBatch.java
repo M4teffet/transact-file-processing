@@ -30,19 +30,57 @@ public class FileBatch extends PanacheMongoEntity {
 
     public Instant uploadTimestamp = Instant.now();
     public Instant processingTimestamp;
-
     public String uploadedById;
     public String validatedById;
+    public String originalFilename;
     public ValidationReport validationReport;
     public Instant validationTimestamp;
 
+    public static FileBatch findActiveDuplicate(ObjectId appId, String filename) {
+        // We only want to find records that are NOT in a failed state.
+        // These are the statuses that should "Block" a new upload.
+        List<String> blockingStatuses = List.of(
+                STATUS_UPLOADED,
+                STATUS_VALIDATED,
+                STATUS_PROCESSING,
+                STATUS_PROCESSED,
+                STATUS_PROCESSED_PARTIAL
+        );
+
+        // If the existing file is in any of these, 'exists' will be true.
+        // If it is in 'VALIDATED_FAILED', this query will return NULL, and 'exists' will be false.
+        return find("applicationId = ?1 and originalFilename = ?2 and status in ?3",
+                appId, filename, blockingStatuses).firstResult();
+    }
+
     public static void ensureIndexes(@Observes StartupEvent ev) {
+        // General index for dashboard/filtering
+        mongoCollection().createIndex(
+                Indexes.compoundIndex(Indexes.ascending("applicationId"), Indexes.ascending("status")),
+                new IndexOptions().background(true)
+        );
+
+        // List of statuses that MUST be unique per filename
+        List<String> blockingStatuses = List.of(
+                STATUS_UPLOADED,
+                STATUS_VALIDATED,
+                STATUS_PROCESSING,
+                STATUS_PROCESSED,
+                STATUS_PROCESSED_PARTIAL
+        );
+
+        // The FIXED Partial Unique Index (uses $in to avoid the $not limitation)
         mongoCollection().createIndex(
                 Indexes.compoundIndex(
                         Indexes.ascending("applicationId"),
-                        Indexes.ascending("status")
+                        Indexes.ascending("originalFilename")
                 ),
-                new IndexOptions().background(true)
+                new IndexOptions()
+                        .unique(true)
+                        .background(true)
+                        .partialFilterExpression(new org.bson.Document("status",
+                                new org.bson.Document("$in", blockingStatuses)
+                        ))
         );
     }
 

@@ -44,7 +44,7 @@ public class FileValidator {
                 .collect(Collectors.toList());  // Use collect for mutability if needed later
 
         // Batch validation for DATA_CAPTURE: Ensure sum of AMOUNT.LCY where SIGN='C' equals sum where SIGN='D'
-        if ("DATA_CAPTURE".equals(config.name)) {  // Assuming getter; use config.name if direct field
+        if ("DATA_CAPTURE".equals(config.name)) {  // Assuming getter; use config.code if direct field
             BigDecimal creditSum = BigDecimal.ZERO;
             BigDecimal debitSum = BigDecimal.ZERO;
             for (Map<String, Object> record : result) {
@@ -189,7 +189,7 @@ public class FileValidator {
 
         if ((startsWithLetter(debitAcct) || startsWithLetter(creditAcct))
                 && isBlank(orderingBank) && isBlank(orderingCust)) {
-            throw new RuntimeException("Line " + line + ": ORDERING.BANK or ORDERING.CUSTOMER is required when account starts with a letter");
+            throw new RuntimeException("Line " + line + ": For internal/P&L accounts, either ORDERING.BANK or ORDERING.CUSTOMER is required.");
         }
     }
 
@@ -224,7 +224,7 @@ public class FileValidator {
                         OffsetDateTime odt = OffsetDateTime.parse(val);
                         date = odt.toLocalDate();
                     } catch (DateTimeParseException isoE) {
-                        throw new RuntimeException("Invalid date format: must be yyyyMMdd or ISO 8601 (e.g., yyyy-MM-ddTHH:mm:ss.SSSXXX)");
+                        throw new RuntimeException("Invalid date format: must be yyyyMMdd");
                     }
                 }
                 LocalDate today = LocalDate.now();

@@ -37,11 +37,16 @@ public class WebPageResource {
     @Location("dashboard")
     Template dashboardTemplate;
 
+    @Inject
+    @Location("settings")
+    Template settingsTemplate;
+
     @GET
     @Path("/dashboard")
     @RolesAllowed({"ADMIN"})  // Nouveau rôle
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance getAdminPage() {
+
         return dashboardTemplate.data("title", "Administration - Batch Manager");
     }
 
@@ -93,5 +98,15 @@ public class WebPageResource {
         // Chain both .data() calls to the template instance before returning
         return loginTemplate
                 .data("title", "Connexion - Orange Bank");
+    }
+
+    @GET
+    @PermitAll
+    @Path("/settings")
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance getSettingsPage() {
+        // Chain both .data() calls to the template instance before returning
+        return settingsTemplate
+                .data("title", "Administration - Batch Manager Settings");
     }
 }

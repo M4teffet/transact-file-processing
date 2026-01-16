@@ -20,13 +20,17 @@ public class AppUser extends PanacheMongoEntity {
     @Size(min = 8)
     public String passwordHash;
 
-    private UserRole role = UserRole.INPUTTER;
+    @NotBlank
+    public String countryCode;
+
+    @NotBlank
+    public UserRole role = UserRole.INPUTTER;
 
     // Constructor for Panache
     public AppUser() {
     }
 
-    public static AppUser add(@NotBlank String username, @NotBlank String password, @NotBlank String roleStr) {
+    public static AppUser add(String username, String password, String roleStr, String countryName) {
 
         // Validate and parse role
         UserRole role;
@@ -34,6 +38,12 @@ public class AppUser extends PanacheMongoEntity {
             role = UserRole.valueOf(roleStr.toUpperCase()); // Enforce uppercase for consistency
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid role: " + roleStr + ". Must be INPUTTER, ADMIN, or AUTHORISER.");
+        }
+
+        Country country = Country.find("code", countryName).firstResult();
+
+        if (country == null) {
+            throw new IllegalArgumentException("Invalid country code: " + countryName);
         }
 
         // Check for existing user
@@ -46,13 +56,18 @@ public class AppUser extends PanacheMongoEntity {
         user.setUsername(username.trim());
         user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
         user.setRole(role);
+        user.setCountryCode(country.code);
 
         user.persist();
         return user;
     }
 
-    public static Optional<AppUser> findByUsername(@NotBlank String username) {
+    public static Optional<AppUser> findByUsername(String username) {
         return Optional.ofNullable(find("username", username).firstResult());
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
     }
 
     public String getUsername() {
@@ -83,8 +98,9 @@ public class AppUser extends PanacheMongoEntity {
         return id;
     }
 
-    // Enum for roles (stored as string in MongoDB via Panache)
     public enum UserRole {
-        INPUTTER, ADMIN, AUTHORISER
+        INPUTTER,
+        ADMIN,
+        AUTHORISER
     }
 }

@@ -1,36 +1,91 @@
 const API_BASE = "http://localhost:8080/api";
 
-// -----------------------------
+/**
+// DECODE JWT
+ */
+const Auth = {
+    getPayload() {
+        // 1. Try LocalStorage first
+        let token = localStorage.getItem('AuthToken');
+
+        // 2. If not found, try Cookies
+        if (!token) {
+            const name = "AuthToken=";
+            const decodedCookie = decodeURIComponent(document.cookie);
+            const ca = decodedCookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i].trim();
+                if (c.indexOf(name) == 0) {
+                    token = c.substring(name.length, c.length);
+                }
+            }
+        }
+        if (!token) return null;
+
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            return JSON.parse(window.atob(base64));
+        } catch (e) {
+            return null;
+        }
+    },
+
+    getUsername() {
+        const payload = this.getPayload();
+        return payload ? (payload.upn || payload.sub) : "Invité";
+    }
+};
+
+
+/**
 // SNACKBAR (UPDATED)
-// -----------------------------
+ */
 const showSnackbar = (msg, type = "info") => {
     const container = document.getElementById("snackbar-container");
-    if (!container) {
-        console.error("Snackbar container missing, logging message instead:", msg);
-        return;
-    }
-    const div = document.createElement("div");
-    const colors = {
-        error: "bg-red-50 border-red-700 text-red-800",
-        success: "bg-green-50 border-green-700 text-green-800",
-        info: "bg-blue-50 border-blue-700 text-blue-800"
-    };
-    div.className = `
-        p-3 rounded shadow text-sm my-2 border
-        opacity-0 translate-y-2 transition-all duration-300
-        ${colors[type] || colors.info}
-        whitespace-pre-line
-    `;
-    div.textContent = msg;
-    container.appendChild(div);
+    if (!container) return;
 
+    if (container.children.length >= 6) {
+            container.children[0].remove();
+    }
+
+    const div = document.createElement("div");
+
+    // Improved color mapping with consistent border classes
+    const colors = {
+        error: "bg-red-50/90 border-red-200 text-red-900 shadow-[0_4px_12px_rgba(239,68,68,0.15)]",
+        success: "bg-emerald-50/90 border-emerald-200 text-emerald-900 shadow-[0_4px_12px_rgba(16,185,129,0.15)]",
+        info: "bg-indigo-50/90 border-indigo-200 text-indigo-900 shadow-[0_4px_12px_rgba(99,102,241,0.15)]"
+    };
+
+    // Base styling
+    div.className = `
+        p-4 rounded-lg border shadow-sm text-sm font-medium
+        flex items-start gap-3 w-full
+        transform transition-all duration-300 ease-out
+        opacity-0 translate-y-4
+        ${colors[type] || colors.info}
+    `;
+
+    // Add content (using innerHTML in case you want to add icons later)
+    div.innerHTML = `
+        <span class="flex-1 whitespace-pre-line">${msg}</span>
+        <button onclick="this.parentElement.remove()" class="opacity-40 hover:opacity-100 transition-opacity">✕</button>
+    `;
+
+    // Prepend puts the new notification at the bottom of the stack
+    container.prepend(div);
+
+    // Trigger entrance animation
     requestAnimationFrame(() => {
-        div.classList.remove("opacity-0", "translate-y-2");
+        div.classList.remove("opacity-0", "translate-y-4");
     });
+
+    // Auto-remove logic
     setTimeout(() => {
-        div.classList.add("opacity-0", "translate-y-2");
+        div.classList.add("opacity-0", "translate-x-8"); // Slide out effect
         setTimeout(() => div.remove(), 300);
-    }, 7000);
+    }, 10000);
 };
 
 
@@ -67,6 +122,7 @@ const secureFetch = async (url, options = {}) => {
             console.warn("Authentication failure or redirect to login detected. Clearing session and redirecting...");
 
             // Clear client-side storage
+            localStorage.clear();
             sessionStorage.clear();
             localStorage.removeItem('auth_valid_until'); // if you're using the timestamp method
 
@@ -84,12 +140,21 @@ const secureFetch = async (url, options = {}) => {
     }
 };
 
-// -----------------------------
-// LOAD STATS
-// -----------------------------
+
+/**
+ * LOAD STATS
+ */
 const loadStats = async (mapping) => {
     try {
-        const res = await secureFetch(`${API_BASE}/batches/counts?size=999`);
+
+        const currentInputter = Auth.getUsername();
+
+        const params = new URLSearchParams({
+            size: '999',
+            uploadedById: currentInputter
+        });
+
+        const res = await secureFetch(`${API_BASE}/batches/counts?${params.toString()}`);
         if (!res) return; // Exit if redirected
         if (!res.ok) return; // Exit if redirected
 
@@ -204,7 +269,6 @@ const viewBatchDetails = async (batchId, modalId = "batchDetailsModal", contentI
         showSnackbar(err.message, "error");
     }
 };
-
 
 
 // -----------------------------

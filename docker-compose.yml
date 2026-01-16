@@ -17,7 +17,7 @@ services:
       start_period: 15s
 
   transact-file-processing:
-    image: transact-file-processing
+    image: transact-file-processing:latest
     container_name: transact-app
     build:
       context: .
@@ -28,22 +28,26 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Database connection (Points to the 'mongo' service name)
+      # Database connection (Points to the 'mongo' service code)
       - MONGO_URL=mongodb://mongo:27017
-      
+
       # External Funds Transfer API
-      - FUNDS_TRANSFER_API_URL=http://192.168.1.2:8085/omerchant/api/v1.0.0/order/payments
+      - FUNDS_TRANSFER_API_URL=http://192.168.1.4:8085/omerchant/api/v1.0.0/order/payments
       - FT_API_USER=INPUTTER
       - FT_API_PASS=123456
-      
+
       # App Logic & Logging
-      - MAX_UPLOAD_LINES=1000
+      - MAX_UPLOAD_LINES=5000
       - REST_LOG_LEVEL=DEBUG
       - REST_CLIENT_LOG_SCOPE=request-response
       - QUARKUS_PROFILE=dev
 
+      # JVM Optimization for containers
+      - JAVA_OPTS=-Xmx512m -Xms256m
+
     volumes:
-      # Mount your local keys into the container so the app can find them
+      # Mount your local keys into the container
+      # Ensure the path inside matches the WORKDIR in the Dockerfile
       - ./src/main/resources/jwt:/deployments/jwt:ro
 
 volumes:

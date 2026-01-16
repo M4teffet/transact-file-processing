@@ -31,14 +31,13 @@ public class BatchResource {
     @Inject
     SecurityIdentity identity;
 
-
     // --- GET /batches (List View) ---
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getBatches(
             @QueryParam("application") String application,
             @QueryParam("status") List<String> status,
-            @QueryParam("inputter") String inputter,
+            @QueryParam("uploadedById") String uploadedById,
             @QueryParam("from") String fromStr,
             @QueryParam("to") String toStr,
             @QueryParam("page") @DefaultValue("0") int page,
@@ -65,6 +64,13 @@ public class BatchResource {
             params.put("status", status);
         }
 
+        // Inputter Filter
+        if (uploadedById != null && !uploadedById.isBlank()) {
+            if (!filter.isEmpty()) filter.append(" and ");
+            filter.append("uploadedById = :uploadedById");
+            params.put("uploadedById", uploadedById.trim());
+        }
+
         Sort sort = Sort.by("uploadTimestamp").descending();
         PanacheQuery<FileBatch> query = filter.isEmpty()
                 ? FileBatch.findAll(sort)
@@ -78,6 +84,7 @@ public class BatchResource {
             return new BatchViewDTO(
                     batch.id.toHexString(),
                     getAppName(batch.applicationId),
+                    batch.originalFilename,
                     batch.status,
                     batch.uploadTimestamp,
                     stats != null ? (int) stats.totalRecords : 0,
@@ -135,6 +142,7 @@ public class BatchResource {
         return Response.ok(new BatchDetailResponse(
                 batch.id.toHexString(),
                 getAppName(batch.applicationId),
+                batch.originalFilename,
                 batch.status,
                 batch.uploadTimestamp,
                 stats != null ? (int) stats.totalRecords : rows.size(), // Fallback to list size if stats missing
@@ -149,7 +157,6 @@ public class BatchResource {
     @PUT
     @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Validate batch", description = "Transition status from UPLOADED to VALIDATED")
     public Response updateBatchStatus(@PathParam("id") String id, BatchUpdateRequest request) {
         ObjectId batchId = parseObjectId(id);
         FileBatch batch = FileBatch.findById(batchId);
@@ -158,32 +165,44 @@ public class BatchResource {
             return Response.status(404).entity("Batch not found").build();
         }
 
-        // Validation Logic
+        // 1. Get the Validator's Info (Current Authenticated User)
+        String validatorName = identity.getPrincipal().getName();
+        AppUser validator = AppUser.find("username", validatorName).firstResult();
+
+        // 2. Get the Inputter's Info (The person who uploaded the batch)
+        // Assuming batch.inputter stores the username
+        String inputterName = batch.uploadedById;
+        AppUser inputter = AppUser.find("username", inputterName).firstResult();
+
+        // 3. Security Cross-Check
+        if (validator == null || inputter == null) {
+            return Response.status(403).entity("User context missing").build();
+        }
+
+        if (!validator.countryCode.equals(inputter.countryCode)) {
+            return Response.status(403)
+                    .entity("Permission Denied: You (" + validator.countryCode + ") cannot validate a batch from " + inputter.countryCode).build();
+        }
+
+        // --- Standard Validation Logic ---
         if (!FileBatch.STATUS_VALIDATED.equals(request.status())) {
-            return Response.status(400).entity("Only 'VALIDATED' status transition is allowed via this endpoint").build();
+            return Response.status(400).entity("Invalid status transition").build();
         }
 
         if (!FileBatch.STATUS_UPLOADED.equals(batch.status)) {
-            return Response.status(403).entity("Current status is " + batch.status + "; expected UPLOADED").build();
+            return Response.status(403).entity("Batch is not in UPLOADED state").build();
         }
 
-        // Perform the update
+        // Perform Update
         batch.status = FileBatch.STATUS_VALIDATED;
-        batch.validatedById = identity.getPrincipal().getName();
+        batch.validatedById = validatorName;
         batch.validationTimestamp = Instant.now();
 
-        // Calculate and cache statistics for the batch
         BatchStatistics stats = BatchStatistics.calculate(batchId);
-        if (stats != null) {
-            stats.persistOrUpdate();
-        }
-
+        if (stats != null) stats.persistOrUpdate();
         batch.update();
 
-        return Response.ok(Map.of(
-                "message", "Batch validated successfully",
-                "totalRecords", stats != null ? stats.totalRecords : 0
-        )).build();
+        return Response.ok(Map.of("message", "Batch validated successfully")).build();
     }
 
 
@@ -266,11 +285,15 @@ public class BatchResource {
     @GET
     @Path("/counts")
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Get batch status statistics", description = "Returns a map of status names to the count of batches in that status")
-    public Map<String, Long> getBatchCounts() {
+    @Operation(
+            summary = "Get batch status statistics",
+            description = "Returns a map of status names to the count of batches in that status, optionally filtered by inputter"
+    )
+    public Map<String, Long> getBatchCounts(
+            @QueryParam("uploadedById") String inputter
+    ) {
         Map<String, Long> counts = new HashMap<>();
 
-        // Define the statuses we want to track based on FileBatch constants
         List<String> statusesToTrack = List.of(
                 FileBatch.STATUS_UPLOADED,
                 FileBatch.STATUS_UPLOADED_FAILED,
@@ -281,14 +304,20 @@ public class BatchResource {
                 FileBatch.STATUS_PROCESSED_FAILED,
                 FileBatch.STATUS_PROCESSED_PARTIAL
         );
+        boolean filterByInputter = inputter != null && !inputter.isBlank();
 
         for (String status : statusesToTrack) {
-            // Efficiently count batches per status using Panache
-            counts.put(status, FileBatch.count("status", status));
+            long count;
+            if (filterByInputter) {
+                count = FileBatch.count("status = ?1 and uploadedById = ?2", status, inputter);
+            } else {
+                count = FileBatch.count("status", status);
+            }
+            counts.put(status, count);
         }
-
         return counts;
     }
+
 
     // ========================================
     // --- Helpers ---
@@ -314,7 +343,8 @@ public class BatchResource {
     // ========================================
     // --- DTOs ---
     // ========================================
-    public record BatchViewDTO(String batchId, String application, String status, Instant uploadedAt, int totalRecords, int errorCount) {
+    public record BatchViewDTO(String batchId, String application, String originalFilename, String status, Instant uploadedAt,
+                               int totalRecords, int errorCount) {
     }
 
     public record BatchPageResponse(List<BatchViewDTO> content, int page, int size, long totalElements, long totalPages) {
@@ -349,6 +379,7 @@ public class BatchResource {
     public record BatchDetailResponse(
             String batchId,
             String application,
+            String originalFilename,
             String status,
             Instant uploadedAt,
             int totalRecords,

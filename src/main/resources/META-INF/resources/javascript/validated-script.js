@@ -75,11 +75,12 @@ const renderValidatedBatches = () => {
 
     const html = `
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 bg-white rounded-md shadow-sm border border-gray-100">
-                <thead class="bg-gray-50/50">
+            <table class="min-w-full divide-y divide-gray-100 bg-white rounded-xs">
+                <thead class="bg-zinc-100/80">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">ID</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Application</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Fichier</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Statut</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
@@ -90,7 +91,12 @@ const renderValidatedBatches = () => {
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="px-6 py-4 text-sm font-medium text-gray-800">${b.batchId}</td>
                             <td class="px-6 py-4 text-sm text-gray-600 font-mono">${b.application}</td>
-                            <td class="px-6 py-4 text-sm text-gray-500">${new Date(b.uploadedAt).toLocaleString('fr-FR')}</td>
+                            <td class="px-6 py-4 text-sm text-gray-700 font-medium italic">
+                                ${b.originalFilename || 'N/A'}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                ${new Date(b.uploadedAt).toLocaleString('fr-FR')}
+                            </td>
                             <td class="px-6 py-4">${getStatusBadge(b.status)}</td>
                             <td class="px-6 py-4 flex justify-start items-center gap-3">
                                 <button onclick="viewBatchDetails('${b.batchId}')" class="p-1.5 hover:bg-blue-50 rounded-full transition" title="Voir données">
@@ -204,7 +210,7 @@ const viewBatchSummary = async (batchId) => {
                             ${totalAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}
                         </p>
                     </div>
-                    <i data-lucide="banknote" class="absolute -right-1 -bottom-4 w-24 h-24 text-white/10 rotate-12"></i>
+                    <i data-lucide="banknote" class="absolute -right-1 -bottom-4 w-36 h-36 text-white/30 rotate-12"></i>
                 </div>
 
                 <div class="mt-4">

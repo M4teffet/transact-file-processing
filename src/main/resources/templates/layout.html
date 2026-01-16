@@ -11,13 +11,22 @@
     <style>
         /* Styles Globaux */
         html { font-size: 0.93rem; } body { font-family: 'Inter', sans-serif; }
-        /* Positionnement du Snackbar (déplacé à droite pour éviter la sidebar) */
-        #snackbar-container { position: fixed; bottom: 1rem; right: 1rem; left: unset; width: 100%; max-width: 20rem; display: flex; flex-direction: column; gap: 0.5rem; z-index: 50; }
+
+        #snackbar-container {
+        position: fixed;
+        bottom: 1rem;
+        right: unset;
+        left: 1rem;
+        width: 100%;
+        max-width: 25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem; z-index: 50; }
 
         /* Composants cohérents */
         .stats-card {
-            @apply bg-white p-6 rounded-md shadow-sm border border-gray-100
-                   transition-all duration-300 hover:shadow-md hover:-translate-y-1
+            @apply bg-white p-6 rounded-md shadow-xs border border-gray-100
+                   transition-all duration-300 hover:shadow-sm hover:-translate-y-1
                    flex flex-col relative overflow-hidden min-h-[130px];
         }
         .stats-icon {
@@ -60,13 +69,13 @@
     {#insert head}{/insert}
 </head>
 
-<body class="bg-gray-200 antialiased min-h-screen flex text-sm">
+<body class="bg-gray-100 antialiased min-h-screen flex text-sm">
 <div class="fixed inset-0 z-40 bg-black/50 lg:hidden hidden transition-opacity duration-200" id="mobile-overlay"></div>
 
 {#insert aside}{/insert}
 
 <div class="flex-1 flex flex-col overflow-hidden lg:ml-64">
-    <header class="bg-black border-b border-gray-200 shadow-sm flex-shrink-0">
+    <header class="bg-black border-b border-gray-200 shadow-xs flex-shrink-0">
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-4">
                 <button aria-label="Menu"
@@ -82,14 +91,14 @@
             </a>
         </div>
     </header>
-    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50/50 p-6">
+    <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
         {#insert default}{/insert}
     </main>
 </div>
 {#insert script}{/insert}
 
 <div class="fixed inset-0 z-50 hidden bg-black/60 flex items-center justify-center" id="deleteConfirmationModal">
-    <div class="bg-white rounded-md shadow-xl p-6 max-w-md mx-4">
+    <div class="bg-white rounded-md shadow-lg p-6 max-w-md mx-4">
         <h3 class="text-xl font-bold text-gray-900 mb-4">Confirmer suppression</h3>
         <p class="text-gray-700 mb-6">Voulez-vous vraiment supprimer ce batch ? Cette action est irréversible.</p>
         <div class="flex justify-end space-x-3">
@@ -102,11 +111,12 @@
 <div class="fixed inset-0 hidden items-center justify-center z-50" id="batchDetailsModal"
      onclick="if(event.target === this) closeModal('batchDetailsModal')">
     <div class="absolute inset-0 bg-black/60"></div>
-    <div class="relative bg-white w-11/12 max-w-6xl rounded-md shadow-xl p-6 z-10 overflow-y-auto max-h-[90vh]">
+    <div class="relative bg-white w-11/12 max-w-6xl rounded-md shadow-lg p-6 z-10 overflow-y-auto max-h-[90vh]">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold text-gray-900">Détails Batch</h2>
-            <button class="p-1 rounded hover:bg-gray-100 transition" onclick="closeModal('batchDetailsModal')">
-                <i class="w-6 h-6 text-gray-700 hover:text-red-500" data-lucide="x"></i></button>
+            <button class="p-1 rounded-full hover:bg-gray-100 transition" onclick="closeModal('batchDetailsModal')">
+                <i class="w-5 h-5 text-gray-700 hover:text-red-500" data-lucide="x"></i>
+            </button>
         </div>
         <div id="batchDetailsContent"></div>
     </div>
@@ -114,11 +124,11 @@
 
 
 <div class="fixed inset-0 hidden items-center justify-center z-50 bg-black/60" id="batchSummaryModal">
-    <div class="relative bg-white w-11/12 max-w-4xl rounded-md shadow-xl p-6 z-10 overflow-y-auto min-h-[90vh]">
+    <div class="relative bg-white w-11/12 max-w-4xl rounded-md shadow-lg p-6 z-10 overflow-y-auto min-h-[90vh]">
         <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-bold text-gray-900" id="batchSummaryTitle">Résumé Batch</h3>
-            <button onclick="closeModal('batchSummaryModal')">
-                <i class="w-5 h-5 text-gray-700" data-lucide="x"></i>
+            <button class="p-1 rounded-full hover:bg-gray-100 transition" onclick="closeModal('batchSummaryModal')">
+                <i class="w-5 h-5 text-gray-700 hover:text-red-500" data-lucide="x"></i>
             </button>
         </div>
 

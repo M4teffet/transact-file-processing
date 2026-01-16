@@ -24,7 +24,6 @@ public class BatchData extends PanacheMongoEntity {
         return list("batchId", batchId);
     }
 
-
     public static boolean claimRow(ObjectId rowId, String workerId) {
         // USE Parameters: This makes the code readable and ensures types are handled correctly
         long updated = update("processingStatus = 'CLAIMED', workerId = :workerId")
@@ -34,6 +33,4 @@ public class BatchData extends PanacheMongoEntity {
 
         return updated > 0;
     }
-
-
 }

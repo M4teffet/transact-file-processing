@@ -48,14 +48,14 @@ public class ApplicationService {
 
     @Schema(name = "FieldDTO")
     public record FieldDTO(
-            @Schema(description = "Field name", example = "DEBIT.ACCT.NO") String fieldName,
+            @Schema(description = "Field code", example = "DEBIT.ACCT.NO") String fieldName,
             @Schema(description = "Data type", example = "STRING") String dataType
     ) {
     }
 
     @Schema(name = "ApplicationFieldsResponse")
     public record ApplicationFieldsResponse(
-            @Schema(description = "Application name", example = "FUNDS_TRANSFER") String application,
+            @Schema(description = "Application code", example = "FUNDS_TRANSFER") String application,
             @Schema(description = "Mandatory fields") List<FieldDTO> mandatory,
             @Schema(description = "Optional fields") List<FieldDTO> optional
     ) {

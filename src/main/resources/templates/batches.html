@@ -5,7 +5,8 @@
 {#head}
 <style>
     /* Utilisation des classes cohérentes définies dans le layout/custom CSS */
-    .stats-card { @apply bg-white p-6 rounded-md shadow-md border border-gray-200 transition-all duration-300 hover:shadow-lg; } /* shadow-md et hover:shadow-lg */
+    .stats-card { @apply bg-white p-6 rounded-md shadow-sm border border-gray-200 transition-all duration-300 hover:shadow-md; }
+     /* shadow-md et hover:shadow-lg */
     .stats-icon { @apply w-8 h-8 rounded-full bg-brand-light flex items-center justify-center text-brand-primary; } /* Style Orange */
 
     /* Styles pour les éléments de la liste des batches (non spécifiés mais ajoutés pour la cohérence) */
@@ -15,7 +16,7 @@
 {/head}
 
 {#aside}
-<aside class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-lg border-r border-gray-200 flex flex-col
+<aside class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-md border-r border-gray-200 flex flex-col
                       transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
        id="sidebar">
     <div class="p-6 border-b border-gray-200 text-center flex-shrink-0">
@@ -52,34 +53,55 @@
 
 {#default}
 <div class="max-w-7xl mx-auto space-y-8">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="stats-card">
-            <div class="flex items-center justify-between">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+
+        <!-- Card 1 -->
+        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
+            <!-- Background pattern -->
+            <div class="absolute inset-0 opacity-[0.75]"
+                 style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
+            </div>
+            <!-- Content -->
+            <div class="relative bg-white/10 p-4 flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Total Chargés</p>
-                    <p class="text-2xl font-bold text-brand-primary" id="uploadedCount">0</p>
+                    <p class="text-sm text-gray-500">Total Chargés</p>
+                    <p class="text-xl font-semibold text-brand-primary" id="uploadedCount">0</p>
                 </div>
-                <div class="stats-icon">
-                    <i class="w-4 h-4" data-lucide="upload-cloud"></i>
-                </div>
+                <svg class="w-6 h-6 text-brand-primary" fill="none"
+                     stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 13v8"/>
+                    <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+                    <path d="m8 17 4-4 4 4"/>
+                </svg>
             </div>
         </div>
 
-        <div class="stats-card">
-            <div class="flex items-center justify-between">
+        <!-- Card 2 -->
+        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
+            <!-- Background pattern -->
+            <div class="absolute inset-0 opacity-[0.75]"
+                 style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
+            </div>
+
+            <!-- Content -->
+            <div class="relative bg-white/10 p-4 flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Total Validés</p>
-                    <p class="text-2xl font-bold text-emerald-600" id="validatedCount">0</p>
+                    <p class="text-sm text-gray-500">Total Validés</p>
+                    <p class="text-xl font-semibold text-emerald-600" id="validatedCount">0</p>
                 </div>
-                <div class="stats-icon bg-green-100">
-                    <i class="w-4 h-4 text-green-600" data-lucide="check-circle"></i>
-                </div>
+                <svg class="w-6 h-6 text-emerald-600" fill="none"
+                     stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21.801 10A10 10 0 1 1 17 3.335"/>
+                    <path d="m9 11 3 3L22 4"/>
+                </svg>
             </div>
         </div>
+
     </div>
 
-    <div class="bg-white rounded-md shadow-md border border-gray-200 overflow-hidden">
-        <div class="p-6 border-b border-gray-200">
+    <div class="bg-white rounded-md shadow-xs border border-gray-200 overflow-hidden">
+        <div class="p-4">
             <h3 class="text-xl font-bold text-gray-900 flex items-center gap-3">
                 <i class="w-5 h-5 text-brand-primary" data-lucide="list"></i>
                 Liste des Batches Uploadés
@@ -93,8 +115,8 @@
 {/default}
 
 {#script}
-<script src="/shared.js"></script>
-<script src="/batches.js"></script>
+<script src="/javascript/shared.js"></script>
+<script src="/javascript/batches.js"></script>
 <script>lucide.createIcons();</script>
 {/script}
 {/include}

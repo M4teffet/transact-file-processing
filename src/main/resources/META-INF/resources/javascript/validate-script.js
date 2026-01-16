@@ -42,7 +42,7 @@ const refreshDashboard = () => {
 const loadUploadedBatches = async () => {
     const container = document.getElementById('uploadedBatchesContainer');
     try {
-        const response = await secureFetch(`${API_BASE}/batches?status=UPLOADED`);
+        const response = await secureFetch(`${API_BASE}/batches?status=UPLOADED&uploadedById=`);
         if (!response) return;
         if (!response.ok) throw new Error("Erreur lors de la récupération des batches");
 
@@ -76,11 +76,12 @@ const renderUploadedBatches = () => {
 
     const html = `
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 bg-white rounded-md shadow-sm border border-gray-100">
-                <thead class="bg-gray-50/50">
+            <table class="min-w-full divide-y divide-gray-100 bg-white rounded-xs">
+               <thead class="bg-zinc-100/80">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">ID Batch</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Application</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Fichier</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date Import</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Statut</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
@@ -91,9 +92,14 @@ const renderUploadedBatches = () => {
                     <tr class="hover:bg-gray-50 transition-colors">
                         <td class="px-6 py-4 text-sm font-medium text-gray-800">${b.batchId}</td>
                         <td class="px-6 py-4 text-sm text-gray-600 font-mono">${b.application}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">${new Date(b.uploadedAt).toLocaleString('fr-FR')}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700 font-medium italic">
+                            ${b.originalFilename || 'N/A'}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">
+                            ${b.uploadedAt ? new Date(b.uploadedAt).toLocaleString('fr-FR') : '---'}
+                        </td>
                         <td class="px-6 py-4">${getStatusBadge(b.status)}</td>
-                        <td class="px-6 py-4 flex justify-startd items-center gap-3">
+                        <td class="px-6 py-4 flex justify-start items-center gap-3">
                             <button onclick="viewBatchDetails('${b.batchId}')" class="p-1.5 hover:bg-blue-50 rounded-full transition" title="Détails">
                                 <i data-lucide="eye" class="w-5 h-5 text-blue-500"></i>
                             </button>
@@ -119,6 +125,7 @@ const renderUploadedBatches = () => {
  * ACTION : VALIDATION
  */
 const validateBatchNow = async (id) => {
+if (!confirm("Voulez-vous valider ce batch et lancer son exécution dans T24 ?")) return;
     try {
         const response = await secureFetch(`${API_BASE}/batches/${id}`, {
             method: 'PUT',

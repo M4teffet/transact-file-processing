@@ -5,17 +5,18 @@
 {#head}
 <style>
     /* Utilisation du style cohérent pour les cartes de liste */
-    .batch-item { @apply bg-white rounded-md shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200; }
+    .batch-item { @apply bg-white rounded-md shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow
+    duration-200; }
 
     /* Surcharge des styles stats génériques pour utiliser les classes Orange Bank cohérentes (si le layout ne les fournit pas) */
-    .stats-card { @apply bg-white p-6 rounded-md shadow-md border border-gray-200 transition-all duration-300 hover:shadow-lg; }
+    .stats-card { @apply bg-white p-6 rounded-md shadow-sm border border-gray-200 transition-all duration-300 hover:shadow-md; }
     .stats-icon { @apply w-8 h-8 rounded-full bg-brand-light flex items-center justify-center text-brand-primary; }
     .stats-icon.bg-green-100 { @apply bg-green-100 text-green-600; }
 </style>
 {/head}
 
 {#aside}
-<aside class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-lg border-r border-gray-200 flex flex-col
+<aside class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-sm border-r border-gray-200 flex flex-col
                       transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
        id="sidebar">
     <div class="p-6 border-b border-gray-200 text-center flex-shrink-0">
@@ -52,45 +53,67 @@
 
 {#default}
 <div class="max-w-7xl mx-auto space-y-8" id="validatedPage">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="stats-card">
-            <div class="flex items-center justify-between">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+
+        <!-- Card 1 -->
+        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
+            <!-- Background pattern -->
+            <div
+                    class="absolute inset-0 opacity-[0.65]"
+                    style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
+            </div>
+            <!-- Content -->
+            <div class="relative bg-white/10 p-4 flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Validés</p>
-                    <p class="text-2xl font-bold text-emerald-600" id="validatedCount">0</p>
+                    <p class="text-sm text-gray-600">Validés</p>
+                    <p class="text-xl font-semibold text-emerald-600" id="validatedCount">0</p>
                 </div>
-                <div class="stats-icon bg-green-100">
-                    <i class="w-4 h-4 text-green-600" data-lucide="check-circle"></i>
-                </div>
+                <svg class="w-6 h-6 text-green-600" fill="none" height="24" stroke="currentColor" stroke-linecap="round"
+                     stroke-linejoin="round"
+                     stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21.801 10A10 10 0 1 1 17 3.335"></path>
+                    <path d="m9 11 3 3L22 4"></path>
+                </svg>
             </div>
         </div>
-        <div class="stats-card">
-            <div class="flex items-center justify-between">
+
+        <!-- Card 2 -->
+        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
+            <!-- Background pattern -->
+            <div class="absolute inset-0 opacity-[0.65]"
+                 style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
+            </div>
+
+            <!-- Content -->
+            <div class="relative bg-white/10 p-4 flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Processés</p>
-                    <p class="text-2xl font-bold text-brand-primary" id="processedCount">0</p>
+                    <p class="text-sm text-gray-600">Traités</p>
+                    <p class="text-xl font-semibold text-brand-primary" id="processedCount">0</p>
                 </div>
-                <div class="stats-icon">
-                    <i class="w-4 h-4" data-lucide="play"></i>
-                </div>
+                <svg class="w-6 h-6 text-brand-primary" fill="none" height="24" stroke="currentColor" stroke-linecap="round"
+                     stroke-linejoin="round"
+                     stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="m5 3 14 9-14 9V3"/>
+                </svg>
             </div>
         </div>
+
     </div>
 
-    <div class="bg-white rounded-md shadow-md border border-gray-200 overflow-hidden">
-        <div class="p-6 border-b border-gray-200">
+    <div class="bg-white rounded-md shadow-xs border border-gray-200 overflow-hidden">
+        <div class="p-4">
             <h3 class="text-xl font-bold text-gray-900 flex items-center gap-3">
                 <i class="w-5 h-5 text-brand-primary" data-lucide="list"></i> Batches Validés
             </h3>
         </div>
-        <div class="divide-y divide-gray-200" id="validatedBatchesContainer"></div>
+        <div class="divide-y divide-gray-200 p-4" id="validatedBatchesContainer"></div>
         <div class="text-center text-sm text-gray-500 mt-4 p-4" id="validatedPaginationInfo"></div>
     </div>
 </div>
 {/default}
 
 {#script}
-<script src="/shared.js"></script>
-<script src="/validated-script.js"></script>
+<script src="/javascript/shared.js"></script>
+<script src="/javascript/validated-script.js"></script>
 {/script}
 {/include}

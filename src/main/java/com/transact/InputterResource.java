@@ -12,10 +12,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -23,8 +20,6 @@ import jakarta.ws.rs.core.SecurityContext;
 import org.bson.types.ObjectId;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.eclipse.microprofile.openapi.annotations.Operation;
-import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
@@ -39,7 +34,7 @@ import java.util.Map;
 
 @Path("/api/inputter")
 @Tag(name = "File Upload", description = "Upload and validate CSV files")
-@RolesAllowed("INPUTTER") // 🔑 FIX: Enforce security validation for the entire resource
+@RolesAllowed("INPUTTER")
 public class InputterResource {
 
     @ConfigProperty(name = "com.transact.upload.max-lines", defaultValue = "100")
@@ -61,73 +56,90 @@ public class InputterResource {
     @Context
     SecurityContext securityContext;
 
-
-    // ========================================
-    // POST /upload
-    // The full path is now /api/inputter/upload
-    // ========================================
     @POST
     @RolesAllowed("INPUTTER")
     @Path("/upload")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Upload CSV file", description = "Validates CSV against application schema")
     public Response uploadFile(
-            @RestForm("applicationName") @Parameter(required = true) String applicationName,
-            @RestForm("file") @Parameter(required = true) FileUpload fileUpload
+            @RestForm("applicationName") String applicationName,
+            @RestForm("file") FileUpload fileUpload
     ) {
+        // 1. Validate Inputs
+        if (applicationName == null || applicationName.isBlank()) return badRequest("applicationName is required");
+        if (fileUpload == null || fileUpload.filePath() == null) return badRequest("File is required");
 
-        // 1. Initial Validation
-        if (applicationName == null || applicationName.trim().isBlank()) {
-            return badRequest("applicationName is required");
-        }
-        if (fileUpload == null || fileUpload.filePath() == null) {
-            return badRequest("File is required");
-        }
-
+        String originalFilename = fileUpload.fileName();
         Application appConfig = Application.findByName(applicationName.trim());
-        if (appConfig == null) {
-            return badRequest("Application not found: " + applicationName);
+        if (appConfig == null) return badRequest("Application not found: " + applicationName);
+
+        // 2. Pre-flight Check: prevents unnecessary file processing if duplicate exists
+        if (FileBatch.findActiveDuplicate(appConfig.id, originalFilename) != null) {
+            return badRequest("A version of '" + originalFilename + "' is already active or processed.");
         }
 
-        // 2. Stream directly from the file path
-        // This prevents loading the entire file into the JVM heap at once
+        // 3. Process the Stream
         try (InputStream inputStream = Files.newInputStream(fileUpload.filePath())) {
-
-            // Ensure your fileParser.parseCsv can accept an InputStream
             List<Map<String, String>> rawData = fileParser.parseCsv(inputStream);
 
             if (rawData == null || rawData.isEmpty()) {
-                throw new ValidationException(List.of(
-                        new ValidationError(1, null, "CSV file is empty or contains only headers")
-                ));
+                throw new ValidationException(List.of(new ValidationError(1, null, "CSV file is empty")));
             }
 
-            // 3. Size validation
             if (rawData.size() > maxLines) {
                 return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(new JsonObject()
-                                .put("error", "File too large")
-                                .put("message", "Max lines: " + maxLines)
-                                .encode())
-                        .build();
+                        .entity(new JsonObject().put("error", "File too large").encode()).build();
             }
 
-            // 4. Processing
             List<Map<String, Object>> validatedData = fileValidator.validateAndConvert(rawData, appConfig);
+
+            // 4. Create Batch
             FileBatch batch = createSuccessBatch(appConfig, validatedData);
+            batch.originalFilename = originalFilename;
+            batch.status = FileBatch.STATUS_UPLOADED; // Entering a 'Blocking' status
+
+            // 5. Final Guard: DB Unique Constraint
+            try {
+                batch.persistOrUpdate();
+            } catch (com.mongodb.MongoWriteException e) {
+                if (e.getError().getCode() == 11000) {
+                    return badRequest("Duplicate file: '" + originalFilename + "' has already being uploaded.");
+                }
+                throw e;
+            }
+
             return successResponse(batch, validatedData.size());
 
         } catch (ValidationException e) {
-            FileBatch batch = createFailedBatch(appConfig, e);
-            batch.persist();
+            saveFailedBatch(appConfig, originalFilename, FileBatch.STATUS_VALIDATED_FAILED, e);
             return validationErrorResponse(e);
         } catch (Exception e) {
-            FileBatch batch = createFailedBatch(appConfig, e);
-            batch.persist();
+            saveFailedBatch(appConfig, originalFilename, FileBatch.STATUS_UPLOADED_FAILED, e);
             return serverError(e.getMessage());
         }
     }
+
+
+    // ========================================
+// GET /check-filename
+// The full path is now /api/inputter/check-filename
+// ========================================
+    @GET
+    @Path("/check-filename")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response checkFilename(@QueryParam("applicationName") String appName, @QueryParam("filename") String filename) {
+        if (appName == null || appName.isBlank() || filename == null || filename.isBlank()) {
+            return Response.status(400).entity("Missing parameters").build();
+        }
+
+        Application app = Application.findByName(appName.trim());
+        if (app == null) return Response.status(404).entity("Application not found").build();
+
+        // Use the helper we created in the model
+        boolean exists = FileBatch.findActiveDuplicate(app.id, filename) != null;
+
+        return Response.ok(new JsonObject().put("exists", exists).encode()).build();
+    }
+
 
     // ========================================
     // HELPERS
@@ -223,5 +235,12 @@ public class InputterResource {
 
     private Response serverError(String msg) {
         return Response.status(500).entity("Server error: " + msg).build();
+    }
+
+    private void saveFailedBatch(Application app, String filename, String status, Exception e) {
+        FileBatch batch = createFailedBatch(app, e);
+        batch.originalFilename = filename;
+        batch.status = status;
+        batch.persistOrUpdate();
     }
 }

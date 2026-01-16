@@ -19,10 +19,9 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Semaphore;
 
 import static io.quarkus.scheduler.Scheduled.ConcurrentExecution.SKIP;
 
@@ -34,6 +33,7 @@ public class FundsTransferProcessor {
 
     private static final String FEATURE_KEY = "FUNDS_TRANSFER";
     private static final int MAX_RETRY = 3;
+    private static final int MAX_THREADS = 2;
 
     @Inject
     @RestClient
@@ -48,11 +48,19 @@ public class FundsTransferProcessor {
     @Scheduled(every = "1m", identity = "ft-processor", concurrentExecution = SKIP)
     @ActivateRequestContext
     public void run() {
+
         Application app = Application.findByName(FEATURE_KEY);
+
         if (app == null) {
             Log.errorf("[FT] Application config missing");
-            // Optional: Log global error to DB if needed, though usually requires a batchId context
             ProcessingLogEntry.log("ERROR", "[FT] Application config missing");
+            return;
+        }
+
+        if (!AppFeatureConfig.isFeatureEnabled(FEATURE_KEY)) {
+            String msg = FEATURE_KEY + " Processing disabled by Administrator";
+            Log.errorf("%s", msg);
+            ProcessingLogEntry.log("ERROR", msg);
             return;
         }
 
@@ -72,7 +80,6 @@ public class FundsTransferProcessor {
             } catch (Exception e) {
                 String msg = String.format("CRITICAL_BATCH_FAILURE: %s", e.getMessage());
                 Log.errorf("[%s] %s", batch.id, msg);
-                // DB Log
                 ProcessingLogEntry.log(batch.id, "ERROR", msg);
             }
         }
@@ -81,7 +88,14 @@ public class FundsTransferProcessor {
     private void processBatch(ObjectId batchId) {
         String workerId = UUID.randomUUID().toString();
         FileBatch batch = FileBatch.findById(batchId);
-        if (batch == null) return;
+
+        String validatedById = batch.validatedById;
+
+        AppUser user = AppUser.findById(validatedById);
+
+        String country = user.countryCode;
+
+        String companyId = Country.findByCode(country);
 
         // Recovery logic
         recoverRows(batchId);
@@ -92,14 +106,50 @@ public class FundsTransferProcessor {
 
         List<BatchData> rows = BatchData.findByBatchId(batchId);
 
+        // --- MULTI-THREADING LOGIC START ---
+
+        // 1. Semaphore to enforce strictly 2 threads active at once
+        Semaphore concurrencyLimiter = new Semaphore(MAX_THREADS);
+
+        // 2. List to keep track of all tasks so we can wait for them at the end
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
         for (BatchData row : rows) {
-            processRow(row, workerId, batchId);
+            try {
+                // Acquire a permit. If 2 threads are running, this blocks the main thread
+                // until one finishes, ensuring we don't flood the executor queue.
+                concurrencyLimiter.acquire();
+
+                CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                    try {
+                        processRow(row, workerId, batchId, companyId);
+                    } catch (Exception e) {
+                        Log.errorf("Unexpected thread error row %d: %s", row.lineNumber, e.getMessage());
+                    } finally {
+                        // Release permit so the next row can be picked up
+                        concurrencyLimiter.release();
+                    }
+                }, managedExecutor);
+
+                futures.add(future);
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                Log.errorf("Batch %s processing interrupted", batchId);
+                break;
+            }
         }
+
+        // 3. Wait for ALL rows to finish before finalizing the batch
+        if (!futures.isEmpty()) {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        }
+
+        // --- MULTI-THREADING LOGIC END ---
         finalizeBatch(batchId);
     }
 
     private void recoverRows(ObjectId batchId) {
-        // Resetting claimed rows that timed out/crashed
         long reset = BatchData.update("processingStatus = 'PENDING', workerId = null, retryCount = retryCount + 1")
                 .where("batchId = :batchId and processingStatus = 'CLAIMED'",
                         Parameters.with("batchId", batchId));
@@ -107,11 +157,9 @@ public class FundsTransferProcessor {
         if (reset > 0) {
             String msg = String.format("Recovery: %d row(s) reset", reset);
             Log.warnf("[%s] %s", batchId, msg);
-            // DB Log
             ProcessingLogEntry.log(batchId, "WARN", msg);
         }
 
-        // Moving poisoned rows to permanent failure
         long poisoned = BatchData.update("processingStatus = 'FAILED_PERMANENT'")
                 .where("batchId = :batchId and processingStatus = 'PENDING' and retryCount >= :max",
                         Parameters.with("batchId", batchId).and("max", MAX_RETRY));
@@ -119,12 +167,11 @@ public class FundsTransferProcessor {
         if (poisoned > 0) {
             String msg = String.format("Poison pill: %d row(s) exceeded retry limit", poisoned);
             Log.errorf("[%s] %s", batchId, msg);
-            // DB Log
             ProcessingLogEntry.log(batchId, "ERROR", msg);
         }
     }
 
-    private void processRow(BatchData row, String workerId, ObjectId batchId) {
+    private void processRow(BatchData row, String workerId, ObjectId batchId, String companyId) {
 
         if (!BatchData.claimRow(row.id, workerId)) {
             Log.debugf("[%s|Row:%d] SKIPPED: Already claimed", batchId, row.lineNumber);
@@ -135,64 +182,82 @@ public class FundsTransferProcessor {
         String correlationId = batchId + "-" + row.lineNumber;
 
         TransactionRequest req = mapToRequest(row.data);
-
-        // 1. Serialize payload for logging
         String payloadJson = serializePayload(req);
 
-        // 2. Initial DB Log: Start processing with payload
         ProcessingLogEntry.log(batchId, "INFO",
                 String.format("Row %d: Starting processing. Payload: %s", row.lineNumber, payloadJson));
 
         Response response = null;
+
         try {
-            response = processingFt.processTransaction(req, correlationId);
-            int status = response.getStatus();
-            String body = response.readEntity(String.class);
-
-            if (status >= 400) {
-                String errorMsg = String.format("HTTP %d: %s", status, body);
-                Log.errorf("%s T24_HTTP_ERR: %s", ctx, errorMsg);
-
-                // Detailed DB Log on Failure
-                ProcessingLogEntry.log(batchId, "ERROR",
-                        String.format("Row %d Failed. HTTP %d. Response: %s | Sent Payload: %s",
-                                row.lineNumber, status, body, payloadJson));
-
-                failRow(batchId, row, errorMsg);
-                return;
+            try {
+                response = processingFt.processTransaction(req, correlationId, companyId);
+            } catch (WebApplicationException e) {
+                response = e.getResponse();
             }
 
-            ProcessingResponse res = objectMapper.readValue(body, ProcessingResponse.class);
-            if (res.isSuccessful()) {
-                String ref = (res.header != null) ? res.header.id : "N/A";
-                Log.infof("%s SUCCESS: T24 Ref %s", ctx, ref);
+            // If response is still null (e.g. connection refused), throw to outer catch
+            if (response == null) {
+                Log.errorf("%s PROCESS_ERR: %s", ctx, "No response received from T24 Service");
+                ProcessingLogEntry.log(batchId, "ERROR",
+                        String.format("Row %d: CRITICAL EXCEPTION. Error: %s | Sent Payload: %s", row.lineNumber, "No response received from T24 Service", payloadJson));
+            }
 
-                ProcessingLogEntry.log(batchId, "INFO",
-                        String.format("Row %d: SUCCESS. T24 Ref: %s", row.lineNumber, ref));
+            // 3. Process the Response (Success or Error)
+            // We use a try-finally here to ensure the response is closed only after we read it
+            try {
+                // Read body ONCE
+                String body = response.readEntity(String.class);
 
-                completeRow(batchId, row, ref);
-            } else {
-                String err = res.getErrorMessage();
-                Log.warnf("%s BUSINESS_REJECT: %s", ctx, err);
+                // Handle Empty Body edge case
+                if (body == null || body.isBlank()) {
+                    String msg = "HTTP " + response.getStatus() + " with Empty Body";
+                    handleFailure(batchId, row, msg, payloadJson);
+                    return;
+                }
 
-                ProcessingLogEntry.log(batchId, "WARN",
-                        String.format("Row %d: BUSINESS REJECT. Reason: %s | Sent Payload: %s",
-                                row.lineNumber, err, payloadJson));
+                // Parse JSON
+                ProcessingResponse res = objectMapper.readValue(body, ProcessingResponse.class);
 
-                failRow(batchId, row, err);
+                // --- A. SUCCESS PATH ---
+                if (response.getStatus() < 400 && res.isSuccessful()) {
+                    String ref = (res.header != null) ? res.header.id : "N/A";
+                    Log.infof("%s SUCCESS: T24 Ref %s", ctx, ref);
+                    ProcessingLogEntry.log(batchId, "INFO", String.format("Row %d: SUCCESS. T24 Ref: %s", row.lineNumber, ref));
+                    completeRow(batchId, row, ref);
+                    return;
+                }
+
+                // --- B. ERROR / IDEMPOTENCY PATH ---
+                String errorMsg = res.getErrorMessage();
+                String transId = (res.header != null) ? res.header.id : null;
+
+                // Check for "Already Exists" in the error message
+                if (errorMsg != null && errorMsg.contains("already Exists")) {
+                    String finalRef = (transId != null) ? transId : "EXISTING";
+
+                    Log.warnf("%s IDEMPOTENCY HIT: %s. Switching to SUCCESS.", ctx, errorMsg);
+                    ProcessingLogEntry.log(batchId, "WARN",
+                            String.format("Row %d: Already Exists. Treating as Success. Ref: %s", row.lineNumber, finalRef));
+
+                    completeRow(batchId, row, finalRef);
+                } else {
+                    // Real Failure
+                    String finalError = (errorMsg != null) ? errorMsg : "HTTP " + response.getStatus();
+                    Log.errorf("%s REJECTED: %s", ctx, finalError);
+                    handleFailure(batchId, row, finalError, payloadJson);
+                }
+            } finally {
+                response.close();
             }
 
         } catch (Exception ex) {
+            // 4. Handle System/Network Crashes (Connection Refused, Serialization Error, etc.)
             String err = extractErrorMessage(ex);
             Log.errorf("%s PROCESS_ERR: %s", ctx, err);
-
             ProcessingLogEntry.log(batchId, "ERROR",
-                    String.format("Row %d: CRITICAL EXCEPTION. Error: %s | Sent Payload: %s",
-                            row.lineNumber, err, payloadJson));
-
+                    String.format("Row %d: CRITICAL EXCEPTION. Error: %s | Sent Payload: %s", row.lineNumber, err, payloadJson));
             failRow(batchId, row, err);
-        } finally {
-            if (response != null) response.close();
         }
     }
 
@@ -216,7 +281,6 @@ public class FundsTransferProcessor {
         BatchStatistics stats = BatchStatistics.calculate(batchId);
         if (stats == null) return;
 
-        // Ensure we don't finalize if processing is still happening
         long pendingCount = BatchData.count("batchId = ?1 and processingStatus in ?2",
                 batchId, List.of("PENDING", "CLAIMED"));
 
@@ -234,7 +298,6 @@ public class FundsTransferProcessor {
             status = FileBatch.STATUS_PROCESSED_FAILED;
         }
 
-        // ... update FileBatch and stats ...
         FileBatch.update("status = ?1, processingTimestamp = ?2", status, Instant.now())
                 .where("_id", batchId);
 
@@ -244,9 +307,13 @@ public class FundsTransferProcessor {
 
         String summary = String.format("Status=%s | Success=%d | Fail=%d", status, stats.successCount, stats.failureCount);
         Log.infof("[%s] FINALIZED: %s", batchId, summary);
-
-        // DB Log
         ProcessingLogEntry.log(batchId, "INFO", "Batch Finalized. " + summary);
+    }
+
+    private void handleFailure(ObjectId batchId, BatchData row, String msg, String payload) {
+        ProcessingLogEntry.log(batchId, "ERROR",
+                String.format("Row %d Failed. Reason: %s | Sent Payload: %s", row.lineNumber, msg, payload));
+        failRow(batchId, row, msg);
     }
 
     private String extractErrorMessage(Throwable t) {

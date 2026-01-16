@@ -20,12 +20,11 @@ public class Application extends PanacheMongoEntity {
     public List<SchemaField> schema;
 
     /**
-     * Find application by name (case-sensitive)
+     * Find application by code (case-sensitive)
      */
     public static Application findByName(String name) {
         return find("name", name).firstResult();
     }
-
 
     /**
      * Find all applications

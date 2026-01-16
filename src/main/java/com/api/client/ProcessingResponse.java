@@ -14,8 +14,8 @@ public class ProcessingResponse {
 
     public ResponseHeader header;        // Always present
     public TransactionBody body;         // Present on success (HTTP 200/201)
-    private ErrorBlock error;             // Business error (HTTP 400)
-    private OverrideBlock override;       // Override errors (restrictions / posting issues)
+    public ErrorBlock error;             // Business error (HTTP 400)
+    public OverrideBlock override;       // Override errors (restrictions / posting issues)
 
     /**
      * Check if the response is fully successful

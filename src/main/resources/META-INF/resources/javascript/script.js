@@ -44,7 +44,6 @@ const showAppSnackbar = (msg, type = "info") => {
         console.warn(`[${type}] ${msg}`);
     }
 };
-
 const parseCsvRow = (row) => {
     let result = [], current = '', inQuotes = false;
     for (let char of row) {
@@ -74,7 +73,6 @@ async function loadApplications() {
         el.innerHTML = '<option value="">Erreur de chargement</option>';
     }
 }
-
 async function loadFields(appCode) {
     if (!appCode) return;
     elements.fieldsSection()?.classList.remove("hidden");
@@ -104,7 +102,6 @@ async function loadFields(appCode) {
         showAppSnackbar("Erreur lors du chargement des champs", "error");
     }
 }
-
 function createFieldItem(field) {
     const div = document.createElement("div");
     div.className = "field-item flex items-center p-3 bg-white border rounded shadow-sm mb-2 cursor-move hover:border-blue-400 transition-all select-none";
@@ -139,7 +136,6 @@ function setupFieldDropZones(containers) {
         });
     });
 }
-
 function getDragAfterElement(container, y) {
     const draggableElements = [...container.querySelectorAll('.field-item:not(.dragging)')];
     return draggableElements.reduce((closest, child) => {
@@ -152,7 +148,6 @@ function getDragAfterElement(container, y) {
         }
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
-
 function rebuildFieldLists() {
     const mDiv = elements.mandatoryDiv();
     if (!mDiv) return;
@@ -176,38 +171,121 @@ function clearCsvPreview() {
         sendBtn.classList.add("opacity-50");
     }
 }
-
 function openFullCsvPreview() {
-    if (!state.fullCsvData.data.length) return;
+    // Safety check
+    if (!state.fullCsvData?.data?.length) return;
+
+    const MAX_ROWS = 1000;
+    const allRows = state.fullCsvData.data;
+    const headers = state.fullCsvData.header || [];
+    const rowCount = allRows.length;
+
+    const displayRows = allRows.slice(0, MAX_ROWS);
+    const isTruncated = rowCount > MAX_ROWS;
+
+    // Create modal backdrop
     const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 focus';
+    modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'csv-preview-title');
+
     modal.innerHTML = `
-        <div class="bg-white rounded-md shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
-            <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
-                <h3 class="font-bold text-gray-800">Données complètes (${state.fullCsvData.data.length} lignes)</h3>
-                <button id="closeModal" class="p-2 hover:bg-gray-200 rounded-full transition-colors text-2xl line-height-0">&times;</button>
+        <div class="bg-white rounded-md shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in duration-200 pb-4">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div>
+                    <h3 id="csv-preview-title" class="text-lg font-bold text-gray-800">
+                        Aperçu des données CSV
+                    </h3>
+                    <p class="text-sm text-gray-600 mt-1">
+                        Affichage de ${displayRows.length.toLocaleString()} ligne${displayRows.length > 1 ? 's' : ''}
+                        sur ${rowCount.toLocaleString()} au total
+                        ${isTruncated ? '<span class="text-orange-600 font-medium"> (limité à 1000 lignes)</span>' : ''}
+                    </p>
+                </div>
+
+                <button
+                    id="closeModal"
+                    class="p-1 rounded-full hover:bg-gray-100 transition"
+                    aria-label="Fermer la fenêtre">
+                    <svg class="w-5 h-5 text-gray-700 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
-            <div class="overflow-auto flex-1">
-                <table class="min-w-full divide-y divide-gray-200 text-left">
-                    <thead class="bg-gray-100 sticky top-0">
+
+            <!-- Table Container -->
+            <div class="flex-1 overflow-auto bg-gray-50">
+                <table class="min-w-full divide-y divide-gray-300">
+                    <thead class="bg-gray-200 sticky top-0 z-10 shadow-sm">
                         <tr>
-                            ${state.fullCsvData.header.map(h => `<th class="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase">${h}</th>`).join('')}
+                            ${headers.map(h => `
+                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                                    ${h || ''}
+                                </th>
+                            `).join('')}
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        ${state.fullCsvData.data.map(row => `<tr>${row.map(c => `<td class="px-4 py-2 text-xs text-gray-600 whitespace-nowrap">${c || ''}</td>`).join('')}</tr>`).join('')}
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${displayRows.map(row => `
+                            <tr class="hover:bg-indigo-50/30 transition-colors">
+                                ${row.map(cell => `
+                                    <td class="px-5 py-3 text-sm text-gray-700 whitespace-nowrap max-w-xs overflow-hidden text-ellipsis" title="${cell || ''}">
+                                        ${cell ?? ''}
+                                    </td>
+                                `).join('')}
+                            </tr>
+                        `).join('')}
                     </tbody>
                 </table>
+
+                ${isTruncated ? `
+                    <div class="px-6 py-4 bg-orange-50 border-t border-orange-200 text-center">
+                        <p class="text-sm text-orange-800 font-medium">
+                            ⚠️ Seules les 1000 premières lignes sont affichées pour des raisons de performance.
+                        </p>
+                    </div>
+                ` : ''}
             </div>
         </div>
     `;
-    document.body.appendChild(modal);
-    modal.querySelector('#closeModal').onclick = () => modal.remove();
-    modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
-}
 
+    // Append to body
+    document.body.appendChild(modal);
+
+    // Close handlers
+    const closeModal = () => modal.remove();
+
+    modal.querySelector('#closeModal').onclick = closeModal;
+
+    // Click outside to close
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+
+    // ESC key to close
+    const escHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    // Focus trap (basic accessibility)
+    modal.querySelector('#closeModal').focus();
+}
 function previewCsv(file) {
     if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+        if (!fileName.endsWith('.csv')) {
+            showAppSnackbar("Format invalide : Veuillez sélectionner un fichier .csv", "error");
+            clearCsvPreview();
+            return;
+        }
+
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
@@ -268,7 +346,6 @@ function computeSummaryData(header, data) {
 
     return { totalDebit: dr, totalCredit: cr, mismatch: Math.abs(dr - cr) > 0.01, fieldsMissing: false };
 }
-
 function renderSummary(summary, appCode) {
     const existingSummary = document.getElementById('dataCaptureSummary');
     if (existingSummary) existingSummary.remove();
@@ -313,8 +390,32 @@ async function handleUpload() {
     const file = elements.csvInput().files[0];
     const app = elements.appSelect().value;
     const btn = elements.sendCsvBtn();
+
     if (!file || !app) return showAppSnackbar("Fichier ou application manquante", "error");
 
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+            return showAppSnackbar("Seuls les fichiers CSV sont autorisés.", "error");
+    }
+
+    const filename = file.name;
+
+    // 1. Pre-check for duplicate filename
+    try {
+        const params = new URLSearchParams({ applicationName: app, filename: filename });
+        const checkRes = await secureFetch(`${DEV_API_BASE}/inputter/check-filename?${params}`);
+
+        if (checkRes.ok) {
+            const checkData = await checkRes.json();
+            if (checkData.exists) {
+                showAppSnackbar(`Le fichier "${filename}" a déjà été soumis. Veuillez utiliser un nom différent ou vérifier l'état du traitement actuel.`, "error");
+                return;
+            }
+        }
+    } catch (err) {
+        console.warn("Pre-check failed, proceeding to upload attempt anyway...", err);
+    }
+
+    // 2. Prepare Upload
     const formData = new FormData();
     formData.append("file", file);
     formData.append("applicationName", app);
@@ -322,17 +423,40 @@ async function handleUpload() {
     try {
         btn.disabled = true;
         btn.innerHTML = "⏳ Envoi...";
-        const res = await secureFetch(`${DEV_API_BASE}/inputter/upload`, { method: "POST", body: formData });
+
+        const res = await secureFetch(`${DEV_API_BASE}/inputter/upload`, {
+            method: "POST",
+            body: formData
+        });
+
         if (!res) return;
-        if (!res.ok) throw new Error(await res.text());
-        const result = await res.json();
-        elements.batchIdElement().textContent = result.batchId;
+
+        const errorData = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            // Priority 1: Specific row validation details
+            if (errorData.details && Array.isArray(errorData.details)) {
+                errorData.details.forEach((item, index) => {
+                    setTimeout(() => showAppSnackbar(item.message, "error"), index * 100);
+                });
+                return;
+            }
+
+            // Priority 2: Custom error message (like our "Duplicate file" from Mongo)
+            const errorMsg = errorData.message || errorData.error || "Une erreur est survenue";
+            throw new Error(errorMsg);
+        }
+
+        // 3. Success UI Update
+        elements.batchIdElement().textContent = errorData.batchId; // 'errorData' is the result here
         elements.successSection()?.classList.remove("hidden");
         elements.uploadSection()?.classList.add("hidden");
         elements.previewSection()?.classList.add("hidden");
         showAppSnackbar("Upload réussi !", "success");
+
     } catch (err) {
         showAppSnackbar(err.message, "error");
+    } finally {
         btn.disabled = false;
         btn.innerHTML = state.originalBtnHTML;
     }
@@ -340,7 +464,7 @@ async function handleUpload() {
 
 // 8. INITIALIZATION
 document.addEventListener("DOMContentLoaded", () => {
-    state.originalBtnHTML = elements.sendCsvBtn()?.innerHTML || "Envoyer";
+    state.originalBtnHTML = elements.sendCsvBtn()?.innerHTML || "Soumettre";
     loadApplications();
 
             loadStats({
@@ -395,7 +519,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     window.copyHeader = () => {
         const text = elements.csvHeaderCode().textContent;
-        navigator.clipboard.writeText(text).then(() => showAppSnackbar("Header copié !", "success"));
+        navigator.clipboard.writeText(text).then(() => showAppSnackbar("Copié dans le presse-papiers", "success"));
     };
 
     if (window.lucide) window.lucide.createIcons();

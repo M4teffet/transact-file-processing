@@ -20,7 +20,7 @@ import java.util.Optional;
 @Path("/api")
 public class LoginResource {
 
-    // The name of the cookie we will use for authentication
+    // The code of the cookie we will use for authentication
     private static final String AUTH_COOKIE_NAME = "AuthToken";
     // Time until the JWT and the cookie expire (in seconds)
     @ConfigProperty(name = "mp.jwt.expire-seconds", defaultValue = "3600")  // Increased to 1 hour for usability
@@ -99,7 +99,7 @@ public class LoginResource {
                 .path("/")
                 .maxAge((int) tokenExpirySeconds)
                 .secure(false)        // true in prod (HTTPS)
-                .httpOnly(true)
+                .httpOnly(false)
                 .sameSite(NewCookie.SameSite.STRICT)
                 .build();
 

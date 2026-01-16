@@ -4,6 +4,7 @@ import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @MongoEntity(collection = "app_feature_configs")
 public class AppFeatureConfig extends PanacheMongoEntity {
@@ -22,4 +23,9 @@ public class AppFeatureConfig extends PanacheMongoEntity {
                 .map(config -> ((AppFeatureConfig) config).isEnabled)
                 .orElse(true); // Default to true if not configured
     }
+
+    public static Optional<AppFeatureConfig> findByName(String key) {
+        return find("configKey", key).firstResultOptional();
+    }
+
 }

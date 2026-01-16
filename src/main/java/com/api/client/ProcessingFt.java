@@ -17,6 +17,7 @@ public interface ProcessingFt {
     @Produces(MediaType.APPLICATION_JSON)
     Response processTransaction(
             TransactionRequest request,
-            @HeaderParam("uniqueIdentifier") String uniqueIdentifier
+            @HeaderParam("uniqueIdentifier") String uniqueIdentifier,
+            @HeaderParam("companyId") String companyId
     );
 }

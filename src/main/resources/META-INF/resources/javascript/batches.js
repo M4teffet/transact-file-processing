@@ -46,16 +46,26 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 const loadUploadedBatches = async () => {
     try {
-        const response = await secureFetch(`${API_BASE}/batches?size=999`);
+        // 1. Get the current username from your Auth helper
+        const currentInputter = Auth.getUsername();
+
+        // 2. Build the URL with the inputter filter
+        // Using URLSearchParams makes it cleaner and handles special characters
+        const params = new URLSearchParams({
+            size: '999',
+            uploadedById: currentInputter
+        });
+
+        const response = await secureFetch(`${API_BASE}/batches?${params.toString()}`);
+
         if (!response) return;
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const result = await response.json();
 
-        // Handle Spring-style paginated response (content) or flat array
+        // Handle Panache/Spring-style paginated response (result.content)
         const rawData = result.content || result;
 
-        // Filter for specific statuses relevant to the "Uploaded" view
         const allowedStatuses = [
             'UPLOADED', 'VALIDATED', 'PROCESSING',
             'PROCESSED', 'PROCESSED_FAILED', 'PROCESSED_WITH_ERROR'
@@ -91,11 +101,12 @@ const renderUploadedBatches = () => {
 
     const html = `
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 bg-white">
-                <thead class="bg-gray-50/50">
+            <table class="min-w-full divide-y divide-gray-100 bg-white rounded-xs">
+                <thead class="bg-zinc-100/80">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ID Batch</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Application</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Fichier</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date Import</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
@@ -106,6 +117,8 @@ const renderUploadedBatches = () => {
                     <tr class="hover:bg-gray-50 transition-colors">
                         <td class="px-6 py-4 text-sm font-medium text-gray-800">${b.batchId}</td>
                         <td class="px-6 py-4 text-sm text-gray-600 font-mono">${b.application || 'N/A'}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700 font-medium italic">
+                            ${b.originalFilename || 'Nom inconnu'} </td>
                         <td class="px-6 py-4 text-sm text-gray-500">
                             ${b.uploadedAt ? new Date(b.uploadedAt).toLocaleString('fr-FR') : 'Date inconnue'}
                         </td>
@@ -251,7 +264,7 @@ const viewBatchSummary = async (batchId) => {
                             ${totalAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}
                         </p>
                     </div>
-                    <i data-lucide="banknote" class="absolute -right-1 -bottom-4 w-24 h-24 text-white/10 rotate-12"></i>
+                    <i data-lucide="banknote" class="absolute -right-1 -bottom-4 w-36 h-36 text-white/30 rotate-12"></i>
                 </div>` : ''}
 
                 <!-- Journal des anomalies -->
@@ -300,6 +313,104 @@ const viewBatchSummary = async (batchId) => {
     }
 };
 
+/**
+ * GENERATE DYNAMIC CSV REPORT
+ * Merges technical T24 results with original business data.
+ */
+const downloadExecutionReport = async (batchId) => {
+    try {
+        const res = await secureFetch(`${API_BASE}/batches/${batchId}`);
+        if (!res) return;
+        if (!res.ok) throw new Error("Impossible de récupérer les données du batch.");
+        const batch = await res.json();
+
+        // FIX: In your JSON, data is in 'details', not 'summary'
+        const records = batch.details;
+
+        if (!records || records.length === 0) {
+            showSnackbar("Aucune donnée disponible pour l'export.", "info");
+            return;
+        }
+
+        // 1. Collect all unique field names from the 'data' objects
+        let allPossibleFields = new Set();
+        records.forEach(item => {
+            if (item.data) {
+                Object.keys(item.data).forEach(key => {
+                    // Only include fields that have at least one non-null value in the batch
+                    if (item.data[key] !== null && item.data[key] !== undefined) {
+                        allPossibleFields.add(key);
+                    }
+                });
+            }
+        });
+
+        const dynamicFields = Array.from(allPossibleFields).sort();
+
+        // 2. Define CSV Headers
+        const headers = [
+            "Ligne",
+            "Statut T24",
+            "Reference T24",
+            "Message Erreur (Propre)",
+            ...dynamicFields
+        ];
+
+        // 3. Map rows for CSV
+        const csvRows = records.map(record => {
+            const bizData = record.data || {};
+
+            // Clean the error message (Handling the stringified JSON from T24)
+            let cleanError = record.errorMessage || "";
+            if (record.status === 'FAILED' && cleanError.startsWith('{')) {
+                try {
+                    const parsed = JSON.parse(cleanError);
+                    cleanError = parsed.error?.errorDetails?.[0]?.message || cleanError;
+                } catch (e) { /* Keep original if parsing fails */ }
+            }
+
+            // Technical columns
+            const row = [
+                record.lineNumber,
+                `"${record.status}"`,
+                `"${record.t24Reference || 'N/A'}"`,
+                `"${cleanError.replace(/"/g, '""')}"` // Escape quotes for CSV
+            ];
+
+            // Business columns
+            dynamicFields.forEach(field => {
+                const value = bizData[field] ?? "";
+                row.push(`"${value.toString().replace(/"/g, '""')}"`);
+            });
+
+            return row;
+        });
+
+        // 4. Build CSV String
+        const csvString = [
+            headers.join(","),
+            ...csvRows.map(r => r.join(","))
+        ].join("\n");
+
+        // 5. Trigger Download with UTF-8 BOM (Essential for Excel to read French accents/symbols)
+        const blob = new Blob(["\ufeff" + csvString], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Report_${batch.application}_${batchId.slice(-8)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showSnackbar("Rapport CSV généré avec succès", "success");
+
+    } catch (err) {
+        console.error("CSV Export Error:", err);
+        showSnackbar("Erreur lors de l'exportation : " + err.message, "error");
+    }
+};
 
 /**
  * MODAL & ACTION HANDLERS
@@ -344,6 +455,7 @@ const confirmDelete = async () => {
 // Global Exposure for HTML onclick attributes
 window.openDeleteModal = openDeleteModal;
 window.viewBatchSummary = viewBatchSummary;
+window.downloadExecutionReport = downloadExecutionReport;
 window.cancelDelete = cancelDelete;
 window.confirmDelete = confirmDelete;
 window.closeBatchDetails = () => {
