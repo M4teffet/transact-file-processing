@@ -42,7 +42,7 @@ const refreshDashboard = () => {
 const loadUploadedBatches = async () => {
     const container = document.getElementById('uploadedBatchesContainer');
     try {
-        const response = await secureFetch(`${API_BASE}/batches?status=UPLOADED&uploadedById=`);
+        const response = await secureFetch(`${API_BASE}/batches?status=UPLOADED`);
         if (!response) return;
         if (!response.ok) throw new Error("Erreur lors de la récupération des batches");
 

@@ -3,6 +3,7 @@ package com.transact;
 import com.transact.processor.model.AppFeatureConfig;
 import com.transact.processor.model.AppUser;
 import com.transact.processor.model.Country;
+import com.transact.processor.model.Departments;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -22,14 +23,36 @@ public class Initializer {
     private static final String DEFAULT_FEATURE_configKey = "FUNDS_TRANSFER";
     private static final String DEFAULT_FEATURE_description = "Processing Service";
     private static final Boolean DEFAULT_FEATURE_isEnabled = false;
-
+    private static final Integer DEFAULT_DEPARTMENT_ID = 1;
+    private static final String DEFAULT_DEPARTMENT_DESC = "Administrator";
     private static final String INITIAL_ADMIN_PASSWORD =
             System.getenv().getOrDefault("INITIAL_ADMIN_PASSWORD", "changeit");
 
     void onStart(@Observes StartupEvent event) {
         initializeCountry();
+        initializeDepartment();
         initializeAdminUser();
         initializeFeature();
+    }
+
+    void initializeDepartment() {
+        Optional<Departments> existing = Departments.find("code", DEFAULT_DEPARTMENT_ID).firstResultOptional();
+
+        if (existing.isPresent()) {
+            Departments department = existing.get();
+
+            if (DEFAULT_DEPARTMENT_ID.equals(department.code)) {
+                LOG.warnf("Department with code " + DEFAULT_DEPARTMENT_ID + " already exists");
+            }
+
+            return;
+        }
+        Departments department = new Departments();
+        department.code = DEFAULT_DEPARTMENT_ID;
+        department.description = DEFAULT_DEPARTMENT_DESC;
+        department.persist();
+
+        LOG.info("✅ Department with code " + DEFAULT_DEPARTMENT_ID + " created");
     }
 
     void initializeCountry() {
@@ -59,7 +82,6 @@ public class Initializer {
                 DEFAULT_COUNTRY_CODE, DEFAULT_COMPANY_ID);
     }
 
-
     void initializeAdminUser() {
         if (AppUser.findByUsername(ADMIN_USERNAME).isPresent()) {
             LOG.info("Admin user already exists");
@@ -75,6 +97,7 @@ public class Initializer {
         admin.setPasswordHash(hash);
         admin.setRole(AppUser.UserRole.ADMIN);
         admin.countryCode = DEFAULT_COUNTRY_CODE;
+        admin.department = DEFAULT_DEPARTMENT_ID;
 
         admin.persist();
 

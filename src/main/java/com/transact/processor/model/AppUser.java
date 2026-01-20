@@ -26,11 +26,14 @@ public class AppUser extends PanacheMongoEntity {
     @NotBlank
     public UserRole role = UserRole.INPUTTER;
 
-    // Constructor for Panache
+    @NotBlank
+    public Integer department;
+
+
     public AppUser() {
     }
 
-    public static AppUser add(String username, String password, String roleStr, String countryName) {
+    public static AppUser add(String username, String password, String roleStr, String countryName, Integer department) {
 
         // Validate and parse role
         UserRole role;
@@ -44,6 +47,14 @@ public class AppUser extends PanacheMongoEntity {
 
         if (country == null) {
             throw new IllegalArgumentException("Invalid country code: " + countryName);
+        }
+
+        Departments departments = Departments.find("code", department).firstResult();
+
+        System.out.println("Department code: " + departments.code);
+
+        if (departments == null) {
+            throw new IllegalArgumentException("Invalid department code: " + department);
         }
 
         // Check for existing user
@@ -68,6 +79,18 @@ public class AppUser extends PanacheMongoEntity {
 
     public void setCountryCode(String countryCode) {
         this.countryCode = countryCode;
+    }
+
+    public String getCountryCode() {
+        return countryCode;
+    }
+
+    public Integer getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(Integer department) {
+        this.department = department;
     }
 
     public String getUsername() {

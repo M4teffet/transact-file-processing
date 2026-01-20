@@ -71,6 +71,36 @@ public class BatchResource {
             params.put("uploadedById", uploadedById.trim());
         }
 
+        // Country Filter
+        String currentUsername = identity.getPrincipal().getName();
+
+        System.out.println("currentUsername = " + currentUsername);
+        AppUser currentUser = AppUser.findByUsername(currentUsername).orElse(null);
+
+        System.out.println("currentUser = " + currentUser.countryCode);
+        if (currentUser == null) {
+            throw new WebApplicationException("User not found", 403);
+        }
+
+
+        String currentCountry = currentUser.countryCode;
+        Integer currentDepartmentId = currentUser.department;
+
+        List<String> sameCountryUploaders =
+                AppUser.<AppUser>find(
+                                "countryCode = ?1 and departmentId = ?2",
+                                currentCountry,
+                                currentDepartmentId
+                        )
+                        .list()
+                        .stream()
+                        .map(AppUser::getUsername)
+                        .collect(Collectors.toList());
+
+        if (!filter.isEmpty()) filter.append(" and ");
+        filter.append("uploadedById IN :sameCountryUploaders");
+        params.put("sameCountryUploaders", sameCountryUploaders);
+
         Sort sort = Sort.by("uploadTimestamp").descending();
         PanacheQuery<FileBatch> query = filter.isEmpty()
                 ? FileBatch.findAll(sort)
@@ -79,7 +109,6 @@ public class BatchResource {
         List<FileBatch> batches = query.page(Page.of(validatedPage, validatedSize)).list();
 
         List<BatchViewDTO> result = batches.stream().map(batch -> {
-            // Efficiency: Fetch counts from the Statistics collection
             BatchStatistics stats = BatchStatistics.findById(batch.id);
             return new BatchViewDTO(
                     batch.id.toHexString(),
@@ -95,7 +124,6 @@ public class BatchResource {
         return Response.ok(new BatchPageResponse(result, validatedPage, validatedSize, query.count(), query.pageCount())).build();
     }
 
-
     // ========================================
     // GET /batches/{id}
     // ========================================
@@ -105,51 +133,52 @@ public class BatchResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Get detailed batch info", description = "Combines metadata, raw data, and processing results")
     public Response getBatchById(@PathParam("id") String id) {
-        ObjectId bId = parseObjectId(id); // Helper handles 400 error for bad formats
+        ObjectId bId = parseObjectId(id);
 
-        // 1. Fetch the main batch record
         FileBatch batch = FileBatch.findById(bId);
         if (batch == null) return Response.status(404).entity("Batch not found").build();
 
-        // 2. Fetch associated data and results
+        // Country Access Check
+        String currentUsername = identity.getPrincipal().getName();
+        AppUser currentUser = AppUser.findByUsername(currentUsername).orElse(null);
+        if (currentUser == null) {
+            return Response.status(403).entity("User not found").build();
+        }
+        String currentCountry = currentUser.countryCode;
+        AppUser uploader = AppUser.findByUsername(batch.uploadedById).orElse(null);
+        if (uploader == null || !currentCountry.equals(uploader.countryCode)) {
+            return Response.status(403).entity("Access Denied: Batch from different country").build();
+        }
+
         List<BatchData> rows = BatchData.findByBatchId(bId);
         List<RowResult> results = RowResult.find("batchId", bId).list();
 
-        // 3. Get cached statistics
         BatchStatistics stats = BatchStatistics.findById(bId);
 
-        // 4. Map results for O(1) lookup during merging
         Map<Integer, RowResult> resultMap = results.stream()
-                .collect(Collectors.toMap(
-                        r -> r.lineNumber,
-                        r -> r,
-                        (existing, replacement) -> existing // Handle potential duplicates safely
-                ));
+                .collect(Collectors.toMap(r -> r.lineNumber, r -> r));
 
-        // 5. Build the detailed list (Merging BatchData + RowResult)
         List<RowDetailDTO> details = rows.stream().map(row -> {
             RowResult res = resultMap.get(row.lineNumber);
             return new RowDetailDTO(
                     row.lineNumber,
                     row.data,
-                    res != null ? res.status : "PENDING", // Status is PENDING if result doesn't exist yet
+                    res != null ? res.status : "PENDING",
                     res != null ? res.t24Reference : null,
                     res != null ? res.errorMessage : null
             );
         }).collect(Collectors.toList());
 
-        // 6. Construct and return the response
         return Response.ok(new BatchDetailResponse(
                 batch.id.toHexString(),
                 getAppName(batch.applicationId),
                 batch.originalFilename,
                 batch.status,
                 batch.uploadTimestamp,
-                stats != null ? (int) stats.totalRecords : rows.size(), // Fallback to list size if stats missing
+                stats != null ? (int) stats.totalRecords : rows.size(),
                 details
         )).build();
     }
-
 
     // ========================================
     // PUT /batches/{id}
@@ -165,16 +194,12 @@ public class BatchResource {
             return Response.status(404).entity("Batch not found").build();
         }
 
-        // 1. Get the Validator's Info (Current Authenticated User)
         String validatorName = identity.getPrincipal().getName();
-        AppUser validator = AppUser.find("username", validatorName).firstResult();
+        AppUser validator = AppUser.findByUsername(validatorName).orElse(null);
 
-        // 2. Get the Inputter's Info (The person who uploaded the batch)
-        // Assuming batch.inputter stores the username
         String inputterName = batch.uploadedById;
-        AppUser inputter = AppUser.find("username", inputterName).firstResult();
+        AppUser inputter = AppUser.findByUsername(inputterName).orElse(null);
 
-        // 3. Security Cross-Check
         if (validator == null || inputter == null) {
             return Response.status(403).entity("User context missing").build();
         }
@@ -184,7 +209,6 @@ public class BatchResource {
                     .entity("Permission Denied: You (" + validator.countryCode + ") cannot validate a batch from " + inputter.countryCode).build();
         }
 
-        // --- Standard Validation Logic ---
         if (!FileBatch.STATUS_VALIDATED.equals(request.status())) {
             return Response.status(400).entity("Invalid status transition").build();
         }
@@ -193,7 +217,6 @@ public class BatchResource {
             return Response.status(403).entity("Batch is not in UPLOADED state").build();
         }
 
-        // Perform Update
         batch.status = FileBatch.STATUS_VALIDATED;
         batch.validatedById = validatorName;
         batch.validationTimestamp = Instant.now();
@@ -205,7 +228,6 @@ public class BatchResource {
         return Response.ok(Map.of("message", "Batch validated successfully")).build();
     }
 
-
     // ========================================
     // DELETE /batches/{id}
     // ========================================
@@ -216,13 +238,23 @@ public class BatchResource {
         FileBatch batch = FileBatch.findById(batchId);
         if (batch == null) return Response.status(404).build();
 
-        // Restriction Check
+        // Country Access Check
+        String currentUsername = identity.getPrincipal().getName();
+        AppUser currentUser = AppUser.findByUsername(currentUsername).orElse(null);
+        if (currentUser == null) {
+            return Response.status(403).entity("User not found").build();
+        }
+        String currentCountry = currentUser.countryCode;
+        AppUser uploader = AppUser.findByUsername(batch.uploadedById).orElse(null);
+        if (uploader == null || !currentCountry.equals(uploader.countryCode)) {
+            return Response.status(403).entity("Access Denied: Batch from different country").build();
+        }
+
         List<String> deletable = List.of(FileBatch.STATUS_UPLOADED, FileBatch.STATUS_UPLOADED_FAILED, FileBatch.STATUS_VALIDATED_FAILED);
         if (!deletable.contains(batch.status)) {
             return Response.status(403).entity("Cannot delete batch in status: " + batch.status).build();
         }
 
-        // Atomic cleanup across collections
         BatchData.delete("batchId", batchId);
         RowResult.delete("batchId", batchId);
         BatchStatistics.deleteById(batchId);
@@ -230,7 +262,6 @@ public class BatchResource {
 
         return Response.noContent().build();
     }
-
 
     // ========================================
     // GET /recent-batches
@@ -240,7 +271,20 @@ public class BatchResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getRecentBatches() {
 
-        List<RecentBatchDTO> list = FileBatch.<FileBatch>findAll(Sort.descending("uploadTimestamp"))
+        String currentUsername = identity.getPrincipal().getName();
+        AppUser currentUser = AppUser.findByUsername(currentUsername).orElse(null);
+        if (currentUser == null) {
+            return Response.ok(List.of()).build();
+        }
+        String currentCountry = currentUser.countryCode;
+        List<String> sameCountryUploaders =
+                AppUser.<AppUser>find("countryCode", currentCountry)
+                        .list()
+                        .stream()
+                        .map(AppUser::getUsername)
+                        .collect(Collectors.toList());
+
+        List<RecentBatchDTO> list = FileBatch.<FileBatch>find("uploadedById IN ?1", Sort.descending("uploadTimestamp"), sameCountryUploaders)
                 .page(Page.of(0, 10))
                 .stream()
                 .map(batch -> new RecentBatchDTO(
@@ -253,7 +297,6 @@ public class BatchResource {
         return Response.ok(list).build();
     }
 
-
     // ========================================
     // GET /api/batches/processing-logs
     // ========================================
@@ -264,20 +307,41 @@ public class BatchResource {
     public List<ProcessingLogEntry> getProcessingLogs(
             @QueryParam("batchId") String batchId) {
 
+        String currentUsername = identity.getPrincipal().getName();
+        AppUser currentUser = AppUser.findByUsername(currentUsername).orElse(null);
+        if (currentUser == null) {
+            return List.of();
+        }
+        String currentCountry = currentUser.countryCode;
+
         if (batchId != null && !batchId.isBlank()) {
             ObjectId bId = parseObjectId(batchId);
-            // Filter logs for a specific batch
+            FileBatch batch = FileBatch.findById(bId);
+            if (batch == null) return List.of();
+            AppUser uploader = AppUser.findByUsername(batch.uploadedById).orElse(null);
+            if (uploader == null || !currentCountry.equals(uploader.countryCode)) {
+                return List.of();
+            }
             return ProcessingLogEntry.find("batchId", Sort.by("timestamp").descending(), bId)
                     .page(Page.of(0, 1000))
                     .list();
         } else {
-            // Return latest global logs if no batchId is selected
-            return ProcessingLogEntry.findAll(Sort.by("timestamp").descending())
+            List<String> sameCountryUploaders =
+                    AppUser.<AppUser>find("countryCode", currentCountry)
+                            .list()
+                            .stream()
+                            .map(AppUser::getUsername)
+                            .collect(Collectors.toList());
+
+            List<FileBatch> allowedBatches = FileBatch.find("uploadedById IN ?1", sameCountryUploaders).list();
+            List<ObjectId> allowedBatchIds = allowedBatches.stream()
+                    .map(batch -> batch.id)
+                    .collect(Collectors.toList());
+            return ProcessingLogEntry.find("batchId IN ?1", Sort.by("timestamp").descending(), allowedBatchIds)
                     .page(Page.of(0, 100))
                     .list();
         }
     }
-
 
     // ========================================
     // GET /count
@@ -294,6 +358,20 @@ public class BatchResource {
     ) {
         Map<String, Long> counts = new HashMap<>();
 
+        String currentUsername = identity.getPrincipal().getName();
+        AppUser currentUser = AppUser.findByUsername(currentUsername).orElse(null);
+        if (currentUser == null) {
+            return counts;
+        }
+        String currentCountry = currentUser.countryCode;
+        List<String> sameCountryUploaders =
+                AppUser.<AppUser>find("countryCode", currentCountry)
+                        .list()
+                        .stream()
+                        .map(AppUser::getUsername)
+                        .collect(Collectors.toList());
+
+
         List<String> statusesToTrack = List.of(
                 FileBatch.STATUS_UPLOADED,
                 FileBatch.STATUS_UPLOADED_FAILED,
@@ -309,15 +387,19 @@ public class BatchResource {
         for (String status : statusesToTrack) {
             long count;
             if (filterByInputter) {
-                count = FileBatch.count("status = ?1 and uploadedById = ?2", status, inputter);
+                AppUser specificInputter = AppUser.findByUsername(inputter).orElse(null);
+                if (specificInputter == null || !currentCountry.equals(specificInputter.countryCode)) {
+                    count = 0;
+                } else {
+                    count = FileBatch.count("status = ?1 and uploadedById = ?2", status, inputter);
+                }
             } else {
-                count = FileBatch.count("status", status);
+                count = FileBatch.count("status = ?1 and uploadedById IN ?2", status, sameCountryUploaders);
             }
             counts.put(status, count);
         }
         return counts;
     }
-
 
     // ========================================
     // --- Helpers ---

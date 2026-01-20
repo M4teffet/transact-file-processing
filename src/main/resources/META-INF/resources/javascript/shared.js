@@ -148,11 +148,15 @@ const loadStats = async (mapping) => {
     try {
 
         const currentInputter = Auth.getUsername();
+        const pathname = window.location.pathname;
 
         const params = new URLSearchParams({
             size: '999',
-            uploadedById: currentInputter
         });
+
+        if (pathname === '/batches') {
+            params.set('uploadedById', currentInputter);
+        }
 
         const res = await secureFetch(`${API_BASE}/batches/counts?${params.toString()}`);
         if (!res) return; // Exit if redirected

@@ -1,7 +1,7 @@
 package com.transact;
 
 import com.transact.processor.model.AppUser;
-import io.quarkus.security.Authenticated;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -21,8 +21,7 @@ public class UserResource {
     @GET
     @Path("/list")
     @Produces(MediaType.APPLICATION_JSON)
-    @Authenticated
-// You might want to add @RolesAllowed("ADMIN") here if this is sensitive
+    @RolesAllowed("ADMIN")
     public Response findAll() {
         try {
             // Fetch all users and map to a list of simple maps (DTO)
@@ -40,41 +39,60 @@ public class UserResource {
         }
     }
 
-
     @POST
-    @Produces(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed("ADMIN")
     public Response addUser(@RestForm String username,
                             @RestForm String password,
                             @RestForm String role,
-                            @RestForm String country) {
+                            @RestForm String country,
+                            @RestForm Integer department) {
         try {
-            // Basic input checks (null/empty)
             if (username == null || username.trim().isEmpty()
                     || password == null || password.trim().isEmpty()
                     || role == null || role.trim().isEmpty()
                     || country == null || country.trim().isEmpty()) {
-                return Response.status(400).entity("Error: Username, password, role, country are required.").build();
+                return Response.status(400)
+                        .entity("Username, password, role, country are required.")
+                        .build();
             }
 
             final Set<String> VALID_ROLES = Set.of("INPUTTER", "ADMIN", "AUTHORISER");
-
-            // Role validation
             String roleUpper = role.trim().toUpperCase();
+
             if (!VALID_ROLES.contains(roleUpper)) {
-                return Response.status(400).entity("Error: Invalid role '" + role + "'. Must be Inputter, Admin, or Authoriser.").build();
+                return Response.status(400)
+                        .entity("Invalid role: " + role)
+                        .build();
             }
 
-            AppUser.add(username, password, role, country);
-            return Response.ok("User '" + username + "' created successfully.").build();
+            // Create user
+            AppUser user = AppUser.add(username, password, roleUpper, country, department);
+
+            // Return DTO for immediate UI rendering
+            UserViewDTO dto = new UserViewDTO(
+                    user.getUsername(),
+                    user.countryCode,
+                    user.getRole().toString(),
+                    user.department
+            );
+
+            return Response.status(Response.Status.CREATED)
+                    .entity(dto)
+                    .build();
+
         } catch (Exception e) {
-            return Response.status(400).entity("Error: " + e.getMessage()).build();
+            return Response.status(400)
+                    .entity(e.getMessage())
+                    .build();
         }
     }
 
     public record UserViewDTO(
             String username,
             String countryCode,
-            String role
+            String role,
+            Integer department
     ) {
     }
 }

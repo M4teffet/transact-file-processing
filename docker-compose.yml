@@ -32,7 +32,7 @@ services:
       - MONGO_URL=mongodb://mongo:27017
 
       # External Funds Transfer API
-      - FUNDS_TRANSFER_API_URL=http://192.168.1.4:8085/omerchant/api/v1.0.0/order/payments
+      - FUNDS_TRANSFER_API_URL=http://192.168.1.103:8085/omerchant/api/v1.0.0/order/payments
       - FT_API_USER=INPUTTER
       - FT_API_PASS=123456
 
