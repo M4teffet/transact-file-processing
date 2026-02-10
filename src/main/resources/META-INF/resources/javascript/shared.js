@@ -38,6 +38,70 @@ const Auth = {
 };
 
 
+// ========================================
+// COUNTRY FLAG UTILITIES - NO 404 ERRORS
+// ========================================
+
+/**
+ * Get country flag using flagcdn.com images
+ * Works on ALL browsers - no 404 errors
+ */
+function getCountryFlag(countryCode) {
+    if (!countryCode || countryCode.length !== 2) {
+        return '';
+    }
+
+    const code = countryCode.toLowerCase();
+
+    // ✅ Use flagcdn.com images - works everywhere, no local files needed
+    return `<img src="https://flagcdn.com/16x12/${code}.png"
+                 srcset="https://flagcdn.com/32x24/${code}.png 2x"
+                 width="16"
+                 height="12"
+                 alt="${code.toUpperCase()}"
+                 style="display: inline-block; vertical-align: middle; margin: 0 4px;">`;
+}
+
+/**
+ * Get country name in French
+ */
+function getCountryName(countryCode) {
+    if (!countryCode || countryCode.length !== 2) {
+        return 'Pays inconnu';
+    }
+
+    try {
+        const regionNames = new Intl.DisplayNames(['fr'], { type: 'region' });
+        return regionNames.of(countryCode.toUpperCase()) || countryCode;
+    } catch (e) {
+        return countryCode;
+    }
+}
+
+/**
+ * Add country flag to footer
+ */
+function addCountryFlagToFooter() {
+    const countryCode = sessionStorage.getItem('country')?.trim().toUpperCase();
+
+    if (!countryCode || countryCode.length !== 2) {
+        return; // silent exit — no flag shown if missing
+    }
+
+    const flagEl = document.getElementById('country-flag');
+    if (!flagEl) return;
+
+    const flag = getCountryFlag(countryCode);
+    const name = getCountryName(countryCode);
+
+    // Use innerHTML to render the flag image
+    flagEl.innerHTML = flag;
+    flagEl.title = name || countryCode;
+
+    console.log(`✅ Drapeau affiché : ${name} (${countryCode})`);
+}
+
+
 /**
 // SNACKBAR (UPDATED)
  */
@@ -119,12 +183,12 @@ const secureFetch = async (url, options = {}) => {
             response.redirected ||
             response.url.includes('/login')
         ) {
-            console.warn("Authentication failure or redirect to login detected. Clearing session and redirecting...");
+            console.warn("Échec d'authentification détecté. Nettoyage de session et redirection...");
 
             // Clear client-side storage
             localStorage.clear();
             sessionStorage.clear();
-            localStorage.removeItem('auth_valid_until'); // if you're using the timestamp method
+            localStorage.removeItem('auth_valid_until');
 
             // Force full page navigation to login
             window.location.href = "/login?error=session_expired";
@@ -135,7 +199,7 @@ const secureFetch = async (url, options = {}) => {
 
         return response;
     } catch (error) {
-        console.error("Network error in secureFetch:", error);
+        console.error("Erreur réseau dans secureFetch:", error);
         throw error;
     }
 };
@@ -154,7 +218,7 @@ const loadStats = async (mapping) => {
             size: '999',
         });
 
-        if (pathname === '/batches') {
+        if (pathname === '/batches' || pathname === '/upload') {
             params.set('uploadedById', currentInputter);
         }
 
@@ -178,7 +242,7 @@ const loadStats = async (mapping) => {
             if (el) el.textContent = finalSum;
         });
     } catch (err) {
-        console.error("Stats Error:", err);
+        console.error("Erreur stats:", err);
     }
 };
 
@@ -192,7 +256,7 @@ const getStatusBadge = (status) => {
         VALIDATED: { color: "bg-blue-50 text-blue-700 border-blue-200", icon: "user-check", label: "Validé" },
         PROCESSING: { color: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: "refresh-cw", label: "En cours" },
         PROCESSED: { color: "bg-emerald-100 text-emerald-800 border-emerald-200", icon: "check-circle", label: "Terminé" },
-        PROCESSED_WITH_ERROR: { color: "bg-orange-100 text-orange-800 border-orange-200", icon: "alert-triangle", label: "Terminé (Alertes)" },
+        PROCESSED_WITH_ERROR: { color: "bg-orange-100 text-orange-800 border-orange-200", icon: "alert-triangle", label: "Terminé" },
         UPLOADED_FAILED: { color: "bg-red-50 text-red-700 border-red-100", icon: "alert-octagon", label: "Échec Upload" },
         VALIDATED_FAILED: { color: "bg-red-50 text-red-700 border-red-100", icon: "x-octagon", label: "Échec Signature" },
         PROCESSED_FAILED: { color: "bg-red-100 text-red-900 border-red-200", icon: "x-circle", label: "Échec" }
@@ -284,7 +348,7 @@ const downloadBatchNonNull = async (batchId) => {
         if (!res) return;
         if (!res.ok) throw new Error(`HTTP ${res.status}: Erreur API`);
 
-        const { details } = await res.json(); // use 'details' instead of 'data'
+        const { details } = await res.json();
 
         if (!details?.length) return showSnackbar("Aucune donnée à télécharger", "error");
 
@@ -326,6 +390,7 @@ const openModal = (id) => {
     const m = document.getElementById(id);
     if (m) { m.classList.remove("hidden"); m.classList.add("flex"); }
 };
+
 const closeModal = (id) => {
     const m = document.getElementById(id);
     if (m) { m.classList.add("hidden"); m.classList.remove("flex"); }
@@ -333,6 +398,7 @@ const closeModal = (id) => {
 
 const logoutUser = async () => {
     sessionStorage.clear();
+    localStorage.clear();
     try {
         await fetch(`${API_BASE}/logout`, { method: "POST" });
     } finally {
@@ -342,8 +408,28 @@ const logoutUser = async () => {
 
 
 // -----------------------------
-// EXPORTS & AUTO-INIT
+// INITIALIZATION
 // -----------------------------
+function initShared() {
+    addCountryFlagToFooter();
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+
+    console.log('✅ shared.js initialisé');
+}
+
+document.addEventListener("DOMContentLoaded", initShared);
+
+
+// -----------------------------
+// GLOBAL EXPORTS
+// -----------------------------
+window.Auth = Auth;
+window.getCountryFlag = getCountryFlag;
+window.getCountryName = getCountryName;
+window.addCountryFlagToFooter = addCountryFlagToFooter;
 window.showSnackbar = showSnackbar;
 window.loadStats = loadStats;
 window.getStatusBadge = getStatusBadge;
@@ -353,7 +439,3 @@ window.openModal = openModal;
 window.closeModal = closeModal;
 window.logoutUser = logoutUser;
 window.secureFetch = secureFetch;
-
-document.addEventListener("DOMContentLoaded", () => {
-    lucide.createIcons();
-});

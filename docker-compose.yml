@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongo:
     image: mongo:7
@@ -32,9 +30,9 @@ services:
       - MONGO_URL=mongodb://mongo:27017
 
       # External Funds Transfer API
-      - FUNDS_TRANSFER_API_URL=http://192.168.1.103:8085/omerchant/api/v1.0.0/order/payments
-      - FT_API_USER=INPUTTER
-      - FT_API_PASS=123456
+      - FUNDS_TRANSFER_API_URL=https://orange-fr.temenoscloud.com:541/OBAMobApi/api/v1.0.0/order/payments
+      - FT_API_USER=GTSUSER
+      - FT_API_PASS=1234567
 
       # App Logic & Logging
       - MAX_UPLOAD_LINES=5000

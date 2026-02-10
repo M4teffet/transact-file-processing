@@ -131,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             sessionStorage.setItem('role', data.role);
             sessionStorage.setItem('username', data.username);
+            sessionStorage.setItem('country', data.country);
 
             redirectByRole(data.role);
 

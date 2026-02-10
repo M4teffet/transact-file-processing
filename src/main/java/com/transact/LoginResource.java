@@ -107,6 +107,7 @@ public class LoginResource {
         return Response.ok(Map.of(
                         "username", user.getUsername(),
                         "role", user.getRole().name(),
+                        "country", user.getCountryCode(),
                         "message", "Authentication successful"
                 ))
                 .cookie(authCookie)

@@ -20,7 +20,8 @@
                       transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
        id="sidebar">
     <div class="p-6 border-b border-gray-200 text-center flex-shrink-0">
-        <a class="inline-flex items-center justify-center h-10 w-auto hover:opacity-80 transition-opacity" href="/" title="Orange Bank">
+        <a class="inline-flex items-center justify-center h-10 w-auto hover:opacity-80 transition-opacity" href="."
+           title="Orange Bank">
             <picture class="h-full w-auto"><img alt="Orange Bank Logo" class="h-full w-auto max-h-10 object-contain"
                                                 loading="lazy"
                                                 onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'; this.onerror=null;"
@@ -45,8 +46,17 @@
         </a>
     </nav>
 
-    <div class="absolute bottom-0 left-0 right-0 p-3 border-t border-gray-200 bg-gray-100 flex-shrink-0 text-center text-sm text-gray-700">
-        &copy; 2025 Orange Bank
+    <div class="absolute bottom-0 left-0 right-0 px-4 py-3
+            border-t border-gray-200 bg-gray-50 text-gray-600
+            flex items-center justify-center gap-3 text-sm"
+         id="app-footer">
+
+        <span class="text-[10px] text-gray-500 text-center block font-bold uppercase">&copy; 2025 Orange Bank</span>
+
+        <span aria-hidden="true"
+              class="text-lg leading-none"
+              id="country-flag"
+              title=""></span>
     </div>
 </aside>
 {/aside}
@@ -102,7 +112,7 @@
 
     <div class="bg-white rounded-md shadow-xs border border-gray-200 overflow-hidden">
         <div class="p-4">
-            <h3 class="text-xl font-bold text-gray-900 flex items-center gap-3">
+            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-3">
                 <i class="w-5 h-5 text-brand-primary" data-lucide="list"></i>
                 Liste des Batches Uploadés
             </h3>
