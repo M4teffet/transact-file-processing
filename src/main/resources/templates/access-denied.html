@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Accès Non Autorisé</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .icon {
+            font-size: 120px;
+            margin-bottom: 30px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-20px);
+            }
+            60% {
+                transform: translateY(-10px);
+            }
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        p {
+            font-size: 20px;
+            margin-bottom: 15px;
+            opacity: 0.95;
+            line-height: 1.6;
+        }
+
+        .warning {
+            background: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #fbbf24;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .warning p {
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .btn {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: #fff;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .footer {
+            margin-top: 50px;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        /* Particules en arrière-plan */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: float 15s infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="particles" id="particles"></div>
+
+<div class="container">
+    <div class="icon">🚫</div>
+    <h1>Accès Non Autorisé</h1>
+    <p>Les outils de développement ne sont pas autorisés sur cette application.</p>
+
+    <div class="warning">
+        <p><strong>⚠️ Attention :</strong> L'utilisation des outils de développement est interdite et peut entraîner la suspension
+            de votre compte.</p>
+    </div>
+
+    <p>Si vous pensez qu'il s'agit d'une erreur, veuillez contacter l'administrateur système.</p>
+
+    <a class="btn" href="/">Retour à l'accueil</a>
+
+    <div class="footer">
+        © 2025 - Tous droits réservés
+    </div>
+</div>
+
+<script>
+    // Créer des particules animées
+    const particlesContainer = document.getElementById('particles');
+    for (let i = 0; i < 50; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 15 + 's';
+        particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+        particlesContainer.appendChild(particle);
+    }
+
+    // Bloquer DevTools même sur cette page
+    document.addEventListener('keydown', function(e) {
+        if (e.keyCode === 123 ||
+            (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
+            (e.metaKey && e.altKey && (e.keyCode === 73 || e.keyCode === 74))) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+    });
+</script>
+</body>
+</html>

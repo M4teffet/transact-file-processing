@@ -22,7 +22,8 @@
         max-width: 25rem;
         display: flex;
         flex-direction: column;
-        gap: 0.5rem; z-index: 50; }
+        gap: 0.5rem; z-index: 50;
+        }
 
         /* Composants cohérents */
         .stats-card {
@@ -96,7 +97,7 @@
         {#insert default}{/insert}
     </main>
 </div>
-{#insert script}{/insert}
+
 
 <div class="fixed inset-0 z-50 hidden bg-black/60 flex items-center justify-center" id="deleteConfirmationModal">
     <div class="bg-white rounded-md shadow-lg p-6 max-w-md mx-4">
@@ -140,6 +141,9 @@
 
 <div id="snackbar-container"></div>
 
+<script src="/javascript/shared.js"></script>
+<script src="/javascript/devtools-protection.js"></script>
+{#insert script}{/insert}
 <script>
     document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
         document.getElementById('sidebar').classList.toggle('-translate-x-full');
@@ -151,5 +155,6 @@
     });
     lucide.createIcons();
 </script>
+
 </body>
 </html>

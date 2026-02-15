@@ -41,6 +41,10 @@ public class WebPageResource {
     @Location("settings")
     Template settingsTemplate;
 
+    @Inject
+    @Location("access-denied")
+    Template accessdeniedTemplate;
+
     @GET
     @Path("/dashboard")
     @RolesAllowed({"ADMIN"})  // Nouveau rôle
@@ -48,6 +52,15 @@ public class WebPageResource {
     public TemplateInstance getAdminPage() {
 
         return dashboardTemplate.data("title", "Administration - Batch Manager");
+    }
+
+    @GET
+    @Path("/access-denied")
+    @Authenticated
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance accessdeniedTemplate() {
+
+        return dashboardTemplate.data("title", "Accès Non Autorisé");
     }
 
     @GET
