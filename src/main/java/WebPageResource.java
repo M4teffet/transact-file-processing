@@ -10,67 +10,81 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-@Path("")
+@Path("/")
 public class WebPageResource {
 
-    @Inject
-    @Location("upload")  // Finds src/main/resources/templates/upload.html
-    Template uploadTemplate;
-
-    @Inject
-    @Location("validate")  // Finds src/main/resources/templates/validate.html
-    Template validateTemplate;
-
-    @Inject
-    @Location("batches")  // Finds src/main/resources/templates/batches.html
-    Template batchesTemplate;
-
-    @Inject
-    @Location("validated")  // Finds src/main/resources/templates/batches.html
-    Template validatedTemplate;
-
-    @Inject
-    @Location("login")  // Finds src/main/resources/templates/login.html
-    Template loginTemplate;
+    // --- Template Injections ---
 
     @Inject
     @Location("dashboard")
     Template dashboardTemplate;
 
     @Inject
+    @Location("upload")
+    Template uploadTemplate;
+
+    @Inject
+    @Location("validate")
+    Template validateTemplate;
+
+    @Inject
+    @Location("batches")
+    Template batchesTemplate;
+
+    @Inject
+    @Location("validated")
+    Template validatedTemplate;
+
+    @Inject
+    @Location("login")
+    Template loginTemplate;
+
+    @Inject
     @Location("settings")
     Template settingsTemplate;
 
     @Inject
+    @Location("reports")
+    Template reportsTemplate;
+
+    @Inject
     @Location("access-denied")
-    Template accessdeniedTemplate;
+    Template accessDeniedTemplate;
+
+    // --- Admin Endpoints ---
 
     @GET
     @Path("/dashboard")
-    @RolesAllowed({"ADMIN"})  // Nouveau rôle
+    @RolesAllowed("ADMIN")
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance getAdminPage() {
-
         return dashboardTemplate.data("title", "Administration - Batch Manager");
     }
 
     @GET
-    @Path("/access-denied")
-    @Authenticated
+    @Path("/settings")
+    @RolesAllowed("ADMIN")
     @Produces(MediaType.TEXT_HTML)
-    public TemplateInstance accessdeniedTemplate() {
-
-        return dashboardTemplate.data("title", "Accès Non Autorisé");
+    public TemplateInstance getSettingsPage() {
+        return settingsTemplate.data("title", "Paramètres - Batch Manager");
     }
+
+    @GET
+    @Path("/reports")
+    @RolesAllowed("ADMIN")
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance getReportPage() {
+        return reportsTemplate.data("title", "Rapports - Batch Manager");
+    }
+
+    // --- Operations Endpoints ---
 
     @GET
     @Path("/upload")
     @RolesAllowed("INPUTTER")
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance getUploadPage() {
-        // Chain both .data() calls to the template instance before returning
-        return uploadTemplate
-                .data("title", "Import CSV & Modèles - Orange Bank");
+        return uploadTemplate.data("title", "Import CSV & Modèles - Orange Bank");
     }
 
     @GET
@@ -78,48 +92,40 @@ public class WebPageResource {
     @Authenticated
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance getValidatePage() {
-        // Chain both .data() calls to the template instance before returning
-        return validateTemplate
-                .data("title", "Validation CSV - Orange Bank");
+        return validateTemplate.data("title", "Validation CSV - Orange Bank");
     }
 
     @GET
-    @Authenticated
     @Path("/batches")
+    @Authenticated
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance getBatchesPage() {
-        // Chain both .data() calls to the template instance before returning
-        return batchesTemplate
-                .data("title", "Lots en Attente - Orange Bank");
+        return batchesTemplate.data("title", "Lots en Attente - Orange Bank");
     }
 
     @GET
-    @Authenticated
     @Path("/validated")
+    @Authenticated
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance getValidatedPage() {
-        // Chain both .data() calls to the template instance before returning
-        return validatedTemplate
-                .data("title", "Lots Validés - Orange Bank");
+        return validatedTemplate.data("title", "Lots Validés - Orange Bank");
     }
 
+    // --- Public & Utility Endpoints ---
+
     @GET
-    @PermitAll
     @Path("/login")
+    @PermitAll
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance getLoginPage() {
-        // Chain both .data() calls to the template instance before returning
-        return loginTemplate
-                .data("title", "Connexion - Orange Bank");
+        return loginTemplate.data("title", "Connexion - Orange Bank");
     }
 
     @GET
-    @PermitAll
-    @Path("/settings")
+    @Path("/access-denied")
+    @Authenticated
     @Produces(MediaType.TEXT_HTML)
-    public TemplateInstance getSettingsPage() {
-        // Chain both .data() calls to the template instance before returning
-        return settingsTemplate
-                .data("title", "Administration - Batch Manager Settings");
+    public TemplateInstance getAccessDeniedPage() {
+        return accessDeniedTemplate.data("title", "Accès Non Autorisé");
     }
 }

@@ -1,0 +1,226 @@
+{#include layout}
+{#title}Rapports - Batch Manager{/title}
+
+{#head}
+<style>
+    .table-row { transition: background-color 0.2s; }
+    .table-row:hover { background-color: #f9fafb; }
+    .filter-badge { @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-light text-brand-dark; }
+</style>
+{/head}
+
+{#aside}
+<aside class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-md border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
+       id="sidebar">
+    <div class="p-6 border-b border-gray-200 text-center flex-shrink-0">
+        <a class="inline-flex items-center justify-center h-10 w-auto hover:opacity-80 transition-opacity" href="."
+           title="Orange Bank">
+            <picture class="h-full w-auto">
+                <img alt="Orange Bank Logo" class="h-full w-auto max-h-10 object-contain" loading="lazy"
+                     onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'; this.onerror=null;"
+                     src="/images/Logo_Orange_Bank.svg">
+            </picture>
+        </a>
+        <h1 class="mt-4 px-1 font-semibold text-gray-600 text-sm">Utilitaire Batch</h1>
+    </div>
+    <nav class="flex-1 px-4 py-6 space-y-2">
+        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-brand-primary hover:bg-gray-100 transition rounded-md"
+           href="/dashboard">
+            <i class="w-5 h-5 mr-3" data-lucide="shield"></i> Administration
+        </a>
+        <a class="flex items-center px-4 py-3 text-brand-dark transition rounded-md bg-brand-light font-semibold" href="/reports">
+            <i class="w-5 h-5 mr-3" data-lucide="bar-chart-3"></i> Rapports
+        </a>
+        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-brand-primary hover:bg-gray-100 transition rounded-md"
+           href="/settings">
+            <i class="w-5 h-5 mr-3" data-lucide="list-checks"></i> Settings
+        </a>
+    </nav>
+    <div class="absolute bottom-0 left-0 right-0 px-4 py-3 border-t border-gray-200 bg-gray-50 text-gray-600 flex items-center justify-center gap-3 text-sm"
+         id="app-footer">
+        <span class="text-[10px] text-gray-500 text-center block font-bold uppercase">&copy; 2025 Orange Bank</span>
+        <span aria-hidden="true" class="text-lg leading-none" id="country-flag" title=""></span>
+    </div>
+</aside>
+{/aside}
+
+{#default}
+<div class="max-w-7xl mx-auto space-y-8">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-gray-200">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-900">Rapports Détaillés</h2>
+            <p class="text-sm text-gray-600 mt-1">Analyse complète des batchs avec traçabilité</p>
+        </div>
+        <div class="flex items-center gap-3 bg-gray-50 rounded-md px-4 py-3 border border-gray-200">
+            <button class="flex items-center gap-2 px-4 py-2 bg-white rounded-md border border-gray-300 hover:border-brand-primary hover:shadow-sm transition-all duration-200 group"
+                    onclick="refreshAllReports()">
+                <i class="w-4 h-4 text-gray-600 group-hover:text-brand-primary transition-all duration-300"
+                   data-lucide="refresh-cw"></i>
+                <span class="text-sm font-medium text-gray-700">Actualiser</span>
+            </button>
+            <div class="h-8 w-px bg-gray-300"></div>
+            <button class="flex items-center gap-2 px-4 py-2 bg-brand-primary hover:bg-brand-dark text-white rounded-md transition-all duration-200"
+                    onclick="exportToPDF()">
+                <i class="w-4 h-4" data-lucide="file-text"></i>
+                <span class="text-sm font-medium">Exporter PDF</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="bg-white rounded-md shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <i class="w-5 h-5 text-brand-primary" data-lucide="filter"></i>
+            Filtres de Recherche
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Date Range -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Date de début</label>
+                <input class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-primary text-sm" id="startDate"
+                       type="date">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Date de fin</label>
+                <input class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-primary text-sm" id="endDate"
+                       type="date">
+            </div>
+            <!-- Country Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Pays</label>
+                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-primary text-sm"
+                        id="countryFilter">
+                    <option value="">Tous les pays</option>
+                </select>
+            </div>
+            <!-- Department Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Département</label>
+                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-primary text-sm"
+                        id="departmentFilter">
+                    <option value="">Tous les départements</option>
+                </select>
+            </div>
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Statut</label>
+                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-primary text-sm"
+                        id="statusFilter">
+                    <option value="">Tous les statuts</option>
+                    <option value="PROCESSED">Traité avec succès</option>
+                    <option value="PROCESSED_WITH_ERROR">Traité avec erreurs</option>
+                    <option value="VALIDATED">Validé</option>
+                    <option value="UPLOADED">Uploadé</option>
+                </select>
+            </div>
+            <!-- Inputter Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Inputter</label>
+                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-primary text-sm"
+                        id="inputterFilter">
+                    <option value="">Tous les inputters</option>
+                </select>
+            </div>
+            <!-- Validator Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Validateur</label>
+                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-primary text-sm"
+                        id="validatorFilter">
+                    <option value="">Tous les validateurs</option>
+                </select>
+            </div>
+            <!-- Apply Button -->
+            <div class="flex items-end">
+                <button class="w-full px-6 py-2.5 bg-brand-primary hover:bg-brand-dark text-white text-sm font-semibold rounded-md transition-colors"
+                        onclick="applyFilters()">
+                    Appliquer les filtres
+                </button>
+            </div>
+        </div>
+        <!-- Active Filters Display -->
+        <div class="mt-4 flex flex-wrap gap-2 hidden" id="activeFilters"></div>
+    </div>
+
+    <!-- Detailed Batch Table -->
+    <div class="bg-white rounded-md shadow-sm border border-gray-200">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <i class="w-5 h-5 text-brand-primary" data-lucide="table"></i>
+                    Détails des Batchs
+                </h3>
+                <div class="flex items-center gap-3">
+                    <input class="px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-brand-primary" id="searchTable" onkeyup="searchInTable()"
+                           placeholder="Rechercher dans le tableau..."
+                           type="text">
+                    <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 hover:border-brand-primary rounded-md text-sm transition-colors"
+                            onclick="exportTableToCSV()">
+                        <i class="w-4 h-4" data-lucide="download"></i>
+                        CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm" id="batchDetailsTable">
+                <thead>
+                <tr class="border-b border-gray-200 bg-gray-50">
+                    <th class="px-4 py-3 text-left font-bold text-gray-700">Batch ID</th>
+                    <th class="px-4 py-3 text-left font-bold text-gray-700">Application</th>
+                    <th class="px-4 py-3 text-center font-bold text-gray-700">Statut</th>
+                    <th class="px-4 py-3 text-left font-bold text-gray-700">Inputter</th>
+                    <th class="px-4 py-3 text-left font-bold text-gray-700">Validateur</th>
+                    <th class="px-4 py-3 text-center font-bold text-gray-700">Pays</th>
+                    <th class="px-4 py-3 text-center font-bold text-gray-700">Département</th>
+                    <th class="px-4 py-3 text-center font-bold text-gray-700">Records</th>
+                    <th class="px-4 py-3 text-center font-bold text-gray-700">Erreurs</th>
+                    <th class="px-4 py-3 text-center font-bold text-gray-700">Date Upload</th>
+                    <th class="px-4 py-3 text-center font-bold text-gray-700">Date Validation</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200" id="batchTableBody">
+                <tr>
+                    <td class="px-4 py-12 text-center text-gray-500" colspan="11">
+                        <div class="flex flex-col items-center gap-3">
+                            <i class="w-10 h-10 animate-spin text-brand-primary" data-lucide="loader"></i>
+                            <span>Chargement des données...</span>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- Pagination -->
+        <div class="p-4 border-t border-gray-200 flex items-center justify-between">
+            <div class="text-sm text-gray-600">
+                Affichage de <span id="showingFrom">0</span> à <span id="showingTo">0</span> sur <span id="totalItems">0</span>
+                batchs
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" id="prevPageBtn"
+                        onclick="previousPage()">
+                    Précédent
+                </button>
+                <span class="text-sm text-gray-600">Page <span id="currentPage">1</span> sur <span id="totalPages">1</span></span>
+                <button class="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" id="nextPageBtn"
+                        onclick="nextPage()">
+                    Suivant
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{/default}
+
+{#script}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script src="/javascript/reports.js"></script>
+<script>
+    lucide.createIcons();
+</script>
+{/script}
+{/include}
