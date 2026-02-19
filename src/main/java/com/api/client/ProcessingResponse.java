@@ -64,19 +64,6 @@ public class ProcessingResponse {
     }
 }
 
-/**
- * Business error block
- */
-@JsonIgnoreProperties(ignoreUnknown = true)
-class ErrorBlock {
-
-    @JsonProperty("type")
-    public String type;
-
-    @JsonProperty("errorDetails")
-    public List<ErrorDetail> errorDetails;
-}
-
 @JsonIgnoreProperties(ignoreUnknown = true)
 class ErrorDetail {
 

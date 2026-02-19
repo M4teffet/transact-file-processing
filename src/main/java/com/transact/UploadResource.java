@@ -35,7 +35,7 @@ import java.util.Map;
 @Path("/api/inputter")
 @Tag(name = "File Upload", description = "Upload and validate CSV files")
 @RolesAllowed("INPUTTER")
-public class InputterResource {
+public class UploadResource {
 
     @ConfigProperty(name = "com.transact.upload.max-lines", defaultValue = "100")
     int maxLines;

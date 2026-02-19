@@ -49,13 +49,18 @@ const loadUploadedBatches = async () => {
         // 1. Get the current username from your Auth helper
         const currentInputter = Auth.getUsername();
 
-        // 2. Build the URL with the inputter filter
-        // Using URLSearchParams makes it cleaner and handles special characters
+        // Define your statuses and the current user
+        const statuses = ['VALIDATED', 'UPLOADED', 'PROCESSING', 'PROCESSED', 'PROCESSED_WITH_ERROR', 'PROCESSED_FAILED'];
+
+        // Initialize URLSearchParams with your object
         const params = new URLSearchParams({
-            size: '999',
             uploadedById: currentInputter
         });
 
+        // Append each status individually to create the repeated key format (status=A&status=B)
+        statuses.forEach(s => params.append('status', s));
+
+        // Fetch using the stringified parameters
         const response = await secureFetch(`${API_BASE}/batches?${params.toString()}`);
 
         if (!response) return;
@@ -91,7 +96,7 @@ const renderUploadedBatches = () => {
 
     if (!uploadedBatches.length) {
         container.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-12 text-gray-500">
+            <div class="flex flex-col items-center justify-center py-12 text-gray-500 bg-white rounded-md border border-dashed">
                 <i data-lucide="inbox" class="w-12 h-12 mb-3 opacity-20"></i>
                 <p>Aucun batch trouvé pour le moment.</p>
             </div>`;

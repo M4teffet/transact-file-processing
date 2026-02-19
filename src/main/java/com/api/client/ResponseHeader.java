@@ -13,4 +13,5 @@ public class ResponseHeader {
 
     @JsonProperty("transactionStatus")
     public String transactionStatus;
+
 }

@@ -113,7 +113,33 @@ public class FileValidator {
         switch (appType) {
             case "FUNDS_TRANSFER" -> validateFundsTransfer(raw, line);
             case "DATA_CAPTURE" -> validateDataCapture(raw, line);
+            case "FUNDS_TRANSFER_REVERSAL" -> validateReversal(raw, line);
             default -> throw new RuntimeException("Line " + line + ": Unsupported application type: " + appType);
+        }
+    }
+
+    private void validateReversal(Map<String, String> raw, int line) {
+        String ref = raw.get("T24.REFERENCE");
+
+        if (isBlank(ref)) {
+            throw new RuntimeException("Line " + line + ": T24.REFERENCE is mandatory.");
+        }
+
+        String trimmedRef = ref.trim().toUpperCase();
+
+        // 1. Prefix Verification
+        if (!trimmedRef.startsWith("FT")) {
+            throw new RuntimeException("Line " + line + ": Invalid reference '" + ref + "'. Reversal references must start with 'FT'.");
+        }
+
+        // 2. Length Verification (Typical T24 FT reference length)
+        if (trimmedRef.length() < 10) {
+            throw new RuntimeException("Line " + line + ": Reference '" + ref + "' is too short to be a valid T24 FT ID.");
+        }
+
+        // 3. Sanitization Check (Ensure no special characters are present in the ID)
+        if (!trimmedRef.matches("^[A-Z0-9]+$")) {
+            throw new RuntimeException("Line " + line + ": Reference contains invalid characters. Only alphanumeric characters allowed.");
         }
     }
 
@@ -256,5 +282,4 @@ public class FileValidator {
     private boolean isBlank(String s) {
         return s == null || s.isBlank();
     }
-
 }

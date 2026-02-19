@@ -2,6 +2,7 @@ package com.transact.processor.model;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
+import io.smallrye.common.constraint.NotNull;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.bson.types.ObjectId;
@@ -26,7 +27,7 @@ public class AppUser extends PanacheMongoEntity {
     @NotBlank
     public UserRole role = UserRole.INPUTTER;
 
-    @NotBlank
+    @NotNull
     public Integer department;
 
 
@@ -51,8 +52,6 @@ public class AppUser extends PanacheMongoEntity {
 
         Departments departments = Departments.find("code", department).firstResult();
 
-        System.out.println("Department code: " + departments.code);
-
         if (departments == null) {
             throw new IllegalArgumentException("Invalid department code: " + department);
         }
@@ -68,6 +67,7 @@ public class AppUser extends PanacheMongoEntity {
         user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
         user.setRole(role);
         user.setCountryCode(country.code);
+        user.setDepartment(departments.code);
 
         user.persist();
         return user;

@@ -2,7 +2,6 @@ package com.transact.scheduler;
 
 import com.api.client.ProcessingFt;
 import com.api.client.ProcessingResponse;
-import com.api.client.TransactionRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.transact.processor.model.*;
 import io.quarkus.logging.Log;
@@ -18,7 +17,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -27,45 +25,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.quarkus.scheduler.Scheduled.ConcurrentExecution.SKIP;
 
-/**
- * FundsTransferProcessor - IMPROVED VERSION
- *
- * Improvements:
- * - ✅ Fixed resource leaks (Response properly closed with try-with-resources)
- * - ✅ Fixed race conditions (atomic WHERE clauses in updates)
- * - ✅ Configurable settings via application.properties
- * - ✅ Better null safety and error handling
- * - ✅ Active processor tracking
- */
 @ApplicationScoped
-public class FundsTransferProcessor {
+public class FundsTransferReversalProcessor {
 
-    private static final String FEATURE_KEY = "FUNDS_TRANSFER";
-
+    private static final String FEATURE_KEY = "FUNDS_TRANSFER_REVERSAL";
     private final AtomicInteger activeProcessors = new AtomicInteger(0);
-    @ConfigProperty(name = "ft.processor.max-retry", defaultValue = "3")
+    @ConfigProperty(name = "ft.reversal.processor.max-retry", defaultValue = "3")
     int maxRetry;
-
+    @ConfigProperty(name = "ft.reversal.processor.max-threads", defaultValue = "2")
+    int maxThreads;
     @Inject
     @RestClient
     ProcessingFt processingFt;
-
     @Inject
     ObjectMapper objectMapper;
-
     @Inject
     ManagedExecutor managedExecutor;
-    @ConfigProperty(name = "ft.processor.max-threads", defaultValue = "2")
-    int maxThreads;
 
-    @Scheduled(every = "1m", identity = "ft-processor", concurrentExecution = SKIP)
+    @Scheduled(every = "1m", identity = "ft-reversal-processor", concurrentExecution = SKIP)
     @ActivateRequestContext
     public void run() {
         Application app = Application.findByName(FEATURE_KEY);
 
         if (app == null) {
-            Log.errorf("[FT] Application config missing for key: %s", FEATURE_KEY);
-            ProcessingLogEntry.log("ERROR", String.format("[FT] Application config missing: %s", FEATURE_KEY));
+            Log.errorf("[FT_REV] Application config missing for key: %s", FEATURE_KEY);
+            ProcessingLogEntry.log("ERROR", String.format("[FT_REV] Application config missing: %s", FEATURE_KEY));
             return;
         }
 
@@ -82,7 +66,7 @@ public class FundsTransferProcessor {
 
         if (batches.isEmpty()) return;
 
-        Log.infof("[FT] %d batch(es) detected for processing", batches.size());
+        Log.infof("[FT_REV] %d batch(es) detected for processing", batches.size());
 
         for (FileBatch batch : batches) {
             try {
@@ -95,7 +79,6 @@ public class FundsTransferProcessor {
         }
     }
 
-
     private void processBatch(ObjectId batchId) {
         activeProcessors.incrementAndGet();
         String workerId = UUID.randomUUID().toString();
@@ -107,6 +90,7 @@ public class FundsTransferProcessor {
                 return;
             }
 
+            // Retrieve user country to determine company ID
             String country = AppUser.findByUsername(batch.validatedById)
                     .map(AppUser::getCountryCode)
                     .orElse(null);
@@ -124,7 +108,7 @@ public class FundsTransferProcessor {
 
             recoverRows(batchId);
 
-            // ✅ FIXED: Atomic update with WHERE clause
+            // Atomic update to mark batch as PROCESSING
             long updated = FileBatch.update(
                             "status = ?1, processingTimestamp = ?2",
                             FileBatch.STATUS_PROCESSING,
@@ -183,6 +167,7 @@ public class FundsTransferProcessor {
     }
 
     private void recoverRows(ObjectId batchId) {
+        // Reset stuck rows (CLAIMED -> PENDING)
         long reset = BatchData.update(
                         "processingStatus = 'PENDING', workerId = null, retryCount = retryCount + 1"
                 )
@@ -193,6 +178,7 @@ public class FundsTransferProcessor {
             Log.warnf("[%s] Recovery: %d row(s) reset", batchId, reset);
         }
 
+        // Poison pill for rows exceeding max retries
         long poisoned = BatchData.update("processingStatus = 'FAILED_PERMANENT'")
                 .where("batchId = :batchId and processingStatus = 'PENDING' and retryCount >= :max",
                         Parameters.with("batchId", batchId).and("max", maxRetry));
@@ -203,21 +189,27 @@ public class FundsTransferProcessor {
     }
 
     private void processRow(BatchData row, String workerId, ObjectId batchId, String companyId) {
+        // Attempt to claim the row atomically
         if (!BatchData.claimRow(row.id, workerId)) {
             return;
         }
 
         String ctx = String.format("[%s|Row:%d]", batchId, row.lineNumber);
-        String correlationId = batchId + "-" + row.lineNumber;
 
-        TransactionRequest req = mapToRequest(row.data);
-        String payloadJson = serializePayload(req);
+        String t24Reference = getT24Reference(row.data);
+        if (t24Reference == null || t24Reference.trim().isEmpty()) {
+            failRow(batchId, row, "Missing or empty T24.REFERENCE");
+            return;
+        }
 
-        Response response = null;
+        String payloadJson = "{\"t24Reference\":\"" + t24Reference + "\"}";
+
+        Response response;
 
         try {
+            // 1. Execute Remote Call
             try {
-                response = processingFt.processTransaction(req, correlationId, companyId);
+                response = processingFt.reverseTransaction(t24Reference, companyId);
             } catch (WebApplicationException e) {
                 response = e.getResponse();
             }
@@ -227,7 +219,7 @@ public class FundsTransferProcessor {
                 return;
             }
 
-            // ✅ FIXED: Use try-with-resources to close Response
+            // 2. Process Response (Try-with-resources ensures closure)
             try (Response resp = response) {
                 String body = resp.readEntity(String.class);
 
@@ -236,24 +228,37 @@ public class FundsTransferProcessor {
                     return;
                 }
 
+                // Deserialize into ProcessingResponse (ignores linkedActivities automatically)
                 ProcessingResponse res = objectMapper.readValue(body, ProcessingResponse.class);
 
+                // 2a. Success Scenario
                 if (resp.getStatus() < 400 && res.isSuccessful()) {
+                    // Extract ID from header safely
                     String ref = (res.header != null) ? res.header.id : "N/A";
                     Log.infof("%s SUCCESS: %s", ctx, ref);
                     completeRow(batchId, row, ref);
                     return;
                 }
 
+                // 2b. Error Scenario
                 String errorMsg = res.getErrorMessage();
 
-                if (errorMsg != null && errorMsg.contains("already Exists")) {
+                // Fallback for failed extraction (e.g., generic HTTP error)
+                if (errorMsg == null) {
+                    errorMsg = "HTTP " + resp.getStatus();
+                    // Attempt to grab full error from JSON if detail was missing
+                    if (res.error != null && res.error.type != null) {
+                        errorMsg += " [" + res.error.type + "]";
+                    }
+                }
+
+                // Idempotency / Already Reversed handling
+                if (errorMsg.contains("already reversed") || errorMsg.contains("duplicate")) {
                     String ref = (res.header != null) ? res.header.id : "EXISTING";
                     Log.warnf("%s IDEMPOTENCY: %s", ctx, errorMsg);
                     completeRow(batchId, row, ref);
                 } else {
-                    String finalError = (errorMsg != null) ? errorMsg : "HTTP " + resp.getStatus();
-                    handleFailure(batchId, row, finalError, payloadJson);
+                    handleFailure(batchId, row, errorMsg, payloadJson);
                 }
             }
 
@@ -266,6 +271,7 @@ public class FundsTransferProcessor {
 
     public void completeRow(ObjectId batchId, BatchData row, String ref) {
         try {
+            // Save result log (idempotent check)
             long existing = RowResult.count("batchId = ?1 and lineNumber = ?2", batchId, row.lineNumber);
             if (existing == 0) {
                 new RowResult(batchId, row.lineNumber, "SUCCESS", ref, null).persist();
@@ -273,7 +279,7 @@ public class FundsTransferProcessor {
         } catch (Exception ignored) {
         }
 
-        // ✅ FIXED: Atomic with WHERE clause
+        // Mark row as COMPLETED
         BatchData.update("processingStatus = 'COMPLETED'")
                 .where("_id = ?1 and processingStatus != 'COMPLETED'", row.id);
     }
@@ -287,7 +293,7 @@ public class FundsTransferProcessor {
         } catch (Exception ignored) {
         }
 
-        // ✅ FIXED: Atomic with WHERE clause
+        // Mark row as FAILED
         BatchData.update("processingStatus = 'FAILED'")
                 .where("_id = ?1 and processingStatus != 'FAILED'", row.id);
     }
@@ -296,6 +302,7 @@ public class FundsTransferProcessor {
         BatchStatistics stats = BatchStatistics.calculate(batchId);
         if (stats == null) return;
 
+        // Ensure all rows are done
         long pendingCount = BatchData.count("batchId = ?1 and processingStatus in ?2",
                 batchId, List.of("PENDING", "CLAIMED"));
 
@@ -312,7 +319,7 @@ public class FundsTransferProcessor {
             status = FileBatch.STATUS_PROCESSED_FAILED;
         }
 
-        // ✅ FIXED: Atomic with WHERE clause
+        // Final atomic update
         long updated = FileBatch.update(
                         "status = ?1, processingTimestamp = ?2",
                         status,
@@ -342,8 +349,11 @@ public class FundsTransferProcessor {
     private String extractErrorMessage(Throwable t) {
         if (t == null) return "Unknown error";
 
+        // Attempt to extract JSON message from WebApplicationException response
         if (t instanceof WebApplicationException w && w.getResponse() != null) {
             try (Response resp = w.getResponse()) {
+                // Buffer entity allows multiple reads if necessary
+                // resp.bufferEntity();
                 String body = resp.readEntity(String.class);
                 if (body != null && !body.isBlank()) {
                     ProcessingResponse res = objectMapper.readValue(body, ProcessingResponse.class);
@@ -351,70 +361,16 @@ public class FundsTransferProcessor {
                     if (err != null) return err;
                 }
             } catch (Exception ignored) {
+                // Fallback if parsing fails
             }
         }
 
         return Optional.ofNullable(t.getMessage()).orElse(t.getClass().getSimpleName());
     }
 
-    private TransactionRequest mapToRequest(Map<String, Object> data) {
-        TransactionRequest r = new TransactionRequest();
-        r.body = new TransactionRequest.RequestBody();
-
-        if (data != null) {
-            data.forEach((k, v) -> {
-                if (v != null) populateField(r, k, v.toString());
-            });
-        }
-
-        return r;
-    }
-
-    private String serializePayload(TransactionRequest req) {
-        try {
-            return objectMapper.writeValueAsString(req);
-        } catch (Exception e) {
-            return "[Serialization Error]";
-        }
-    }
-
-    private void populateField(TransactionRequest r, String k, String v) {
-        String val = v.trim();
-        if (val.isEmpty()) return;
-
-        switch (k) {
-            case "TRANSACTION.TYPE" -> r.body.transactionType = val;
-            case "DEBIT.ACCT.NO" -> r.body.debitAcctNo = val;
-            case "DEBIT.CURRENCY" -> r.body.debitCurrency = val;
-            case "DEBIT.AMOUNT" -> r.body.debitAmount = parseAmount(val);
-            case "DEBIT.VALUE.DATE" -> r.body.debitValueDate = val;
-            case "DEBIT.THEIR.REF" -> r.body.debitTheirRef = val;
-            case "CREDIT.ACCT.NO" -> r.body.creditAcctNo = val;
-            case "CREDIT.CURRENCY" -> r.body.creditCurrency = val;
-            case "CREDIT.AMOUNT" -> r.body.creditAmount = parseAmount(val);
-            case "CREDIT.VALUE.DATE" -> r.body.creditValueDate = val;
-            case "CREDIT.THEIR.REF" -> r.body.creditTheirRef = val;
-            case "PROCESSING.DATE" -> r.body.processingDate = val;
-            case "EXPOSURE.DATE" -> r.body.exposureDate = val;
-            case "PAYMENT.DETAILS" -> r.body.paymentDetails = val;
-            case "ORDERING.CUST" -> r.body.orderingCust = val;
-            case "ORDERING.BANK" -> r.body.orderingBank = val;
-            case "COMMISSION.CODE" -> r.body.commissionCode = val;
-            case "COMMISSION.TYPE" -> r.body.commissionType = val;
-            case "COMMISSION.AMT" -> r.body.commissionAmt = parseAmount(val);
-            case "CHARGE.CODE" -> r.body.chargeCode = val;
-            case "CHARGE.TYPE" -> r.body.chargeType = val;
-            case "CHARGE.AMT" -> r.body.chargeAmt = parseAmount(val);
-            case "PROFIT.CENTRE.CUST" -> r.body.profitCentreCust = val;
-            case "PROFIT.CENTRE.DEPT" -> r.body.profitCentreDept = val;
-        }
-    }
-
-    private BigDecimal parseAmount(String val) {
-        try {
-            return new BigDecimal(val.replace(",", ""));
-        } catch (Exception e) {
-            return null;
-        }
+    private String getT24Reference(Map<String, Object> data) {
+        if (data == null) return null;
+        Object value = data.get("T24.REFERENCE");
+        return (value != null) ? value.toString().trim() : null;
     }
 }

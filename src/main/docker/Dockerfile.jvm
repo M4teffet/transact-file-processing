@@ -8,7 +8,7 @@ RUN mvn dependency:go-offline
 
 # 2. Copy source and build (This creates the /target folder INSIDE Docker)
 COPY src ./src
-RUN mvn package -DskipTests
+RUN mvn package.json -DskipTests
 
 # STAGE 2: Runtime (The final lean image)
 FROM eclipse-temurin:17-jre-alpine
