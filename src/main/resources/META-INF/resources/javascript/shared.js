@@ -1,4 +1,5 @@
-const API_BASE = "http://localhost:8080/api";
+// Use relative URL so the app works in any environment (dev, staging, prod)
+const API_BASE = "/api";
 
 /**
 // DECODE JWT
@@ -71,7 +72,7 @@ function getCountryName(countryCode) {
     }
 
     try {
-        const regionNames = new Intl.DisplayNames(['fr'], {type: 'region'});
+        const regionNames = new Intl.DisplayNames(['fr'], { type: 'region' });
         return regionNames.of(countryCode.toUpperCase()) || countryCode;
     } catch (e) {
         return countryCode;
@@ -176,12 +177,13 @@ const secureFetch = async (url, options = {}) => {
         });
 
         // Detect authentication issues or unwanted redirects
+        // Detect authentication failures — avoid matching on response.url.includes('/login')
+        // which fires on any payload containing the word "login" (false positives)
         if (
             response.status === 401 ||
             response.status === 403 ||
             response.status === 302 ||
-            response.redirected ||
-            response.url.includes('/login')
+            (response.redirected && response.url.includes('/login'))
         ) {
             console.warn("Échec d'authentification détecté. Nettoyage de session et redirection...");
 
@@ -256,11 +258,7 @@ const getStatusBadge = (status) => {
         VALIDATED: { color: "bg-blue-50 text-blue-700 border-blue-200", icon: "user-check", label: "Validé" },
         PROCESSING: { color: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: "refresh-cw", label: "En cours" },
         PROCESSED: { color: "bg-emerald-100 text-emerald-800 border-emerald-200", icon: "check-circle", label: "Terminé" },
-        PROCESSED_WITH_ERROR: {
-            color: "bg-orange-100 text-orange-800 border-orange-200",
-            icon: "alert-triangle",
-            label: "Terminé"
-        },
+        PROCESSED_WITH_ERROR: { color: "bg-orange-100 text-orange-800 border-orange-200", icon: "alert-triangle", label: "Terminé" },
         UPLOADED_FAILED: { color: "bg-red-50 text-red-700 border-red-100", icon: "alert-octagon", label: "Échec Upload" },
         VALIDATED_FAILED: { color: "bg-red-50 text-red-700 border-red-100", icon: "x-octagon", label: "Échec Signature" },
         PROCESSED_FAILED: { color: "bg-red-100 text-red-900 border-red-200", icon: "x-circle", label: "Échec" }
@@ -330,7 +328,7 @@ const viewBatchDetails = async (batchId, modalId = "batchDetailsModal", contentI
             ${table}
             <button
                 onclick="downloadBatchNonNull('${batchId}')"
-                class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-brand-primary text-white rounded hover:bg-brand-dark transition-colors">
+                class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors">
                 <i data-lucide="download" class="w-4 h-4"></i> Télécharger le CSV complet
             </button>
         `;
@@ -352,7 +350,7 @@ const downloadBatchNonNull = async (batchId) => {
         if (!res) return;
         if (!res.ok) throw new Error(`HTTP ${res.status}: Erreur API`);
 
-        const {details} = await res.json();
+        const { details } = await res.json();
 
         if (!details?.length) return showSnackbar("Aucune donnée à télécharger", "error");
 

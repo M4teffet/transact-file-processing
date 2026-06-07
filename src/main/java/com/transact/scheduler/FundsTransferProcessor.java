@@ -417,4 +417,20 @@ public class FundsTransferProcessor {
             return null;
         }
     }
+
+    /**
+     * Purge expired OTP tokens daily to prevent unbounded collection growth
+     */
+    @Scheduled(cron = "0 0 3 * * ?", identity = "otp-token-purge", concurrentExecution = SKIP)
+    @ActivateRequestContext
+    public void purgeExpiredOtpTokens() {
+        try {
+            long removed = com.transact.processor.model.OtpToken.purgeExpired();
+            if (removed > 0) {
+                Log.infof("[OTP] Purged %d expired token(s)", removed);
+            }
+        } catch (Exception e) {
+            Log.warnf(e, "[OTP] Purge failed: %s", e.getMessage());
+        }
+    }
 }

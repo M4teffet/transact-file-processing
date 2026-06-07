@@ -5,7 +5,7 @@
  */
 
 // 1. CONFIGURATION & STATE
-const DEV_API_BASE = "http://localhost:8080/api";
+const DEV_API_BASE = "/api"; // relative — works in dev and production
 
 let state = {
     fieldOrder: [],
@@ -64,8 +64,8 @@ async function loadApplications() {
     if (!el) return;
     el.innerHTML = '<option value="">Chargement...</option>';
     try {
-        const res = await fetch(`${DEV_API_BASE}/applications`);
-        if (!res.ok) throw new Error("Erreur serveur");
+        const res = await secureFetch(`${DEV_API_BASE}/applications`);
+        if (!res || !res.ok) throw new Error("Erreur serveur");
         const apps = await res.json();
         el.innerHTML = '<option value="">Choisir une application...</option>';
         apps.forEach(app => el.add(new Option(`${app.code} – ${app.label}`, app.code)));
@@ -149,7 +149,7 @@ function getDragAfterElement(container, y) {
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) return {offset: offset, element: child};
+        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
         else return closest;
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
@@ -179,7 +179,6 @@ function toggleFieldsVisibility() {
     const isHidden = content.classList.toggle("hidden");
     chevron.classList.toggle("rotate-180", !isHidden);
 }
-
 window.toggleFieldsVisibility = toggleFieldsVisibility;
 
 // 5. CSV PREVIEW
@@ -190,10 +189,7 @@ function clearCsvPreview() {
     elements.previewSection()?.classList.add("hidden");
 
     const sendBtn = elements.sendCsvBtn();
-    if (sendBtn) {
-        sendBtn.disabled = true;
-        sendBtn.classList.add("opacity-50");
-    }
+    if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add("opacity-50"); }
 }
 
 function previewCsv(file) {
@@ -229,10 +225,7 @@ function previewCsv(file) {
             }
 
             const sendBtn = elements.sendCsvBtn();
-            if (sendBtn) {
-                sendBtn.disabled = false;
-                sendBtn.classList.remove("opacity-50");
-            }
+            if (sendBtn) { sendBtn.disabled = false; sendBtn.classList.remove("opacity-50"); }
 
         } catch (err) {
             showAppSnackbar("Impossible de lire le CSV : " + err.message, "error");
@@ -281,12 +274,8 @@ function openFullCsvPreview() {
     document.body.appendChild(modal);
 
     modal.querySelector('#closeModal').onclick = () => modal.remove();
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.remove();
-    });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') modal.remove();
-    }, {once: true});
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') modal.remove(); }, { once: true });
 }
 
 // ✅ NEW: Show validation error modal
@@ -366,12 +355,8 @@ function showValidationErrorModal(errorData) {
     const closeModal = () => modal.remove();
     modal.querySelector('#closeErrorModal').onclick = closeModal;
     modal.querySelector('#closeErrorModalBtn').onclick = closeModal;
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
-    });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeModal();
-    }, {once: true});
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); }, { once: true });
 }
 
 // 6. UPLOAD ACTION (UPDATED)
@@ -385,15 +370,13 @@ async function handleUpload() {
 
     const filename = file.name;
     try {
-        const params = new URLSearchParams({applicationName: app, filename});
+        const params = new URLSearchParams({ applicationName: app, filename });
         const checkRes = await fetch(`${DEV_API_BASE}/inputter/check-filename?${params}`);
         if (checkRes.ok) {
             const checkData = await checkRes.json();
             if (checkData.exists) return showAppSnackbar(`Le fichier "${filename}" existe déjà.`, "error");
         }
-    } catch (err) {
-        console.warn("Pre-check failed", err);
-    }
+    } catch (err) { console.warn("Pre-check failed", err); }
 
     const formData = new FormData();
     formData.append("file", file);
@@ -403,7 +386,7 @@ async function handleUpload() {
         btn.disabled = true;
         btn.innerHTML = "⏳ Envoi...";
 
-        const res = await fetch(`${DEV_API_BASE}/inputter/upload`, {method: "POST", body: formData});
+        const res = await fetch(`${DEV_API_BASE}/inputter/upload`, { method: "POST", body: formData });
 
         // ✅ UPDATED: Better error handling
         if (!res.ok) {
@@ -414,7 +397,7 @@ async function handleUpload() {
                 errorData = await res.json();
             } else {
                 const text = await res.text();
-                errorData = {error: text || `Erreur ${res.status}`};
+                errorData = { error: text || `Erreur ${res.status}` };
             }
 
             // ✅ Show modal for validation errors
@@ -472,11 +455,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Drag & Drop CSV
     const zone = elements.csvDropZone();
     if (zone) {
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
-            zone.addEventListener(name, e => {
-                e.preventDefault();
-                e.stopPropagation();
-            });
+        ['dragenter','dragover','dragleave','drop'].forEach(name => {
+            zone.addEventListener(name, e => { e.preventDefault(); e.stopPropagation(); });
         });
 
         zone.addEventListener("dragover", () => zone.classList.add("bg-blue-50", "border-blue-400"));

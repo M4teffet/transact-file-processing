@@ -86,8 +86,12 @@ public class UploadResource {
             }
 
             if (rawData.size() > maxLines) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(new JsonObject().put("error", "File too large").encode()).build();
+                return Response.status(413)
+                        .entity(new JsonObject()
+                                .put("error", "Fichier trop volumineux")
+                                .put("message", "Le fichier dépasse la limite de " + maxLines + " lignes.")
+                                .encode())
+                        .build();
             }
 
             List<Map<String, Object>> validatedData = fileValidator.validateAndConvert(rawData, appConfig);

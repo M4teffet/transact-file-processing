@@ -271,9 +271,11 @@ public class BatchResource {
         if (currentUser == null)
             return Response.status(403).entity(Map.of("message", "Utilisateur non trouvé")).build();
 
-        AppUser uploader = AppUser.findByUsername(batch.uploadedById).orElse(null);
-        if (uploader == null || !currentUser.countryCode.equals(uploader.countryCode) || !currentUser.getDepartment().equals(uploader.getDepartment())) {
-            return Response.status(403).entity(Map.of("message", "Accès refusé : Pays ou département différent")).build();
+        if (!identity.hasRole("ADMIN")) {
+            AppUser uploader = AppUser.findByUsername(batch.uploadedById).orElse(null);
+            if (uploader == null || !currentUser.countryCode.equals(uploader.countryCode) || !currentUser.getDepartment().equals(uploader.getDepartment())) {
+                return Response.status(403).entity(Map.of("message", "Accès refusé : Pays ou département différent")).build();
+            }
         }
 
         List<BatchData> rows = BatchData.findByBatchId(bId);
@@ -356,9 +358,11 @@ public class BatchResource {
         if (currentUser == null)
             return Response.status(403).entity(Map.of("message", "Utilisateur non trouvé")).build();
 
-        AppUser uploader = AppUser.findByUsername(batch.uploadedById).orElse(null);
-        if (uploader == null || !currentUser.countryCode.equals(uploader.countryCode) || !currentUser.getDepartment().equals(uploader.getDepartment())) {
-            return Response.status(403).entity(Map.of("message", "Accès refusé : Pays ou département différent")).build();
+        if (!identity.hasRole("ADMIN")) {
+            AppUser uploader = AppUser.findByUsername(batch.uploadedById).orElse(null);
+            if (uploader == null || !currentUser.countryCode.equals(uploader.countryCode) || !currentUser.getDepartment().equals(uploader.getDepartment())) {
+                return Response.status(403).entity(Map.of("message", "Accès refusé : Pays ou département différent")).build();
+            }
         }
 
         List<String> deletable = List.of(FileBatch.STATUS_UPLOADED, FileBatch.STATUS_UPLOADED_FAILED, FileBatch.STATUS_VALIDATED_FAILED);

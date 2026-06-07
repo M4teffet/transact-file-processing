@@ -14,8 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializeDates() {
-    const today = new Date('2026-02-15');
-    const startDate = new Date('2026-02-01');
+    const today = new Date();
+    const startDate = new Date();
+    startDate.setDate(1); // first day of current month
 
     document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
     document.getElementById('endDate').value = today.toISOString().split('T')[0];
@@ -79,10 +80,8 @@ async function loadBatchData() {
 
         const data = await res.json();
 
-        // Filter to only show PROCESSED and PROCESSED_WITH_ERROR batches
-        allBatches = (data.content || []).filter(batch =>
-            batch.status === 'PROCESSED' || batch.status === 'PROCESSED_WITH_ERROR'
-        );
+        // Default: show all processed statuses. Status filter in UI can narrow further.
+        allBatches = data.content || [];
 
         // Populate filter dropdowns with unique values
         populateFilterDropdowns();
@@ -134,21 +133,24 @@ function applyFilters() {
     // Reset to first page
     currentPage = 1;
 
+    // Update summary KPIs
+    updateSummaryKpis();
+
     // Update display
     renderBatchTable();
 
-    showSnackbar('Filtres appliqués', 'success', 2000);
+    showSnackbar('Filtres appliqués', 'success');
 }
 
 function updateActiveFilters(filters) {
     const container = document.getElementById('activeFilters');
     const activeFilters = [];
 
-    if (filters.country) activeFilters.push({label: 'Pays', value: getCountryName(filters.country), key: 'country'});
-    if (filters.department) activeFilters.push({label: 'Département', value: filters.department, key: 'department'});
-    if (filters.status) activeFilters.push({label: 'Statut', value: filters.status, key: 'status'});
-    if (filters.inputter) activeFilters.push({label: 'Inputter', value: filters.inputter, key: 'inputter'});
-    if (filters.validator) activeFilters.push({label: 'Validateur', value: filters.validator, key: 'validator'});
+    if (filters.country) activeFilters.push({ label: 'Pays', value: getCountryName(filters.country), key: 'country' });
+    if (filters.department) activeFilters.push({ label: 'Département', value: filters.department, key: 'department' });
+    if (filters.status) activeFilters.push({ label: 'Statut', value: filters.status, key: 'status' });
+    if (filters.inputter) activeFilters.push({ label: 'Inputter', value: filters.inputter, key: 'inputter' });
+    if (filters.validator) activeFilters.push({ label: 'Validateur', value: filters.validator, key: 'validator' });
 
     if (activeFilters.length === 0) {
         container.classList.add('hidden');
@@ -179,6 +181,34 @@ function clearFilter(key) {
 
     document.getElementById(filterMap[key]).value = '';
     applyFilters();
+}
+
+function updateSummaryKpis() {
+    const total     = filteredBatches.length;
+    const processed = filteredBatches.filter(b => b.status === 'PROCESSED').length;
+    const errors    = filteredBatches.filter(b => b.status === 'PROCESSED_WITH_ERROR').length;
+    const failed    = filteredBatches.filter(b => b.status === 'PROCESSED_FAILED').length;
+    const totalRecs = filteredBatches.reduce((s, b) => s + (b.totalRecords || 0), 0);
+    const totalErrs = filteredBatches.reduce((s, b) => s + (b.errorCount || 0), 0);
+
+    const kpiContainer = document.getElementById('reportKpis');
+    if (!kpiContainer) return;
+
+    const kpiData = [
+        { label: 'Batches total', value: total.toLocaleString(), color: 'text-gray-900', bg: 'bg-gray-50' },
+        { label: 'Traités OK', value: processed.toLocaleString(), color: 'text-green-700', bg: 'bg-green-50' },
+        { label: 'Avec erreurs', value: errors.toLocaleString(), color: 'text-orange-600', bg: 'bg-orange-50' },
+        { label: 'Échecs', value: failed.toLocaleString(), color: 'text-red-600', bg: 'bg-red-50' },
+        { label: 'Total enregistrements', value: totalRecs.toLocaleString(), color: 'text-blue-700', bg: 'bg-blue-50' },
+        { label: 'Total erreurs lignes', value: totalErrs.toLocaleString(), color: 'text-red-600', bg: 'bg-red-50' },
+    ];
+
+    kpiContainer.innerHTML = kpiData.map(k => `
+        <div class="${k.bg} rounded-lg border border-gray-100 p-3 text-center transition-all hover:shadow-sm">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">${k.label}</p>
+            <p class="text-xl font-black ${k.color}">${k.value}</p>
+        </div>
+    `).join('');
 }
 
 function renderBatchTable() {
@@ -216,7 +246,7 @@ function renderBatchTable() {
             </td>
             <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
-                    <div class="w-7 h-7 rounded-full bg-brand-light flex items-center justify-center text-brand-primary font-bold text-xs">
+                    <div class="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center text-orange-600 font-bold text-xs">
                         ${(batch.uploadedBy || 'U').charAt(0).toUpperCase()}
                     </div>
                     <span class="text-sm font-medium text-gray-900">${batch.uploadedBy || '-'}</span>
@@ -250,9 +280,9 @@ function renderBatchTable() {
             </td>
             <td class="px-4 py-3 text-center">
                 ${batch.errorCount > 0
-        ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">${batch.errorCount}</span>`
-        : `<span class="text-gray-400">0</span>`
-    }
+                    ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">${batch.errorCount}</span>`
+                    : `<span class="text-gray-400">0</span>`
+                }
             </td>
             <td class="px-4 py-3 text-center text-xs text-gray-600">
                 ${batch.uploadedAt ? new Date(batch.uploadedAt).toLocaleString('fr-FR') : '-'}
@@ -286,7 +316,7 @@ function previousPage() {
     if (currentPage > 1) {
         currentPage--;
         renderBatchTable();
-        window.scrollTo({top: 0, behavior: 'smooth'});
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }
 
@@ -295,7 +325,7 @@ function nextPage() {
     if (currentPage < totalPages) {
         currentPage++;
         renderBatchTable();
-        window.scrollTo({top: 0, behavior: 'smooth'});
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }
 
@@ -334,7 +364,7 @@ function exportTableToCSV() {
         }).join(','))
     ].join('\n');
 
-    const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `batches_report_${new Date().toISOString().split('T')[0]}.csv`;
@@ -344,7 +374,7 @@ function exportTableToCSV() {
 }
 
 function exportToPDF() {
-    const {jsPDF} = window.jspdf;
+    const { jsPDF } = window.jspdf;
     const doc = new jsPDF('l', 'mm', 'a4');
 
     // Title and Header
@@ -426,20 +456,20 @@ function exportToPDF() {
             halign: 'center'
         },
         columnStyles: {
-            0: {cellWidth: 25, fontSize: 6},  // Batch ID
-            1: {cellWidth: 20},                // Application
-            2: {cellWidth: 25, halign: 'center'}, // Statut
-            3: {cellWidth: 18},                // Inputter
-            4: {cellWidth: 18},                // Validateur
-            5: {cellWidth: 12, halign: 'center'}, // Pays
-            6: {cellWidth: 15, halign: 'center'}, // Dept
-            7: {cellWidth: 15, halign: 'right'},  // Records
-            8: {cellWidth: 12, halign: 'center'}, // Err.
-            9: {cellWidth: 20, fontSize: 6},      // Upload
-            10: {cellWidth: 20, fontSize: 6}      // Validation
+            0: { cellWidth: 25, fontSize: 6 },  // Batch ID
+            1: { cellWidth: 20 },                // Application
+            2: { cellWidth: 25, halign: 'center' }, // Statut
+            3: { cellWidth: 18 },                // Inputter
+            4: { cellWidth: 18 },                // Validateur
+            5: { cellWidth: 12, halign: 'center' }, // Pays
+            6: { cellWidth: 15, halign: 'center' }, // Dept
+            7: { cellWidth: 15, halign: 'right' },  // Records
+            8: { cellWidth: 12, halign: 'center' }, // Err.
+            9: { cellWidth: 20, fontSize: 6 },      // Upload
+            10: { cellWidth: 20, fontSize: 6 }      // Validation
         },
-        alternateRowStyles: {fillColor: [245, 245, 245]},
-        didDrawPage: function (data) {
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        didDrawPage: function(data) {
             // Page number on each page
             doc.setFontSize(8);
             doc.setTextColor(120);

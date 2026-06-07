@@ -5,8 +5,13 @@ import com.transact.processor.model.OtpToken;
 import com.transact.service.EmailService;
 import com.transact.service.PasswordService;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.NoCache;
 
@@ -36,29 +41,21 @@ public class LoginResource {
 
     // ── POST /api/login ───────────────────────────────────────────────────────
 
-    /**
-     * Step 1 of login:
-     * - Validates credentials
-     * - If valid + user has email → sends OTP, returns {requiresOtp: true}
-     * - If valid + no email     → issues JWT directly (legacy / no-email users)
-     * - If mustChangePassword   → sets flag in response so frontend redirects
-     */
     @POST
     @Path("/login")
     public Response login(LoginRequest request) {
-        if (request == null) return badRequest("Invalid request");
+        if (request == null) return badRequest("Requête invalide");
 
         String username = trim(request.username());
         String password = request.password();
 
-        if (isBlank(username)) return badRequest("Username is required");
-        if (isBlank(password)) return badRequest("Password is required");
+        if (isBlank(username)) return badRequest("Le nom d'utilisateur est requis");
+        if (isBlank(password)) return badRequest("Le mot de passe est requis");
 
         Optional<AppUser> userOpt = AppUser.findByUsername(username.toUpperCase());
 
-        // Constant-time failure — same response whether user exists or not
         if (userOpt.isEmpty()) {
-            return unauthorized("Invalid credentials");
+            return unauthorized("Identifiants invalides");
         }
 
         AppUser user = userOpt.get();
@@ -66,7 +63,7 @@ public class LoginResource {
         // Check account lock
         if (user.isLocked()) {
             return Response.status(403).entity(Map.of(
-                    "message", "Account locked after too many failed attempts. Contact your administrator.",
+                    "message", "Compte verrouillé après trop de tentatives échouées. Contactez votre administrateur.",
                     "code", "ACCOUNT_LOCKED"
             )).build();
         }
@@ -76,15 +73,12 @@ public class LoginResource {
             user.recordFailedLogin(maxFailedAttempts);
             int remaining = Math.max(0, maxFailedAttempts - user.failedLoginCount);
             return Response.status(401).entity(Map.of(
-                    "message", "Invalid credentials" + (remaining > 0 ? " (" + remaining + " attempts remaining)" : ""),
+                    "message", "Identifiants invalides" + (remaining > 0 ? " (" + remaining + " tentatives restantes)" : ""),
                     "code", "INVALID_CREDENTIALS"
             )).build();
         }
 
-        // Credentials are correct — reset failed count
-        // (full recordSuccessfulLogin() called after OTP, not here)
-
-        // If user has an email, send OTP (MFA step)
+        // If user has an email, send OTP
         if (user.email != null && !user.email.isBlank()) {
             String otp = OtpToken.createOtp(user.username, otpExpirySeconds);
             emailService.sendOtp(user.email, user.username, otp);
@@ -92,11 +86,11 @@ public class LoginResource {
             return Response.ok(Map.of(
                     "requiresOtp", true,
                     "username", user.getUsername(),
-                    "message", "A verification code has been sent to your email"
+                    "message", "Un code de vérification a été envoyé à votre adresse email"
             )).build();
         }
 
-        // No email configured → issue JWT directly (and handle mustChangePassword)
+        // No email → issue JWT directly
         return issueJwt(user);
     }
 
@@ -109,7 +103,7 @@ public class LoginResource {
         NewCookie cleared = new NewCookie.Builder(AUTH_COOKIE_NAME)
                 .value("").path("/").maxAge(0).secure(false).httpOnly(true).build();
 
-        return Response.ok(Map.of("message", "Logged out successfully"))
+        return Response.ok(Map.of("message", "Déconnexion réussie"))
                 .cookie(cleared)
                 .header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
                 .header("Pragma", "no-cache")
@@ -145,7 +139,7 @@ public class LoginResource {
                 "country", user.getCountryCode(),
                 "mustChangePassword", user.mustChangePassword,
                 "requiresOtp", false,
-                "message", "Authentication successful"
+                "message", "Authentification réussie"
         )).cookie(authCookie).build();
     }
 

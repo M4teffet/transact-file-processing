@@ -109,25 +109,25 @@ const renderUploadedBatches = () => {
             <table class="min-w-full divide-y divide-gray-100 bg-white rounded-xs">
                 <thead class="bg-zinc-100/80">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ID Batch</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Application</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Fichier</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date Import</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider">ID Batch</th>
+                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Application</th>
+                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Fichier</th>
+                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Date Import</th>
+                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
+                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     ${uploadedBatches.map(b => `
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-800">${b.batchId}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 font-mono">${b.application || 'N/A'}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700 font-medium italic">
+                        <td class="px-4 py-2.5 text-xs font-medium text-gray-800">${b.batchId}</td>
+                        <td class="px-4 py-2.5 text-xs text-gray-600 font-mono">${b.application || 'N/A'}</td>
+                        <td class="px-4 py-2.5 text-xs text-gray-700 font-medium italic">
                             ${b.originalFilename || 'Nom inconnu'} </td>
-                        <td class="px-6 py-4 text-sm text-gray-500">
+                        <td class="px-4 py-2.5 text-xs text-gray-500">
                             ${b.uploadedAt ? new Date(b.uploadedAt).toLocaleString('fr-FR') : 'Date inconnue'}
                         </td>
-                        <td class="px-6 py-4 text-sm">
+                        <td class="px-4 py-2.5 text-xs">
                             ${getStatusBadge(b.status)}
                         </td>
                         <td class="px-6 py-4 flex justify-start gap-3">

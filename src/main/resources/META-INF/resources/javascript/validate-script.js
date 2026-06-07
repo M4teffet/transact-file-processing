@@ -79,23 +79,23 @@ const renderUploadedBatches = () => {
             <table class="min-w-full divide-y divide-gray-100 bg-white rounded-xs">
                <thead class="bg-zinc-100/80">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">ID Batch</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Application</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Fichier</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date Import</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Statut</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">ID Batch</th>
+                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Application</th>
+                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Fichier</th>
+                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Date Import</th>
+                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Statut</th>
+                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     ${uploadedBatches.map(b => `
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-800">${b.batchId}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 font-mono">${b.application}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700 font-medium italic">
+                        <td class="px-4 py-2.5 text-xs font-medium text-gray-800">${b.batchId}</td>
+                        <td class="px-4 py-2.5 text-xs text-gray-600 font-mono">${b.application}</td>
+                        <td class="px-4 py-2.5 text-xs text-gray-700 font-medium italic">
                             ${b.originalFilename || 'N/A'}
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-500">
+                        <td class="px-4 py-2.5 text-xs text-gray-500">
                             ${b.uploadedAt ? new Date(b.uploadedAt).toLocaleString('fr-FR') : '---'}
                         </td>
                         <td class="px-6 py-4">${getStatusBadge(b.status)}</td>
@@ -163,8 +163,8 @@ const cancelDelete = () => {
 const confirmDelete = async () => {
     if (!batchIdToDelete) return;
     try {
-        const response = await fetch(`${API_BASE}/batches/${batchIdToDelete}`, { method: 'DELETE' });
-        if (!response.ok) throw new Error("Échec de la suppression");
+        const response = await secureFetch(`${API_BASE}/batches/${batchIdToDelete}`, { method: 'DELETE' });
+        if (!response || !response.ok) throw new Error("Échec de la suppression");
 
         showSnackbar('Batch supprimé avec succès', 'success');
         cancelDelete();

@@ -6,55 +6,8 @@
 {/head}
 
 {#aside}
-<aside
-        class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-md border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
-       id="sidebar">
-    <div class="p-6 border-b border-gray-200 text-center flex-shrink-0">
-        <a class="inline-flex items-center justify-center h-10 w-auto hover:opacity-80 transition-opacity" href="."
-           title="Orange Bank">
-            <picture class="h-full w-auto">
-                <img alt="Orange Bank Logo"
-                     class="h-full w-auto max-h-10 object-contain"
-                     loading="lazy"
-                     onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'; this.onerror=null;"
-                     src="/images/Logo_Orange_Bank.svg">
-            </picture>
-        </a>
-        <h1 class="mt-4 px-1 font-semibold text-gray-600 text-sm">Utilitaire Batch</h1>
-    </div>
-    <nav class="flex-1 px-4 py-6 space-y-2">
-        <a class="flex items-center px-4 py-3 text-orange-700 transition rounded-md bg-orange-50 font-semibold"
-           href="/dashboard">
-            <i class="w-5 h-5 mr-3" data-lucide="shield"></i> Administration
-        </a>
+{#insert aside}{#include sidebar-admin/}{/insert}
 
-        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-orange-500 hover:bg-gray-100 transition rounded-md"
-           href="/reports">
-            <i class="w-5 h-5 mr-3" data-lucide="bar-chart-3"></i> Rapports
-        </a>
-
-        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-orange-500 hover:bg-gray-100 transition rounded-md"
-           href="/settings">
-            <i class="w-5 h-5 mr-3" data-lucide="list-checks"></i> Settings
-        </a>
-
-
-    </nav>
-
-    <div class="absolute bottom-0 left-0 right-0 px-4 py-3
-            border-t border-gray-200 bg-gray-50 text-gray-600
-            flex items-center justify-center gap-3 text-sm"
-         id="app-footer">
-
-        <span class="text-[10px] text-gray-500 text-center block font-bold uppercase">&copy; 2025 Orange Bank</span>
-
-        <span aria-hidden="true"
-              class="text-lg leading-none"
-              id="country-flag"
-              title=""></span>
-    </div>
-
-</aside>
 {/aside}
 
 {#default}

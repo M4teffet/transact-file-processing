@@ -84,16 +84,20 @@ public class UserResource {
         if (isBlank(req.password())) return badRequest("Password is required");
         if (isBlank(role)) return badRequest("Role is required");
         if (isBlank(country)) return badRequest("Country is required");
-        if (req.department() == null || req.department() <= 0)
-            return badRequest("Department must be a positive number");
+        if (req.department() == null || req.department() <= 0) return badRequest("Department must be a positive number");
 
         if (!VALID_ROLES.contains(role)) {
             return badRequest("Invalid role '" + role + "'. Allowed: " + VALID_ROLES);
         }
 
+        // Email mandatory for non-ADMIN users (required for MFA and password reset)
+        boolean isAdminRole = "ADMIN".equals(role);
+        if (!isAdminRole && isBlank(email)) {
+            return badRequest("L\'adresse e-mail est obligatoire pour les rôles INPUTTER et AUTHORISER (nécessaire pour le MFA et la réinitialisation du mot de passe).");
+        }
         // Validate email format if provided
         if (!isBlank(email) && !email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
-            return badRequest("Invalid email address format");
+            return badRequest("Format d\'adresse e-mail invalide.");
         }
 
         // Validate password policy
@@ -147,18 +151,6 @@ public class UserResource {
 
     // ── DTOs ──────────────────────────────────────────────────────────────────
 
-    private Response badRequest(String msg) {
-        return Response.status(400).entity(new ErrorResponse("BAD_REQUEST", msg, Instant.now())).build();
-    }
-
-    private Response serverError(String msg) {
-        return Response.status(500).entity(new ErrorResponse("SERVER_ERROR", msg, Instant.now())).build();
-    }
-
-    private boolean isBlank(String s) {
-        return s == null || s.isBlank();
-    }
-
     public record CreateUserRequest(
             String username,
             String password,
@@ -168,7 +160,25 @@ public class UserResource {
             String email
     ) {}
 
+    private Response badRequest(String msg) {
+        return Response.status(400).entity(new ErrorResponse("BAD_REQUEST", msg, Instant.now())).build();
+    }
+
+    public record ExistsResponse(boolean taken) {
+    }
+
+    public record ErrorResponse(String code, String message, Instant timestamp) {
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private Response serverError(String msg) {
+        return Response.status(500).entity(new ErrorResponse("SERVER_ERROR", msg, Instant.now())).build();
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
 
     public record UserViewDTO(
             String username,
@@ -178,8 +188,10 @@ public class UserResource {
             String email,
             String status,
             boolean mustChangePassword,
+            int failedLoginCount,
             Instant createdAt,
-            String createdBy
+            String createdBy,
+            Instant lastLoginAt
     ) {
         static UserViewDTO from(AppUser u) {
             return new UserViewDTO(
@@ -190,15 +202,11 @@ public class UserResource {
                     u.email,
                     u.status != null ? u.status.name() : "ACTIVE",
                     u.mustChangePassword,
+                    u.failedLoginCount,
                     u.createdAt,
-                    u.createdBy
+                    u.createdBy,
+                    u.lastLoginAt
             );
         }
-    }
-
-    public record ExistsResponse(boolean taken) {
-    }
-
-    public record ErrorResponse(String code, String message, Instant timestamp) {
     }
 }

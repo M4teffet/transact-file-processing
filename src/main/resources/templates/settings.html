@@ -2,53 +2,8 @@
 {#title}Paramètres - Administration{/title}
 
 {#aside}
-<aside
-        class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-md border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
-        id="sidebar">
-    <div class="p-6 border-b border-gray-200 text-center flex-shrink-0">
-        <a class="inline-flex items-center justify-center h-10 w-auto hover:opacity-80 transition-opacity" href="."
-           title="Orange Bank">
-            <picture class="h-full w-auto">
-                <img alt="Orange Bank Logo"
-                     class="h-full w-auto max-h-10 object-contain"
-                     loading="lazy"
-                     onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'; this.onerror=null;"
-                     src="/images/Logo_Orange_Bank.svg">
-            </picture>
-        </a>
-        <h1 class="mt-4 px-1 font-semibold text-gray-600 text-sm">Utilitaire Batch</h1>
-    </div>
-    <nav class="flex-1 px-4 py-6 space-y-2">
-        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-orange-500 hover:bg-gray-100 transition rounded-md"
-           href="/dashboard">
-            <i class="w-5 h-5 mr-3" data-lucide="shield"></i> Administration
-        </a>
+{#insert aside}{#include sidebar-admin/}{/insert}
 
-        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-orange-500 hover:bg-gray-100 transition rounded-md"
-           href="/reports">
-            <i class="w-5 h-5 mr-3" data-lucide="bar-chart-3"></i> Rapports
-        </a>
-
-        <a class="flex items-center px-4 py-3 text-orange-700 transition rounded-md bg-orange-50 font-semibold"
-           href="/settings">
-            <i class="w-5 h-5 mr-3" data-lucide="list-checks"></i> Settings
-        </a>
-    </nav>
-
-    <div class="absolute bottom-0 left-0 right-0 px-4 py-3
-            border-t border-gray-200 bg-gray-50 text-gray-600
-            flex items-center justify-center gap-3 text-sm"
-         id="app-footer">
-
-        <span class="text-[10px] text-gray-500 text-center block font-bold uppercase">&copy; 2025 Orange Bank</span>
-
-        <span aria-hidden="true"
-              class="text-lg leading-none"
-              id="country-flag"
-              title=""></span>
-    </div>
-
-</aside>
 {/aside}
 
 {#default}
@@ -173,8 +128,9 @@
                                     class="appearance-none rounded-md block w-full pl-10 px-3 py-2 border border-gray-300 text-sm"
                                     id="username"
                                     placeholder="3-50 caractères"
-                                    required>
+                                    autocomplete="off" required>
                         </div>
+                        <p class="text-xs mt-1 h-4" id="usernameHint"></p>
                     </div>
 
                     <!-- PASSWORD -->
@@ -197,6 +153,27 @@
                                 <i class="h-4 w-4 text-gray-400" data-lucide="eye" id="eyeIcon"></i>
                             </div>
                         </div>
+                        <div class="h-1 mt-1.5 bg-gray-200 rounded overflow-hidden">
+                            <div class="h-full w-0 rounded transition-all duration-300" id="settingsMeterBar"></div>
+                        </div>
+                        <p class="text-xs mt-0.5 h-4 text-gray-500" id="settingsMeterLabel"></p>
+                    </div>
+
+                    <!-- EMAIL -->
+                    <div id="emailFieldWrapper">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">
+                            E-mail <span class="text-red-500" id="emailRequiredMark">*</span>
+                            <span class="hidden text-gray-400 font-normal text-xs" id="emailOptionalNote">(optionnel pour ADMIN)</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="h-4 w-4 text-gray-400" data-lucide="mail"></i>
+                            </div>
+                            <input class="appearance-none rounded-md block w-full pl-10 px-3 py-2 border border-gray-300 text-sm"
+                                   id="userEmail" placeholder="utilisateur@orangebank.com" type="email">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1" id="emailHint">Requis pour MFA et réinitialisation du mot
+                            de passe</p>
                     </div>
 
                     <!-- ROLE / COUNTRY -->
@@ -208,6 +185,7 @@
                                 <option value="">-- Sélectionner un role --</option>
                                 <option value="INPUTTER">INPUTTER</option>
                                 <option value="AUTHORISER">AUTHORISER</option>
+                                <option value="ADMIN">ADMIN</option>
                             </select>
                         </div>
 

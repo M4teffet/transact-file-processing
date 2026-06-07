@@ -4,35 +4,40 @@ class AdminDashboard {
         this.autoRefreshInterval = null;
         this.currentBatchId = null;
         this.currentLogs = [];
+        this._allUsers = [];
 
         this.elements = {
-            refreshBtn: document.getElementById('refreshStats'),
-            refreshIcon: document.getElementById('refreshIcon'),
-            toggleAutoRefreshBtn: document.getElementById('toggleAutoRefresh'),
-            autoRefreshBg: document.getElementById('autoRefreshBg'),
-            autoRefreshKnob: document.getElementById('autoRefreshKnob'),
-            autoRefreshIndicator: document.getElementById('autoRefreshIndicator'),
-            featuresList: document.getElementById('featuresList'),
-            featuresLoader: document.getElementById('featuresLoader'),
-            featuresError: document.getElementById('featuresError'),
-            batchSelector: document.getElementById('batchSelector'),
-            levelFilter: document.getElementById('levelFilter'),
-            refreshLogsBtn: document.getElementById('refreshLogsBtn'),
-            exportLogsBtn: document.getElementById('exportLogsBtn'),
-            processingLogsList: document.getElementById('processingLogsList'),
-            processingLogsLoader: document.getElementById('processingLogsLoader'),
-            processingLogsEmpty: document.getElementById('processingLogsEmpty'),
-            processingLogsError: document.getElementById('processingLogsError'),
-
-            // Stats
-            statTotal: document.getElementById('stat-total-batches'),
-            statPending: document.getElementById('stat-pending'),
-            statProcessed: document.getElementById('stat-validated'),
-            detailUploaded: document.getElementById('detail-uploaded'),
-            detailValidated: document.getElementById('detail-validated'),
-            detailProcessing: document.getElementById('detail-processing'),
-            detailProcessed: document.getElementById('detail-processed'),
-            detailErrors: document.getElementById('detail-errors'),
+            refreshBtn:            document.getElementById('refreshStats'),
+            refreshIcon:           document.getElementById('refreshIcon'),
+            toggleAutoRefreshBtn:  document.getElementById('toggleAutoRefresh'),
+            autoRefreshBg:         document.getElementById('autoRefreshBg'),
+            autoRefreshKnob:       document.getElementById('autoRefreshKnob'),
+            autoRefreshIndicator:  document.getElementById('autoRefreshIndicator'),
+            featuresList:          document.getElementById('featuresList'),
+            featuresLoader:        document.getElementById('featuresLoader'),
+            featuresError:         document.getElementById('featuresError'),
+            batchSelector:         document.getElementById('batchSelector'),
+            levelFilter:           document.getElementById('levelFilter'),
+            refreshLogsBtn:        document.getElementById('refreshLogsBtn'),
+            exportLogsBtn:         document.getElementById('exportLogsBtn'),
+            processingLogsList:    document.getElementById('processingLogsList'),
+            processingLogsLoader:  document.getElementById('processingLogsLoader'),
+            processingLogsEmpty:   document.getElementById('processingLogsEmpty'),
+            processingLogsError:   document.getElementById('processingLogsError'),
+            usersLoader:           document.getElementById('users-loader'),
+            usersTableWrapper:     document.getElementById('users-table-wrapper'),
+            usersTbody:            document.getElementById('users-tbody'),
+            usersEmpty:            document.getElementById('users-empty'),
+            usersError:            document.getElementById('users-error'),
+            usersCount:            document.getElementById('users-count'),
+            statTotal:             document.getElementById('stat-total-batches'),
+            statPending:           document.getElementById('stat-pending'),
+            statProcessed:         document.getElementById('stat-validated'),
+            detailUploaded:        document.getElementById('detail-uploaded'),
+            detailValidated:       document.getElementById('detail-validated'),
+            detailProcessing:      document.getElementById('detail-processing'),
+            detailProcessed:       document.getElementById('detail-processed'),
+            detailErrors:          document.getElementById('detail-errors'),
         };
 
         this.initEventListeners();
@@ -40,19 +45,15 @@ class AdminDashboard {
 
     initEventListeners() {
         this.elements.refreshBtn?.addEventListener('click', () => {
-            this.elements.refreshIcon.classList.add('animate-spin');
+            this.elements.refreshIcon?.classList.add('animate-spin');
             this.refreshAllData().finally(() => {
-                this.elements.refreshIcon.classList.remove('animate-spin');
+                this.elements.refreshIcon?.classList.remove('animate-spin');
             });
         });
-
         this.elements.toggleAutoRefreshBtn?.addEventListener('click', () => this.toggleAutoRefresh());
-
         this.elements.batchSelector?.addEventListener('change', () => this.applyFilters());
         this.elements.levelFilter?.addEventListener('change', () => this.applyFilters());
-
         this.elements.refreshLogsBtn?.addEventListener('click', () => this.applyFilters());
-
         this.elements.exportLogsBtn?.addEventListener('click', () => this.exportLogsToCSV());
     }
 
@@ -60,294 +61,367 @@ class AdminDashboard {
         await Promise.all([
             this.loadStats(),
             this.loadFeatures(),
-            this.loadRecentBatchesForSelector()
+            this.loadRecentBatchesForSelector(),
+            this.loadUsers()
         ]);
         this.applyFilters();
     }
 
+    // ── Stats ─────────────────────────────────────────────────────────────────
+
     async loadStats() {
         try {
             const response = await secureFetch('/api/batches/counts');
-            if (!response) return;
-            if (!response.ok) throw new Error('Erreur réseau');
+            if (!response || !response.ok) return;
             const counts = await response.json();
 
-            const total = Object.values(counts).reduce((a, b) => a + (b || 0), 0);
-            const pending = (counts.UPLOADED || 0) + (counts.VALIDATED || 0);
+            const total     = Object.values(counts).reduce((a, b) => a + (b || 0), 0);
+            const pending   = (counts.UPLOADED || 0) + (counts.VALIDATED || 0);
             const processed = (counts.PROCESSED || 0) + (counts.PROCESSED_WITH_ERROR || 0);
-            const errors = (counts.UPLOADED_FAILED || 0) + (counts.VALIDATED_FAILED || 0) +
-                           (counts.PROCESSED_FAILED || 0) + (counts.PROCESSED_WITH_ERROR || 0);
+            const errors    = (counts.UPLOADED_FAILED || 0) + (counts.VALIDATED_FAILED || 0)
+                            + (counts.PROCESSED_FAILED || 0) + (counts.PROCESSED_WITH_ERROR || 0);
 
-            this.elements.statTotal.textContent = total;
-            this.elements.statPending.textContent = pending;
-            this.elements.statProcessed.textContent = processed;
+            this.animateNumber(this.elements.statTotal,     total);
+            this.animateNumber(this.elements.statPending,   pending);
+            this.animateNumber(this.elements.statProcessed, processed);
 
-            this.elements.detailUploaded.textContent = counts.UPLOADED || 0;
-            this.elements.detailValidated.textContent = counts.VALIDATED || 0;
-            this.elements.detailProcessing.textContent = counts.PROCESSING || 0;
-            this.elements.detailProcessed.textContent = counts.PROCESSED || 0;
-            this.elements.detailErrors.textContent = errors;
-
+            this.elements.detailUploaded.textContent   = counts.UPLOADED    || 0;
+            this.elements.detailValidated.textContent  = counts.VALIDATED   || 0;
+            this.elements.detailProcessing.textContent = counts.PROCESSING  || 0;
+            this.elements.detailProcessed.textContent  = counts.PROCESSED   || 0;
+            this.elements.detailErrors.textContent     = errors;
         } catch (err) {
-            console.error('Erreur chargement stats:', err);
+            console.error('Erreur stats:', err);
         }
     }
 
+    /** Animate a number counting up from its current value to target */
+    animateNumber(el, target) {
+        if (!el) return;
+        const start  = parseInt(el.textContent) || 0;
+        const change = target - start;
+        if (change === 0) return;
+        const duration = 600;
+        const startTime = performance.now();
+        const tick = (now) => {
+            const elapsed = Math.min(now - startTime, duration);
+            const progress = elapsed / duration;
+            const ease = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+            el.textContent = Math.round(start + change * ease);
+            if (elapsed < duration) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    }
+
+    // ── Features ──────────────────────────────────────────────────────────────
+
     async loadFeatures() {
-        this.elements.featuresLoader.classList.remove('hidden');
-        this.elements.featuresList.innerHTML = '';
-        this.elements.featuresError.classList.add('hidden');
+        this.elements.featuresLoader?.classList.remove('hidden');
+        if (this.elements.featuresList) this.elements.featuresList.innerHTML = '';
+        this.elements.featuresError?.classList.add('hidden');
 
         try {
             const response = await secureFetch('/api/admin/features');
-            if (!response) return;
-            if (!response.ok) throw new Error('Erreur réseau');
+            if (!response || !response.ok) throw new Error('Erreur réseau');
             const features = await response.json();
 
-            if (features.length === 0) {
-                this.elements.featuresList.innerHTML = '<p class="text-gray-500 text-sm">Aucune fonctionnalité configurée.</p>';
+            if (!features.length) {
+                this.elements.featuresList.innerHTML = '<p class="text-gray-500 text-sm italic">Aucune fonctionnalité configurée.</p>';
                 return;
             }
 
-            features.forEach(feature => {
+            this.elements.featuresList.innerHTML = '';
+            features.forEach((feature, idx) => {
                 const enabled = feature.isEnabled === true;
                 const item = document.createElement('div');
-                item.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
+                item.style.cssText = 'opacity:0;transform:translateY(8px);transition:opacity .25s ease,transform .25s ease;';
+                item.className = 'flex items-center justify-between p-4 rounded-lg border border-gray-100 bg-gray-50 hover:bg-white hover:border-gray-200 transition-all';
                 item.innerHTML = `
-                    <div>
-                        <h4 class="font-semibold text-gray-900">${feature.configKey}</h4>
-                        <p class="text-sm text-gray-600 mt-1">${feature.description || 'Pas de description'}</p>
-                        <p class="text-xs text-gray-500 mt-2">
-                            Mis à jour : ${new Date(feature.lastUpdated).toLocaleString()}
-                        </p>
+                    <div class="flex-1 min-w-0 mr-4">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${enabled ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}" id="feat-badge-${feature.configKey}">
+                                ${enabled ? 'Actif' : 'Inactif'}
+                            </span>
+                            <h4 class="font-semibold text-gray-900 text-sm">${feature.configKey}</h4>
+                        </div>
+                        <p class="text-xs text-gray-500">${feature.description || 'Pas de description'}</p>
+                        <p class="text-[10px] text-gray-400 mt-1">Mis à jour : ${feature.lastUpdated ? new Date(feature.lastUpdated).toLocaleString('fr-FR') : '—'}</p>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <span class="text-lg font-medium ${enabled ? 'text-green-600' : 'text-red-600'}">
-                            ${enabled ? 'Actif' : 'Inactif'}
-                        </span>
-                        <button data-key="${feature.configKey}" data-enabled="${enabled}"
-                                class="relative inline-flex h-10 w-20 items-center rounded-full transition-colors focus:outline-none focus:ring-4 focus:ring-brand-primary/30 feature-toggle-btn">
-                            <span class="absolute inset-0 rounded-full transition-colors ${enabled ? 'bg-brand-primary' : 'bg-gray-300'}"></span>
-                            <span class="absolute left-1 top-1 h-8 w-8 transform rounded-full bg-white shadow-md transition-transform ${enabled ? 'translate-x-10' : ''}"></span>
-                        </button>
-                    </div>
+                    <button data-key="${feature.configKey}" data-enabled="${enabled}" aria-pressed="${enabled}"
+                            class="feature-toggle-btn relative inline-flex h-7 w-14 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-1 ${enabled ? 'bg-orange-500' : 'bg-gray-300'}">
+                        <span class="absolute left-0.5 h-6 w-6 transform rounded-full bg-white shadow transition-transform duration-200 ${enabled ? 'translate-x-7' : ''}"></span>
+                    </button>
                 `;
                 this.elements.featuresList.appendChild(item);
+                setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateY(0)'; }, idx * 60);
             });
 
             document.querySelectorAll('.feature-toggle-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
-                    const key = btn.dataset.key;
+                    const key     = btn.dataset.key;
                     const current = btn.dataset.enabled === 'true';
                     const newState = !current;
 
+                    btn.disabled = true;
+                    btn.style.opacity = '0.6';
+
                     try {
-                        const response = await fetch(`/api/admin/features/toggle/${key}?enabled=${newState}`, { method: 'POST' });
-                        if (!response.ok) throw new Error('Échec');
+                        const res = await secureFetch(`/api/admin/features/toggle/${key}?enabled=${newState}`, { method: 'POST' });
+                        if (!res || !res.ok) throw new Error('Échec');
 
-                        btn.dataset.enabled = newState;
-                        const parent = btn.closest('div.flex');
-                        const status = parent.querySelector('span.text-lg');
-                        const bg = btn.querySelector('span.absolute.inset-0');
-                        const knob = btn.querySelector('span.h-8');
+                        btn.dataset.enabled = String(newState);
+                        btn.setAttribute('aria-pressed', String(newState));
 
-                        if (newState) {
-                            status.textContent = 'Actif';
-                            status.className = 'text-lg font-medium text-green-600';
-                            bg.classList.replace('bg-gray-300', 'bg-brand-primary');
-                            knob.classList.add('translate-x-10');
-                        } else {
-                            status.textContent = 'Inactif';
-                            status.className = 'text-lg font-medium text-red-600';
-                            bg.classList.replace('bg-brand-primary', 'bg-gray-300');
-                            knob.classList.remove('translate-x-10');
+                        const knob  = btn.querySelector('span');
+                        const badge = document.getElementById(`feat-badge-${key}`);
+
+                        btn.classList.toggle('bg-orange-500', newState);
+                        btn.classList.toggle('bg-gray-300',   !newState);
+                        knob.classList.toggle('translate-x-7', newState);
+
+                        if (badge) {
+                            badge.textContent = newState ? 'Actif' : 'Inactif';
+                            badge.className = `inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${newState ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}`;
                         }
+
+                        showSnackbar(`${key} ${newState ? 'activé' : 'désactivé'}`, 'success');
                     } catch (err) {
-                        alert('Échec de la mise à jour de la fonctionnalité');
+                        showSnackbar(`Échec de la mise à jour de ${key}`, 'error');
+                    } finally {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
                     }
                 });
             });
 
         } catch (err) {
             console.error('Erreur features:', err);
-            this.elements.featuresError.classList.remove('hidden');
+            this.elements.featuresError?.classList.remove('hidden');
         } finally {
-            this.elements.featuresLoader.classList.add('hidden');
+            this.elements.featuresLoader?.classList.add('hidden');
         }
     }
+
+    // ── Batch selector for logs ───────────────────────────────────────────────
 
     async loadRecentBatchesForSelector() {
         try {
             const response = await secureFetch('/api/batches/recent-batches');
-            if (!response) return;
-            if (!response.ok) return;
+            if (!response || !response.ok) return;
             const batches = await response.json();
 
             const selector = this.elements.batchSelector;
+            if (!selector) return;
             selector.innerHTML = '<option value="">Tous les batches récents</option>';
-
             batches.forEach(batch => {
-                const option = document.createElement('option');
-                option.value = batch.id;
-                option.textContent = `Batch #${batch.id} - ${batch.filename || 'Inconnu'} (${batch.status || 'N/A'})`;
-                selector.appendChild(option);
+                const opt = document.createElement('option');
+                opt.value = batch.id;
+                opt.textContent = `#${batch.id.slice(-8)} (${batch.status || 'N/A'}) — ${batch.uploadedAt ? new Date(batch.uploadedAt).toLocaleDateString('fr-FR') : ''}`;
+                selector.appendChild(opt);
             });
         } catch (err) {
-            console.error('Erreur chargement batches pour selector:', err);
+            console.error('Erreur selector batches:', err);
         }
     }
+
+    // ── Processing logs ───────────────────────────────────────────────────────
 
     async loadProcessingLogs(batchId = null) {
         const { processingLogsLoader, processingLogsList, processingLogsEmpty, processingLogsError } = this.elements;
-
-        processingLogsLoader.classList.remove('hidden');
-        processingLogsList.innerHTML = '';
-        processingLogsEmpty.classList.add('hidden');
-        processingLogsError.classList.add('hidden');
+        processingLogsLoader?.classList.remove('hidden');
+        if (processingLogsList) processingLogsList.innerHTML = '';
+        processingLogsEmpty?.classList.add('hidden');
+        processingLogsError?.classList.add('hidden');
 
         try {
-            const url = batchId
-                ? `/api/batches/processing-logs?batchId=${batchId}`
-                : '/api/batches/processing-logs';
+            const url  = batchId ? `/api/batches/processing-logs?batchId=${batchId}` : '/api/batches/processing-logs';
             const response = await secureFetch(url);
-            if (!response) return;
-            if (!response.ok) throw new Error('Erreur réseau');
+            if (!response || !response.ok) throw new Error('Erreur réseau');
             const logs = await response.json();
-
-            this.currentLogs = logs;
+            this.currentLogs    = logs;
             this.currentBatchId = batchId;
-
             this.renderLogs(logs);
-
         } catch (err) {
-            console.error('Erreur processing logs:', err);
-            processingLogsError.classList.remove('hidden');
+            console.error('Erreur logs:', err);
+            processingLogsError?.classList.remove('hidden');
         } finally {
-            processingLogsLoader.classList.add('hidden');
+            processingLogsLoader?.classList.add('hidden');
         }
     }
 
-    renderLogs(logsToRender) {
+    renderLogs(logs) {
         const list = this.elements.processingLogsList;
+        if (!list) return;
         list.innerHTML = '';
 
-        if (logsToRender.length === 0) {
-            this.elements.processingLogsEmpty.classList.remove('hidden');
+        if (!logs.length) {
+            this.elements.processingLogsEmpty?.classList.remove('hidden');
             return;
         }
+        this.elements.processingLogsEmpty?.classList.add('hidden');
 
-        this.elements.processingLogsEmpty.classList.add('hidden');
+        const fragment = document.createDocumentFragment();
+        logs.forEach(log => {
+            const time  = log.timestamp ? new Date(log.timestamp).toLocaleTimeString('fr-FR') : '??:??:??';
+            const level = log.level || 'INFO';
 
-        logsToRender.forEach(log => {
-            const time = new Date(log.timestamp).toLocaleTimeString();
-
-            let timeColorClass = 'text-gray-400';
-            let levelColorClass = 'text-gray-300';
-            let messageColorClass = 'text-gray-200';
-            let lineBgClass = 'bg-gray-800 border-gray-700';
-
-            if (log.level === 'ERROR') {
-                timeColorClass = 'text-red-400 font-medium';
-                levelColorClass = 'text-red-300 font-semibold';
-                messageColorClass = 'text-red-100';
-                lineBgClass = 'bg-red-950/80 border-red-800';
-            } else if (log.level === 'WARN') {
-                timeColorClass = 'text-yellow-400 font-medium';
-                levelColorClass = 'text-yellow-300 font-semibold';
-                messageColorClass = 'text-yellow-100';
-                lineBgClass = 'bg-yellow-950/80 border-yellow-800';
-            }
+            const styles = {
+                ERROR: { time: 'color:#f87171', level: 'color:#fca5a5;font-weight:700', msg: 'color:#fee2e2', bg: 'background:#2d1a1a;border-left:3px solid #ef4444;' },
+                WARN:  { time: 'color:#fbbf24', level: 'color:#fde68a;font-weight:700', msg: 'color:#fef3c7', bg: 'background:#2a2110;border-left:3px solid #f59e0b;' },
+                INFO:  { time: 'color:#6b7280', level: 'color:#9ca3af;font-weight:600', msg: 'color:#d1d5db', bg: 'background:#111827;border-left:3px solid #374151;' },
+            };
+            const s = styles[level] || styles.INFO;
 
             const line = document.createElement('div');
-            line.className = `p-3 rounded-lg border-l-4 ${lineBgClass} flex items-start gap-4 text-sm font-mono`;
-
+            line.style.cssText = `display:flex;align-items:flex-start;gap:.6rem;padding:.4rem .5rem;border-radius:4px;margin-bottom:2px;font-size:.72rem;${s.bg}`;
             line.innerHTML = `
-                <span class="${timeColorClass} tabular-nums">[${time}]</span>
-                <span class="${levelColorClass} font-bold">[${log.level || 'INFO'}]</span>
-                <span class="${messageColorClass} flex-1 break-words">${this.escapeHtml(log.message || '')}</span>
+                <span style="${s.time};font-variant-numeric:tabular-nums;flex-shrink:0;">${time}</span>
+                <span style="${s.level};flex-shrink:0;min-width:3.5rem;">[${level}]</span>
+                <span style="${s.msg};word-break:break-all;">${this.escapeHtml(log.message || '')}</span>
             `;
-
-            list.appendChild(line);
+            fragment.appendChild(line);
         });
 
-        list.scrollTop = list.scrollHeight;
+        list.appendChild(fragment);
+        const container = document.getElementById('processingLogsContainer');
+        if (container) container.scrollTop = container.scrollHeight;
     }
 
     applyFilters() {
         const batchId = this.elements.batchSelector?.value || null;
-        const level = this.elements.levelFilter?.value || null;
+        const level   = this.elements.levelFilter?.value   || null;
 
         if (batchId !== this.currentBatchId) {
             this.loadProcessingLogs(batchId);
             return;
         }
 
-        let filtered = this.currentLogs;
-
-        if (level) {
-            filtered = filtered.filter(log => log.level === level);
-        }
-
+        const filtered = level ? this.currentLogs.filter(l => l.level === level) : this.currentLogs;
         this.renderLogs(filtered);
     }
 
     exportLogsToCSV() {
-        if (this.elements.processingLogsList.children.length === 0) {
-            alert('Aucun log à exporter');
+        if (!this.currentLogs.length) {
+            showSnackbar('Aucun log à exporter', 'info');
             return;
         }
-
-        let csvRows = [];
-        csvRows.push(['Timestamp', 'Level', 'Message'].join(','));
-
-        Array.from(this.elements.processingLogsList.children).forEach(line => {
-            const time = line.querySelector('span.tabular-nums')?.textContent.trim() || '';
-            const level = line.querySelector('span.font-bold')?.textContent.trim() || '';
-            const message = line.querySelector('span.flex-1')?.textContent.trim() || '';
-
-            const escapeCsv = (field) => {
-                const str = field.toString();
-                return str.includes(',') || str.includes('"') || str.includes('\n')
-                    ? `"${str.replace(/"/g, '""')}"`
-                    : str;
-            };
-
-            csvRows.push([time, level, message].map(escapeCsv).join(','));
+        const rows = [['Timestamp', 'Level', 'Message'].join(',')];
+        this.currentLogs.forEach(log => {
+            const esc = s => { const str = String(s||''); return (str.includes(',') || str.includes('"') || str.includes('\n')) ? `"${str.replace(/"/g,'""')}"` : str; };
+            const time = log.timestamp ? new Date(log.timestamp).toLocaleString('fr-FR') : '';
+            rows.push([esc(time), esc(log.level), esc(log.message)].join(','));
         });
-
-        const csvContent = csvRows.join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-
+        const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `processing_logs_${new Date().toISOString().slice(0,10)}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
+        link.href = URL.createObjectURL(blob);
+        link.download = `logs_${new Date().toISOString().slice(0,10)}.csv`;
         link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        showSnackbar('Export CSV réussi !', 'success');
     }
 
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    // ── Users ─────────────────────────────────────────────────────────────────
+
+    async loadUsers() {
+        const { usersLoader, usersTableWrapper, usersTbody, usersEmpty, usersError, usersCount } = this.elements;
+        usersLoader?.classList.remove('hidden');
+        usersTableWrapper?.classList.add('hidden');
+        usersEmpty?.classList.add('hidden');
+        usersError?.classList.add('hidden');
+
+        try {
+            const res = await secureFetch('/api/users/list');
+            if (!res || !res.ok) throw new Error('HTTP ' + (res?.status || '?'));
+            this._allUsers = await res.json();
+            this.renderUsersTable(this._allUsers);
+        } catch (err) {
+            console.error('Erreur chargement users:', err);
+            usersError?.classList.remove('hidden');
+        } finally {
+            usersLoader?.classList.add('hidden');
+        }
     }
+
+    filterUsers(search) {
+        if (!this._allUsers) return;
+        const q = (search || '').trim().toLowerCase();
+        const statusFilter = document.getElementById('users-status-filter')?.value || '';
+        const filtered = this._allUsers.filter(u => {
+            const matchQ = !q || u.username.toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q) || (u.role||'').toLowerCase().includes(q);
+            const matchS = !statusFilter || u.status === statusFilter;
+            return matchQ && matchS;
+        });
+        this.renderUsersTable(filtered);
+    }
+
+    renderUsersTable(users) {
+        const { usersTableWrapper, usersTbody, usersEmpty, usersCount } = this.elements;
+        if (usersCount) usersCount.textContent = users.length + ' utilisateur' + (users.length !== 1 ? 's' : '');
+
+        if (!users.length) {
+            usersTableWrapper?.classList.add('hidden');
+            usersEmpty?.classList.remove('hidden');
+            return;
+        }
+        usersEmpty?.classList.add('hidden');
+        usersTableWrapper?.classList.remove('hidden');
+
+        const statusBadge = s => {
+            const m = { ACTIVE:'bg-green-100 text-green-800', PENDING:'bg-yellow-100 text-yellow-800', LOCKED:'bg-red-100 text-red-800' };
+            return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${m[s]||'bg-gray-100 text-gray-600'}">${s||'ACTIVE'}</span>`;
+        };
+        const roleBadge = r => {
+            const m = { ADMIN:'bg-purple-100 text-purple-800', INPUTTER:'bg-blue-100 text-blue-800', AUTHORISER:'bg-teal-100 text-teal-800' };
+            return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${m[r]||'bg-gray-100 text-gray-600'}">${r||'—'}</span>`;
+        };
+
+        if (usersTbody) {
+            usersTbody.innerHTML = users.map(u => {
+                const locked = u.status === 'LOCKED';
+                const pwdWarn = u.mustChangePassword ? `<span class="ml-1 text-[9px] text-orange-600 bg-orange-50 px-1 py-0.5 rounded">pwd requis</span>` : '';
+                const action  = locked
+                    ? `<button onclick="dashboard.unlockUser('${u.username}')" class="inline-flex items-center gap-1 px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-[10px] font-medium rounded transition">🔓 Déverrouiller</button>`
+                    : `<span class="text-gray-300 text-[10px]">—</span>`;
+                return `<tr class="hover:bg-gray-50 transition-colors ${locked ? 'bg-red-50/40' : ''}">
+                    <td class="px-3 py-2.5">
+                        <div class="font-semibold text-gray-900 text-xs">${this.escapeHtml(u.username)}${pwdWarn}</div>
+                        ${u.email ? `<div class="text-gray-400 text-[10px]">${this.escapeHtml(u.email)}</div>` : ''}
+                    </td>
+                    <td class="px-3 py-2.5">${roleBadge(u.role)}</td>
+                    <td class="px-3 py-2.5 text-xs text-gray-600">${this.escapeHtml(u.countryCode||'—')}</td>
+                    <td class="px-3 py-2.5 text-center">${statusBadge(u.status)}</td>
+                    <td class="px-3 py-2.5 text-center"><span class="${u.failedLoginCount > 0 ? 'text-red-600 font-bold' : 'text-gray-400'} text-xs">${u.failedLoginCount ?? 0}</span></td>
+                    <td class="px-3 py-2.5 text-xs text-gray-500">${this.escapeHtml(u.createdBy||'—')}</td>
+                    <td class="px-3 py-2.5 text-center">${action}</td>
+                </tr>`;
+            }).join('');
+        }
+    }
+
+    async unlockUser(username) {
+        if (!confirm(`Déverrouiller le compte de ${username} ?`)) return;
+        try {
+            const res = await secureFetch(`/api/auth/unlock/${encodeURIComponent(username)}`, { method: 'POST' });
+            if (!res) return;
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                showSnackbar(`✓ Compte ${username} déverrouillé.`, 'success');
+                await this.loadUsers();
+            } else {
+                showSnackbar(data.message || 'Échec du déverrouillage.', 'error');
+            }
+        } catch { showSnackbar('Erreur réseau.', 'error'); }
+    }
+
+    // ── Auto refresh ──────────────────────────────────────────────────────────
 
     updateAutoRefreshUI() {
         const isOn = !!this.autoRefreshInterval;
-        if (isOn) {
-            this.elements.autoRefreshBg.classList.replace('bg-gray-300', 'bg-brand-primary');
-            this.elements.autoRefreshKnob.classList.add('translate-x-5');
-            this.elements.autoRefreshIndicator.textContent = 'ON';
-            this.elements.autoRefreshIndicator.className = 'text-sm font-semibold text-brand-primary';
-        } else {
-            this.elements.autoRefreshBg.classList.replace('bg-brand-primary', 'bg-gray-300');
-            this.elements.autoRefreshKnob.classList.remove('translate-x-5');
-            this.elements.autoRefreshIndicator.textContent = 'OFF';
-            this.elements.autoRefreshIndicator.className = 'text-sm font-semibold text-gray-500';
-        }
+        const bg   = this.elements.autoRefreshBg;
+        const knob = this.elements.autoRefreshKnob;
+        const ind  = this.elements.autoRefreshIndicator;
+        if (bg)   { bg.style.background = isOn ? '#ff7900' : '#d1d5db'; }
+        if (knob) { knob.style.transform = isOn ? 'translateX(14px)' : 'translateX(0)'; }
+        if (ind)  { ind.textContent = isOn ? 'ON' : 'OFF'; ind.style.color = isOn ? '#ff7900' : '#6b7280'; }
     }
 
     startAutoRefresh() {
@@ -365,21 +439,26 @@ class AdminDashboard {
     toggleAutoRefresh() {
         this.autoRefreshInterval ? this.stopAutoRefresh() : this.startAutoRefresh();
     }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = String(text || '');
+        return div.innerHTML;
+    }
 }
 
-// Initialisation
+let dashboard;
 document.addEventListener('DOMContentLoaded', () => {
-    const dashboard = new AdminDashboard();
+    dashboard = new AdminDashboard();
     dashboard.startAutoRefresh();
     dashboard.refreshAllData().then(() => {
-            // Après chargement des batches, sélectionne automatiquement le premier (le plus récent)
-            if (dashboard.elements.batchSelector.options.length > 1) {
-                dashboard.elements.batchSelector.selectedIndex = 1; // Premier batch après "Tous"
-                dashboard.loadProcessingLogs(dashboard.elements.batchSelector.value);
-            } else {
-                dashboard.loadProcessingLogs(); // Tous les logs
-            }
-        });
-
+        const sel = dashboard.elements.batchSelector;
+        if (sel && sel.options.length > 1) {
+            sel.selectedIndex = 1;
+            dashboard.loadProcessingLogs(sel.value);
+        } else {
+            dashboard.loadProcessingLogs();
+        }
+    });
     window.addEventListener('beforeunload', () => dashboard.stopAutoRefresh());
 });

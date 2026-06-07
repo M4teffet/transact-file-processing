@@ -108,7 +108,7 @@ function renderUserItem(user) {
         : '';
 
     return `
-    <li class="group flex items-center justify-between p-3 mb-2 bg-white border border-gray-200 rounded-lg hover:shadow-sm hover:border-brand-primary transition-all duration-200">
+    <li class="group flex items-center justify-between p-3 mb-2 bg-white border border-gray-200 rounded-lg hover:shadow-sm hover:border-orange-400 transition-all duration-200">
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 flex items-center justify-center bg-gray-50 rounded-full shadow-xs border border-gray-100 group-hover:scale-110 transition-transform">
             ${flag}
@@ -391,7 +391,7 @@ async function loadCountries() {
                 .map((c) => {
                     const { name, flag } = getCountryData(c.code);
                     return `
-<li class="group flex items-center justify-between p-3 mb-2 bg-white border border-gray-200 rounded-lg hover:shadow-sm hover:border-brand-primary transition-all duration-200" data-code="${c.code}">
+<li class="group flex items-center justify-between p-3 mb-2 bg-white border border-gray-200 rounded-lg hover:shadow-sm hover:border-orange-400 transition-all duration-200" data-code="${c.code}">
     <div class="flex items-center gap-4">
         <div class="w-10 h-10 flex items-center justify-center bg-gray-50 rounded-full shadow-xs border border-gray-100 group-hover:scale-110 transition-transform">
             ${flag}
@@ -469,7 +469,7 @@ ${departments
         if (listEl) {
             listEl.innerHTML = departments
                 .map((d) => `
-<li class="group flex items-center justify-between p-3 mb-2 bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-brand-primary transition-all" data-code="${d.code}">
+<li class="group flex items-center justify-between p-3 mb-2 bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-orange-400 transition-all" data-code="${d.code}">
     <div>
         <div class="text-sm font-bold text-gray-900 group-hover:text-brand-primary transition-colors">
             ${d.description}
@@ -682,7 +682,25 @@ function renderSchemaSection(title, fields) {
 // Initialization
 // ────────────────────────────────────────────────
 
+// Toggle email required state based on role selection
+function updateEmailRequirement() {
+    const role = document.getElementById('role')?.value;
+    const emailInput = document.getElementById('userEmail');
+    const requiredMark = document.getElementById('emailRequiredMark');
+    const optionalNote = document.getElementById('emailOptionalNote');
+    const hint = document.getElementById('emailHint');
+
+    if (!emailInput) return;
+    const isAdmin = role === 'ADMIN';
+    emailInput.required = !isAdmin;
+    if (requiredMark) requiredMark.classList.toggle('hidden', isAdmin);
+    if (optionalNote) optionalNote.classList.toggle('hidden', !isAdmin);
+    if (hint) hint.textContent = isAdmin ? 'Optionnel pour le rôle ADMIN' : 'Requis pour MFA et réinitialisation du mot de passe';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('role')?.addEventListener('change', updateEmailRequirement);
+    updateEmailRequirement(); // run once on load
     loadCountries();
     loadDepartments();
     loadUsersList();

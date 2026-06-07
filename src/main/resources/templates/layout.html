@@ -9,8 +9,7 @@
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <link href="/images/favicon.ico" rel="shortcut icon"/>
     <style>
-        /* ── Base — font reduced from 0.93rem to 0.82rem ── */
-        html { font-size: 0.82rem; }
+        html { font-size: 0.92rem; }
         body { font-family: 'Inter', sans-serif; }
 
         #snackbar-container {
@@ -210,7 +209,10 @@
         document.getElementById('user-dropdown').classList.toggle('open');
     }
     (function() {
-        const username = (typeof Auth !== 'undefined' ? Auth.getUsername() : null) || sessionStorage.getItem('username') || '—';
+        // Auth.getUsername() returns 'Invité' as default — we want the actual name
+        const authUser = (typeof Auth !== 'undefined') ? Auth.getUsername() : null;
+        const storedUser = sessionStorage.getItem('username');
+        const username = (authUser && authUser !== 'Invité' ? authUser : null) || storedUser || '—';
         const role     = sessionStorage.getItem('role')    || '—';
         const country  = sessionStorage.getItem('country') || '';
         const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
