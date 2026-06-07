@@ -4,157 +4,227 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>{#insert title}Utilitaire Batch Orange Bank{/insert}</title>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="/css/tailwind.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <link href="/images/favicon.ico" rel="shortcut icon"/>
     <style>
-        /* Styles Globaux */
-        html { font-size: 0.93rem; } body { font-family: 'Inter', sans-serif; }
+        /* ── Base — font reduced from 0.93rem to 0.82rem ── */
+        html { font-size: 0.82rem; }
+        body { font-family: 'Inter', sans-serif; }
 
         #snackbar-container {
-        position: fixed;
-        bottom: 1rem;
-        right: unset;
-        left: 1rem;
-        width: 100%;
-        max-width: 25rem;
-        display: flex;
-        flex-direction: column;
-            gap: 0.5rem;
-            z-index: 50;
+            position: fixed; bottom: 1rem; left: 1rem;
+            width: 100%; max-width: 24rem;
+            display: flex; flex-direction: column; gap: 0.5rem; z-index: 9999;
         }
 
-        /* Composants cohérents */
+        /* Stats cards */
         .stats-card {
-            @apply bg-white p-6 rounded-md shadow-xs border border-gray-100
-                   transition-all duration-300 hover:shadow-sm hover:-translate-y-1
-                   flex flex-col relative overflow-hidden min-h-[130px];
+            background: white; padding: 1.1rem 1.25rem;
+            border-radius: 0.375rem; border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            transition: box-shadow 0.2s, transform 0.2s;
         }
-        .stats-icon {
-            @apply w-10 h-10 rounded-md flex items-center justify-center mb-3;
+        .stats-card:hover { box-shadow: 0 2px 8px 0 rgb(0 0 0 / 0.08); transform: translateY(-1px); }
+        .stats-icon { width: 2rem; height: 2rem; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .stats-label { font-size: 0.65rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.15rem; }
+        .stats-value { font-size: 1.6rem; font-weight: 700; color: #111827; line-height: 1; }
+        .card-green  { border-left: 3px solid #10b981; }
+        .card-orange { border-left: 3px solid #ff7900; }
+        .card-red    { border-left: 3px solid #ef4444; }
+        .card-blue   { border-left: 3px solid #3b82f6; }
+
+        /* Nav */
+        .nav-item { display: flex; align-items: center; gap: 0.65rem; padding: 0.55rem 0.75rem; border-radius: 0.375rem; font-size: 0.8rem; font-weight: 500; transition: all 0.15s; cursor: pointer; text-decoration: none; color: #4b5563; }
+        .nav-item:hover { color: #ff7900; background-color: #fff7ed; }
+        .nav-item-active { color: #a55600; background-color: #fff7ed; font-weight: 600; }
+
+        /* Form inputs */
+        .form-input, .form-select {
+            width: 100%; padding: 0.45rem 0.7rem;
+            border: 1px solid #d1d5db; border-radius: 0.375rem;
+            font-size: 0.8rem; background: white; outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
-        .stats-label { @apply text-[11px] font-black text-gray-400 uppercase tracking-widest; }
-        .stats-value { @apply text-3xl font-black text-gray-900 mt-auto leading-none; }
+        .form-input:focus, .form-select:focus {
+            border-color: #ff7900;
+            box-shadow: 0 0 0 3px rgba(255,121,0,0.12);
+        }
 
-        /* Color Accents */
-        .card-green { border-l-4 border-l-emerald-500; }
-        .card-orange { border-l-4 border-l-orange-500; }
-        .card-red { border-l-4 border-l-red-500; }
-        .card-blue { border-l-4 border-l-blue-500; }
+        /* Page header */
+        .page-header { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 0.75rem; padding-bottom: 1rem; margin-bottom: 1.25rem; border-bottom: 1px solid #e5e7eb; }
+        @media (min-width: 640px) { .page-header { flex-direction: row; align-items: center; } }
+        .page-title    { font-size: 1.25rem; font-weight: 700; color: #111827; }
+        .page-subtitle { font-size: 0.78rem; color: #6b7280; margin-top: 0.1rem; }
 
-        .bg-brand-primary { background-color: #FF7900; }
-        .text-brand-primary { color: #FF7900; }
+        /* User dropdown */
+        #user-dropdown {
+            display: none; position: absolute; right: 0; top: calc(100% + 6px);
+            width: 210px; background: white; border: 1px solid #e5e7eb;
+            border-radius: 0.5rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.12);
+            z-index: 100; overflow: hidden;
+        }
+        #user-dropdown.open { display: block; }
     </style>
-    <script>
-        tailwind.config = {
-            theme: { extend: {
-                    colors: {
-                        /* CHARTE COULEURS ORANGE BANK */
-                        'brand-primary': '#ff7900',
-                        'brand-light': '#fff7ed',
-                        'brand-dark': '#a55600',
-                        'brand-medium': '#ffc885',
-                        /* FIN NOUVELLES COULEURS */
-                        'gray-chimp': '#374151'
-                    },
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    borderRadius: { 'base': '0.5rem' },
-                    boxShadow: {
-                        'xs': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-                        'sm': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-                        'xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-                    }
-                }}
-        };
-    </script>
     {#insert head}{/insert}
 </head>
 
-<body class="bg-gray-100 antialiased min-h-screen flex text-sm">
-<div class="fixed inset-0 z-40 bg-black/50 lg:hidden hidden transition-opacity duration-200" id="mobile-overlay"></div>
+<body class="bg-gray-100 antialiased min-h-screen flex">
+<div class="fixed inset-0 z-40 bg-black/50 lg:hidden hidden" id="mobile-overlay"></div>
 
 {#insert aside}{/insert}
 
 <div class="flex-1 flex flex-col overflow-hidden lg:ml-64">
-    <header class="bg-black border-b border-gray-200 shadow-xs flex-shrink-0">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-                <button aria-label="Menu"
-                        class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 transition-colors"
+
+    <!-- Topbar — original black style -->
+    <header class="bg-black border-b border-gray-800 shadow-xs flex-shrink-0 z-30">
+        <div class="px-5 py-3 flex justify-between items-center">
+
+            <div class="flex items-center gap-3">
+                <button aria-label="Menu" class="lg:hidden p-1.5 rounded text-gray-400 hover:text-white hover:bg-white/10 transition"
                         id="sidebar-toggle">
-                    <i class="w-5 h-5" data-lucide="menu"></i>
+                    <i class="w-4 h-4" data-lucide="menu"></i>
                 </button>
-                <h2 class="text-xl font-bold text-gray-50">Utilitaire Batch Orange Bank</h2>
+                <span class="text-white font-semibold" style="font-size:.8rem;">Utilitaire Batch — Orange Bank</span>
             </div>
-            <a class="flex items-center gap-2 text-sm font-medium text-red-400 hover:text-red-600 transition" href="#" id="logoutBtn"
-               onclick="logoutUser()">
-                <i class="w-5 h-5" data-lucide="log-out"></i> Déconnexion
-            </a>
+
+            <!-- User dropdown -->
+            <div class="relative" id="user-menu-wrapper">
+                <button class="flex items-center gap-2 px-2.5 py-1.5 rounded hover:bg-white/10 transition"
+                        onclick="toggleUserDropdown()">
+                    <div class="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
+                        <span class="text-white font-semibold" id="header-user-initials"
+                              style="font-size:.6rem;">?</span>
+                    </div>
+                    <div class="hidden sm:block text-left leading-tight">
+                        <p class="text-white font-semibold" id="header-username" style="font-size:.75rem;">—</p>
+                        <p class="text-gray-400 uppercase tracking-wide" id="header-role" style="font-size:.6rem;">—</p>
+                    </div>
+                    <i class="w-3 h-3 text-gray-400" data-lucide="chevron-down"></i>
+                </button>
+
+                <div id="user-dropdown">
+                    <div class="px-3 py-2.5 bg-gray-50 border-b border-gray-100">
+                        <p class="font-bold text-gray-800" id="dropdown-username" style="font-size:.78rem;">—</p>
+                        <p class="text-gray-500 mt-0.5" id="dropdown-role" style="font-size:.68rem;">—</p>
+                        <div class="text-gray-400 mt-1 flex items-center gap-1" id="dropdown-country"
+                             style="font-size:.68rem;"></div>
+                    </div>
+                    <div class="py-1">
+                        <a class="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition"
+                           href="/change-password"
+                           style="font-size:.8rem;">
+                            <i class="w-3.5 h-3.5 text-gray-400" data-lucide="key-round"></i>
+                            Changer le mot de passe
+                        </a>
+                        <div class="border-t border-gray-100 my-1"></div>
+                        <button class="w-full flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 transition"
+                                onclick="logoutUser()"
+                                style="font-size:.8rem;">
+                            <i class="w-3.5 h-3.5" data-lucide="log-out"></i>
+                            Déconnexion
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
-    <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+
+    <main class="flex-1 overflow-x-hidden overflow-y-auto p-5">
         {#insert default}{/insert}
     </main>
 </div>
 
+<!-- Delete modal -->
 <div class="fixed inset-0 z-50 hidden bg-black/60 flex items-center justify-center" id="deleteConfirmationModal">
-    <div class="bg-white rounded-md shadow-lg p-6 max-w-md mx-4">
-        <h3 class="text-xl font-bold text-gray-900 mb-4">Confirmer suppression</h3>
-        <p class="text-gray-700 mb-6">Voulez-vous vraiment supprimer ce batch ? Cette action est irréversible.</p>
-        <div class="flex justify-end space-x-3">
-            <button class="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300" onclick="cancelDelete()">Annuler</button>
-            <button class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700" onclick="confirmDelete()">Supprimer</button>
+    <div class="bg-white rounded-lg shadow-xl p-5 max-w-md mx-4 w-full">
+        <h3 class="font-bold text-gray-900 mb-2" style="font-size:.9rem;">Confirmer la suppression</h3>
+        <p class="text-gray-600 mb-5" style="font-size:.8rem;">Voulez-vous vraiment supprimer ce batch ? Cette action
+            est irréversible.</p>
+        <div class="flex justify-end gap-2">
+            <button class="px-3 py-1.5 rounded text-gray-700 bg-gray-100 hover:bg-gray-200 transition"
+                    onclick="cancelDelete()" style="font-size:.8rem;">Annuler
+            </button>
+            <button class="px-3 py-1.5 rounded text-white bg-red-600 hover:bg-red-700 transition"
+                    onclick="confirmDelete()" style="font-size:.8rem;">Supprimer
+            </button>
         </div>
     </div>
 </div>
 
+<!-- Batch details modal -->
 <div class="fixed inset-0 hidden items-center justify-center z-50" id="batchDetailsModal"
-     onclick="if(event.target === this) closeModal('batchDetailsModal')">
+     onclick="if(event.target===this)closeModal('batchDetailsModal')">
     <div class="absolute inset-0 bg-black/60"></div>
-    <div class="relative bg-white w-11/12 max-w-6xl rounded-md shadow-lg p-6 z-10 overflow-y-auto max-h-[90vh]">
+    <div class="relative bg-white w-11/12 max-w-6xl rounded-lg shadow-xl p-5 z-10 overflow-y-auto max-h-[90vh]">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold text-gray-900">Détails Batch</h2>
-            <button class="p-1 rounded-full hover:bg-gray-100 transition" onclick="closeModal('batchDetailsModal')">
-                <i class="w-5 h-5 text-gray-700 hover:text-red-500" data-lucide="x"></i>
+            <h2 class="font-semibold text-gray-900" style="font-size:.9rem;">Détails du batch</h2>
+            <button class="p-1.5 rounded hover:bg-gray-100 text-gray-500 transition"
+                    onclick="closeModal('batchDetailsModal')">
+                <i class="w-4 h-4" data-lucide="x"></i>
             </button>
         </div>
         <div id="batchDetailsContent"></div>
     </div>
 </div>
 
+<!-- Batch summary modal -->
 <div class="fixed inset-0 hidden items-center justify-center z-50 bg-black/60" id="batchSummaryModal">
-    <div class="relative bg-white w-11/12 max-w-4xl rounded-md shadow-lg p-6 z-10 overflow-y-auto min-h-[90vh]">
-        <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-bold text-gray-900" id="batchSummaryTitle">Résumé Batch</h3>
-            <button class="p-1 rounded-full hover:bg-gray-100 transition" onclick="closeModal('batchSummaryModal')">
-                <i class="w-5 h-5 text-gray-700 hover:text-red-500" data-lucide="x"></i>
+    <div class="relative bg-white w-11/12 max-w-4xl rounded-lg shadow-xl z-10 overflow-y-auto max-h-[90vh]">
+        <div class="flex justify-between items-center px-5 py-3 border-b border-gray-200">
+            <h3 class="font-semibold text-gray-900" id="batchSummaryTitle" style="font-size:.9rem;">Résumé du batch</h3>
+            <button class="p-1.5 rounded hover:bg-gray-100 text-gray-500 transition"
+                    onclick="closeModal('batchSummaryModal')">
+                <i class="w-4 h-4" data-lucide="x"></i>
             </button>
         </div>
-
-        <div class="p-6 overflow-auto text-sm text-gray-700" id="batchSummaryContent">
-        </div>
+        <div class="p-5 text-gray-700" id="batchSummaryContent" style="font-size:.8rem;"></div>
     </div>
 </div>
 
 <div id="snackbar-container"></div>
-
 <script src="/javascript/shared.js"></script>
-<script src="/javascript/devtools-protection.js"></script>
 {#insert script}{/insert}
-
 <script>
     document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
         document.getElementById('sidebar').classList.toggle('-translate-x-full');
-        document.getElementById('mobile-overlay').classList.toggle('hidden');
+        document.getElementById('mobile-overlay').classList.remove('hidden');
     });
     document.getElementById('mobile-overlay')?.addEventListener('click', () => {
         document.getElementById('sidebar').classList.add('-translate-x-full');
         document.getElementById('mobile-overlay').classList.add('hidden');
     });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            document.getElementById('sidebar')?.classList.add('-translate-x-full');
+            document.getElementById('mobile-overlay')?.classList.add('hidden');
+            document.getElementById('user-dropdown')?.classList.remove('open');
+        }
+    });
+    document.addEventListener('click', e => {
+        const w = document.getElementById('user-menu-wrapper');
+        if (w && !w.contains(e.target)) document.getElementById('user-dropdown')?.classList.remove('open');
+    });
+    function toggleUserDropdown() {
+        document.getElementById('user-dropdown').classList.toggle('open');
+    }
+    (function() {
+        const username = (typeof Auth !== 'undefined' ? Auth.getUsername() : null) || sessionStorage.getItem('username') || '—';
+        const role     = sessionStorage.getItem('role')    || '—';
+        const country  = sessionStorage.getItem('country') || '';
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+        set('header-user-initials', username.slice(0,2).toUpperCase());
+        set('header-username', username);
+        set('header-role', role);
+        set('dropdown-username', username);
+        set('dropdown-role', role);
+        const dc = document.getElementById('dropdown-country');
+        if (dc && country && typeof getCountryFlag !== 'undefined') {
+            dc.innerHTML = getCountryFlag(country) + ' ' + country;
+        }
+    })();
     lucide.createIcons();
 </script>
-
 </body>
 </html>

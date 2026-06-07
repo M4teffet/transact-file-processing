@@ -1,73 +1,177 @@
-# transact-file-processor
+# Transact File Processing
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+A **Quarkus 3.15 / Java 17** application for bulk CSV file processing into Temenos Transact (T24) core banking via REST
+API.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+It enforces a four-eyes workflow: an **Inputter** uploads and validates a file, a **Validator** reviews and approves it,
+and a background scheduler sends each record to the T24 API automatically.
 
-## Running the application in dev mode
+---
 
-You can run your application in dev mode that enables live coding using:
+## Architecture
 
-```shell script
+```
+CSV Upload  →  FileParser  →  FileValidator  →  FileBatch [UPLOADED]
+                                                        ↓
+                                              Human Validator (PUT /api/batches/{id})
+                                                        ↓
+                                              FileBatch [VALIDATED]
+                                                        ↓
+                                       FundsTransferProcessor (every 1 min)
+                                                        ↓
+                                              T24 REST API (per row, concurrent)
+                                                        ↓
+                                   [PROCESSED | PROCESSED_WITH_ERROR | PROCESSED_FAILED]
+```
+
+**Supported transaction types:** `FUNDS_TRANSFER`, `FUNDS_TRANSFER_REVERSAL`, `DATA_CAPTURE`
+
+---
+
+## Prerequisites
+
+- Java 17+
+- MongoDB 6+
+- Maven 3.8+ (or use the included `./mvnw` wrapper)
+
+---
+
+## Configuration
+
+Copy and populate the required environment variables before running:
+
+```bash
+# MongoDB
+export MONGO_URL=mongodb://localhost:27017
+
+# T24 API credentials — REQUIRED, no defaults
+export FUNDS_TRANSFER_API_URL=https://your-t24-host/api/v1.0.0/order/payments
+export FT_API_USER=your_api_user
+export FT_API_PASS=your_api_password
+
+# JWT keys (see Security section below)
+export JWT_PUBLIC_KEY_PATH=file:/path/to/rsaPublicKey.pem
+export JWT_PRIVATE_KEY_PATH=file:/path/to/pkcs8_privateKey.pem
+```
+
+### JWT Key Generation
+
+JWT keys are **not included in the repository**. Generate your own key pair:
+
+```bash
+# Generate RSA private key
+openssl genrsa -out privateKey.pem 2048
+
+# Convert to PKCS8 format (required by SmallRye JWT)
+openssl pkcs8 -topk8 -nocrypt -in privateKey.pem -out pkcs8_privateKey.pem
+
+# Extract public key
+openssl rsa -pubout -in privateKey.pem -out rsaPublicKey.pem
+```
+
+Store keys securely (e.g. Kubernetes Secrets, HashiCorp Vault) and provide paths via `JWT_PUBLIC_KEY_PATH` /
+`JWT_PRIVATE_KEY_PATH`.
+
+---
+
+## Running
+
+### Development mode (live reload)
+
+```bash
 ./mvnw quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+Dev UI available at: http://localhost:8080/q/dev/
 
-## Packaging and running the application
+### Packaging
 
-The application can be packaged using:
-
-```shell script
-./mvnw package.json
+```bash
+./mvnw package
+java -jar target/quarkus-app/quarkus-run.jar
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+### Über-jar
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./mvnw package.json -Dquarkus.package.json.jar.type=uber-jar
+```bash
+./mvnw package -Dquarkus.package.jar.type=uber-jar
+java -jar target/*-runner.jar
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+### Native executable
 
-## Creating a native executable
+```bash
+# With GraalVM installed
+./mvnw package -Dnative
 
-You can create a native executable using:
+# Without GraalVM (uses Docker)
+./mvnw package -Dnative -Dquarkus.native.container-build=true
 
-```shell script
-./mvnw package.json -Dnative
+./target/transact-file-processor-1.0-SNAPSHOT-runner
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+### Docker
 
-```shell script
-./mvnw package.json -Dnative -Dquarkus.native.container-build=true
+```bash
+docker-compose up
 ```
 
-You can then execute your native executable with: `./target/transact-file-processor-1.0-SNAPSHOT-runner`
+---
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+## API Overview
+
+| Method   | Path                           | Role     | Description                                |
+|----------|--------------------------------|----------|--------------------------------------------|
+| `POST`   | `/api/login`                   | Public   | Authenticate, receive JWT cookie           |
+| `POST`   | `/api/inputter/upload`         | INPUTTER | Upload and validate a CSV file             |
+| `GET`    | `/api/inputter/check-filename` | INPUTTER | Check if filename already exists           |
+| `GET`    | `/api/batches`                 | Any      | List batches (filtered by country/dept)    |
+| `GET`    | `/api/batches/{id}`            | Any      | Get batch details with row results         |
+| `PUT`    | `/api/batches/{id}`            | Any      | Approve batch (moves to VALIDATED)         |
+| `DELETE` | `/api/batches/{id}`            | Any      | Delete batch (only UPLOADED/FAILED states) |
+| `GET`    | `/api/batches/stats`           | Any      | Aggregated dashboard statistics            |
+| `GET`    | `/api/batches/processing-logs` | Any      | Processing logs                            |
+
+OpenAPI UI (dev only): http://localhost:8080/q/swagger-ui/
+
+---
+
+## Batch Lifecycle
+
+```
+UPLOADED → VALIDATED → PROCESSING → PROCESSED
+                ↘                 ↘ PROCESSED_WITH_ERROR
+          VALIDATED_FAILED         PROCESSED_FAILED
+UPLOADED_FAILED
+```
+
+---
+
+## Security
+
+- **JWT RS256** authentication via cookie (`AuthToken`)
+- **Roles:** `INPUTTER` (upload), `VALIDATOR` (approve), `ADMIN` (full access)
+- **Four-eyes:** inputter and validator must be different users
+- **Geographic isolation:** users only see batches from their own country + department (ADMIN bypasses this)
+- **Input sanitisation:** SQL injection pattern detection on all string fields
+
+---
+
+## Key Configuration Properties
+
+| Property                            | Env Var            | Default                     | Description                                  |
+|-------------------------------------|--------------------|-----------------------------|----------------------------------------------|
+| `quarkus.http.port`                 | `PORT`             | `8080`                      | HTTP port                                    |
+| `com.transact.upload.max-lines`     | `MAX_UPLOAD_LINES` | `1000`                      | Max CSV rows per upload                      |
+| `ft.processor.max-threads`          | —                  | `2`                         | Concurrent T24 API calls per batch           |
+| `ft.processor.max-retry`            | —                  | `3`                         | Max retries per row before permanent failure |
+| `quarkus.mongodb.connection-string` | `MONGO_URL`        | `mongodb://localhost:27017` | MongoDB URI                                  |
+
+---
 
 ## Related Guides
 
-- REST ([guide](https://quarkus.io/guides/rest)): A Jakarta REST implementation utilizing build time processing and Vert.x. This extension
-  is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.
-- REST JSON-B ([guide](https://quarkus.io/guides/rest#json-serialisation)): JSON-B serialization support for Quarkus REST. This extension is
-  not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.
-- MongoDB with Panache ([guide](https://quarkus.io/guides/mongodb-panache)): Simplify your persistence code for MongoDB via the active
-  record or the repository pattern
-- REST Jackson ([guide](https://quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension
-  is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
-
-## Provided Code
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+- [Quarkus REST](https://quarkus.io/guides/rest)
+- [MongoDB with Panache](https://quarkus.io/guides/mongodb-panache)
+- [SmallRye JWT](https://quarkus.io/guides/security-jwt)
+- [Quarkus Scheduler](https://quarkus.io/guides/scheduler)

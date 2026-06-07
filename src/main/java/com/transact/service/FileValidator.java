@@ -7,12 +7,15 @@ import com.transact.processor.model.SchemaField;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import org.bson.types.ObjectId;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -22,7 +25,8 @@ public class FileValidator {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final Pattern SUSPICIOUS_CHARS = Pattern.compile("['\";]|--");  // Basic SQLi guard
-    private final Map<Application, Map<String, SchemaField>> schemaCache = new WeakHashMap<>();  // Cache per config
+    // Keyed by Application ObjectId for reliable cache hits; ConcurrentHashMap is thread-safe
+    private final Map<ObjectId, Map<String, SchemaField>> schemaCache = new ConcurrentHashMap<>();
     @ConfigProperty(name = "app.validation.amount.max-scale", defaultValue = "2")
     int maxDecimalScale;
     @ConfigProperty(name = "app.validation.date.max-future-days", defaultValue = "0")  // No future dates
@@ -71,7 +75,7 @@ public class FileValidator {
     }
 
     private Map<String, SchemaField> getOrCreateSchemaMap(Application config) {
-        return schemaCache.computeIfAbsent(config, c -> c.getSchema().stream()
+        return schemaCache.computeIfAbsent(config.id, id -> config.getSchema().stream()
                 .collect(Collectors.toMap(SchemaField::getFieldName, f -> f, (a, b) -> a)));
     }
 

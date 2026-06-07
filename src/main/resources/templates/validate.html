@@ -1,63 +1,11 @@
 {#include layout}
 {#title}Validation Batches - Orange Bank{/title}
 {#head}
-<style>
-    .batch-item {
-        @apply bg-white rounded-md shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200;
-    }
-    .stats-card { @apply bg-white p-6 rounded-md shadow-sm border border-gray-200 transition-all duration-300 hover:shadow-md; }
-    .stats-icon { @apply w-8 h-8 rounded-full bg-brand-light flex items-center justify-center text-brand-primary; }
-    .stats-icon.bg-green-100 { @apply bg-green-100 text-green-600; }
-    .stats-icon.bg-blue-100 { @apply bg-brand-light text-brand-primary; } /* Le bleu générique est remplacé par l'Orange */
-</style>
+
 {/head}
 
 {#aside}
-<aside class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-sm border-r border-gray-200 flex flex-col
-              transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
-       id="sidebar">
-    <div class="p-6 border-b border-gray-200 text-center flex-shrink-0">
-        <a class="inline-flex items-center justify-center h-10 w-auto hover:opacity-80 transition-opacity" href="."
-           title="Orange Bank">
-            <picture class="h-full w-auto"><img alt="Orange Bank Logo" class="h-full w-auto max-h-10 object-contain"
-                                                loading="lazy"
-                                                onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'; this.onerror=null;"
-                                                src="/images/Logo_Orange_Bank.svg">
-            </picture>
-        </a>
-        <h1 class="mt-4 font-semibold text-gray-600 text-sm">Utilitaire Batch</h1>
-    </div>
-
-    <nav class="flex-1 px-4 py-6 space-y-2">
-        <a class="flex items-center px-4 py-3 text-brand-dark transition rounded-md bg-brand-light font-semibold"
-           href="/batches">
-            <i class="w-5 h-5 mr-3" data-lucide="list-checks"></i> Batches Uploadés
-        </a>
-
-        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-brand-primary hover:bg-gray-100 transition rounded-md"
-           href="/validated">
-            <i class="w-5 h-5 mr-3" data-lucide="check-circle"></i> Batches Validés
-        </a>
-
-        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-brand-primary hover:bg-gray-100 transition rounded-md"
-           href="#">
-            <i class="w-5 h-5 mr-3" data-lucide="help-circle"></i> Support
-        </a>
-    </nav>
-
-    <div class="absolute bottom-0 left-0 right-0 px-4 py-3
-            border-t border-gray-200 bg-gray-50 text-gray-600
-            flex items-center justify-center gap-3 text-sm"
-         id="app-footer">
-
-        <span class="text-[10px] text-gray-500 text-center block font-bold uppercase">&copy; 2025 Orange Bank</span>
-
-        <span aria-hidden="true"
-              class="text-lg leading-none"
-              id="country-flag"
-              title=""></span>
-    </div>
-</aside>
+{#insert aside}{#include sidebar-ops/}{/insert}
 
 {/aside}
 
@@ -98,9 +46,10 @@
             <div class="relative bg-white/10 p-4 flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600">Traités</p>
-                    <p class="text-xl font-semibold text-brand-primary" id="processedCount">0</p>
+                    <p class="text-xl font-semibold text-orange-500" id="processedCount">0</p>
                 </div>
-                <svg class="w-6 h-6 text-brand-primary" fill="none" height="24" stroke="currentColor" stroke-linecap="round"
+                <svg class="w-6 h-6 text-orange-500" fill="none" height="24" stroke="currentColor"
+                     stroke-linecap="round"
                      stroke-linejoin="round"
                      stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
                     <path d="m5 3 14 9-14 9V3"/>
@@ -112,7 +61,7 @@
     <div class="bg-white rounded-md shadow-xs border border-gray-200 overflow-hidden">
         <div class="p-4">
             <h3 class="text-lg font-bold text-gray-900 flex items-center gap-3">
-                <i class="w-5 h-5 text-brand-primary" data-lucide="list"></i>
+                <i class="w-5 h-5 text-orange-500" data-lucide="list"></i>
                 Batches à Valider
             </h3>
         </div>

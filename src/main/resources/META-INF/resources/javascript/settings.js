@@ -90,29 +90,68 @@ async function parseErrorResponse(res) {
 function renderUserItem(user) {
     const { flag } = getCountryData(user.countryCode);
 
+    const statusColor = {
+        ACTIVE:  'bg-green-100 text-green-800',
+        PENDING: 'bg-yellow-100 text-yellow-800',
+        LOCKED:  'bg-red-100 text-red-800',
+    }[user.status] || 'bg-gray-100 text-gray-600';
+
+    const pwdBadge = user.mustChangePassword
+        ? '<span class="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-medium">Pwd à changer</span>'
+        : '';
+
+    const unlockBtn = user.status === 'LOCKED'
+        ? `<button onclick="unlockUser('${user.username}')"
+                  class="text-[10px] bg-red-600 hover:bg-red-700 text-white px-2 py-0.5 rounded font-medium transition flex items-center gap-1">
+               🔓 Déverrouiller
+           </button>`
+        : '';
+
     return `
     <li class="group flex items-center justify-between p-3 mb-2 bg-white border border-gray-200 rounded-lg hover:shadow-sm hover:border-brand-primary transition-all duration-200">
     <div class="flex items-center gap-3">
-
       <div class="w-10 h-10 flex items-center justify-center bg-gray-50 rounded-full shadow-xs border border-gray-100 group-hover:scale-110 transition-transform">
             ${flag}
         </div>
-        <div class="flex flex-col">
+        <div class="flex flex-col gap-0.5">
             <span class="text-sm font-bold text-gray-900">${user.username}</span>
-            <span class="text-xs text-gray-400 font-medium uppercase">
-                ${user.countryCode}
-            </span>
+            <span class="text-xs text-gray-400 font-medium uppercase">${user.countryCode}</span>
+            ${user.email ? `<span class="text-[10px] text-gray-400">${user.email}</span>` : ''}
         </div>
     </div>
-    <div class="text-right flex flex-col items-end">
-        <span class="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded mb-1 group-hover:bg-blue-50 group-hover:text-blue-700 transition-colors">
-            ${user.department}
-        </span>
-        <span class="text-[11px] text-gray-400 font-medium">
-            ${user.role}
-        </span>
+    <div class="text-right flex flex-col items-end gap-1">
+        <span class="text-xs ${statusColor} px-2 py-0.5 rounded-full font-medium">${user.status || 'ACTIVE'}</span>
+        <span class="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded">${user.role}</span>
+        ${pwdBadge}
+        ${unlockBtn}
     </div>
 </li>`;
+}
+
+async function unlockUser(username) {
+    if (!confirm(`Déverrouiller le compte de ${username} ?`)) return;
+    try {
+        const res = await secureFetch(`/api/auth/unlock/${encodeURIComponent(username)}`, { method: 'POST' });
+        if (!res) return;
+        const data = await res.json();
+        if (res.ok) {
+            showSnackbar(`Compte ${username} déverrouillé avec succès.`, 'success');
+            // Refresh user list
+            const container = document.getElementById('userList');
+            if (container) {
+                const listRes = await secureFetch('/api/users/list');
+                if (listRes && listRes.ok) {
+                    const users = await listRes.json();
+                    container.innerHTML = users.map(renderUserItem).join('');
+                    lucide.createIcons();
+                }
+            }
+        } else {
+            showSnackbar(data.message || 'Échec du déverrouillage.', 'error');
+        }
+    } catch (err) {
+        showSnackbar('Erreur réseau.', 'error');
+    }
 }
 
 // ────────────────────────────────────────────────
@@ -136,7 +175,7 @@ document.getElementById('countryForm')?.addEventListener('submit', async (e) => 
         return;
     }
 
-    const payload = {code, companyId};
+    const payload = { code, companyId };
     const originalText = btn.textContent;
 
     btn.disabled = true;
@@ -170,52 +209,92 @@ document.getElementById('countryForm')?.addEventListener('submit', async (e) => 
 // User Management
 // ────────────────────────────────────────────────
 
+// Password strength meter (settings form)
+const SPECIAL_CHARS = '!@#$%^&*()_+-=[]{}|;\':\",./<>?';
+let _pwdPolicy = { minLength: 10, requireDigit: true, requireUppercase: true, requireSpecial: true };
+fetch('/api/auth/password-policy').then(r => r.json()).then(p => { _pwdPolicy = p; }).catch(() => {});
+
+function checkSettingsStrength(val) {
+    const p = _pwdPolicy;
+    const ok = { length: val.length >= p.minLength,
+                 upper: !p.requireUppercase || /[A-Z]/.test(val),
+                 digit: !p.requireDigit || /\d/.test(val),
+                 special: !p.requireSpecial || SPECIAL_CHARS.split('').some(c => val.includes(c)),
+                 space: !val.includes(' ') };
+    const score = Object.values(ok).filter(Boolean).length;
+    const bar = document.getElementById('settingsMeterBar');
+    const label = document.getElementById('settingsMeterLabel');
+    if (!bar || !label) return;
+    bar.style.width = (score / 5 * 100) + '%';
+    const [c, t] = score <= 2 ? ['#ef4444','Trop faible'] : score === 3 ? ['#f59e0b','Moyen'] : score === 4 ? ['#3b82f6','Bon'] : ['#22c55e','Excellent'];
+    bar.style.background = c; label.textContent = t; label.style.color = c;
+}
+
+document.getElementById('password')?.addEventListener('input', e => checkSettingsStrength(e.target.value));
+
+// Real-time username availability check (debounced)
+let _usernameCheckTimer = null;
+document.getElementById('username')?.addEventListener('input', (e) => {
+    const val = e.target.value.trim().toUpperCase();
+    const hint = document.getElementById('usernameHint');
+    if (!hint) return;
+    if (val.length < 3) { hint.textContent = ''; return; }
+    clearTimeout(_usernameCheckTimer);
+    hint.textContent = '...';
+    hint.style.color = '#6b7280';
+    _usernameCheckTimer = setTimeout(async () => {
+        try {
+            const res = await secureFetch(`/api/users/exists?username=${encodeURIComponent(val)}`);
+            if (!res || !res.ok) return;
+            const data = await res.json();
+            if (data.taken) { hint.textContent = '✗ Nom d\'utilisateur déjà pris'; hint.style.color = '#dc2626'; }
+            else { hint.textContent = '✓ Disponible'; hint.style.color = '#16a34a'; }
+        } catch { hint.textContent = ''; }
+    }, 450);
+});
+
 document.getElementById('userForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const username = document.getElementById('username')?.value.trim();
-    const password = document.getElementById('password')?.value;
-    const role = document.getElementById('role')?.value;
-    const country = document.getElementById('userCountry')?.value;
-    const department = document.getElementById('department')?.value;
+    const username   = document.getElementById('username')?.value.trim().toUpperCase();
+    const password   = document.getElementById('password')?.value;
+    const role       = document.getElementById('role')?.value;
+    const country    = document.getElementById('userCountry')?.value;
+    const department = parseInt(document.getElementById('department')?.value);
+    const email      = document.getElementById('userEmail')?.value.trim();
 
     if (!username || !password || !role || !country || !department) {
-        showSnackbar("Tous les champs sont requis", "error");
+        showSnackbar("Tous les champs obligatoires doivent être remplis", "error");
         return;
     }
 
-    const params = new URLSearchParams({
-        username,
-        password,
-        role,
-        country,
-        department,
-    });
-
     const btn = document.getElementById('createUserBtn');
     const originalText = btn.textContent;
-
     btn.disabled = true;
     btn.textContent = "Création...";
 
     try {
-        const res = await secureFetch(`/api/users`, {
+        const res = await secureFetch('/api/users', {
             method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: params.toString(),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, role, country, department, email: email || null }),
         });
 
         if (res.ok) {
             const createdUser = await res.json();
             showSnackbar("Utilisateur créé avec succès !", "success");
-
             const container = document.getElementById('userList');
             if (container) {
                 container.insertAdjacentHTML('afterbegin', renderUserItem(createdUser));
                 if (window.lucide) lucide.createIcons();
             }
-
             e.target.reset();
+            const hint = document.getElementById('usernameHint');
+            if (hint) hint.textContent = '';
+            const bar = document.getElementById('settingsMeterBar');
+            const label = document.getElementById('settingsMeterLabel');
+            if (bar) bar.style.width = '0';
+            if (label) label.textContent = '';
         } else {
             const msg = await parseErrorResponse(res);
             showSnackbar(msg, "error");
@@ -251,7 +330,7 @@ document.getElementById('departmentForm')?.addEventListener('submit', async (e) 
         return;
     }
 
-    const payload = {code, description};
+    const payload = { code, description };
     const originalText = btn.textContent;
 
     btn.disabled = true;
@@ -260,7 +339,7 @@ document.getElementById('departmentForm')?.addEventListener('submit', async (e) 
     try {
         const res = await secureFetch(`/api/departments`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         });
 
@@ -300,7 +379,7 @@ async function loadCountries() {
                 '<option value="">-- Sélectionner un pays --</option>' +
                 countries
                     .map((c) => {
-                        const {name} = getCountryData(c.code);
+                        const { name } = getCountryData(c.code);
                         return `<option value="${c.code}">${name} (${c.companyId})</option>`;
                     })
                     .join('');
@@ -310,7 +389,7 @@ async function loadCountries() {
         if (listEl) {
             listEl.innerHTML = countries
                 .map((c) => {
-                    const {name, flag} = getCountryData(c.code);
+                    const { name, flag } = getCountryData(c.code);
                     return `
 <li class="group flex items-center justify-between p-3 mb-2 bg-white border border-gray-200 rounded-lg hover:shadow-sm hover:border-brand-primary transition-all duration-200" data-code="${c.code}">
     <div class="flex items-center gap-4">
@@ -381,8 +460,8 @@ async function loadDepartments() {
             selectEl.innerHTML = `
 <option value="">-- Sélectionner un département --</option>
 ${departments
-                .map((d) => `<option value="${d.code}">${d.code} - ${d.description}</option>`)
-                .join('')}
+    .map((d) => `<option value="${d.code}">${d.code} - ${d.description}</option>`)
+    .join('')}
 `;
         }
 
@@ -444,7 +523,7 @@ document.addEventListener('click', async function handleDelete(e) {
         try {
             const res = await secureFetch(`/api/country/${code}`, {
                 method: 'DELETE',
-                headers: {Accept: 'application/json'},
+                headers: { Accept: 'application/json' },
             });
 
             if (res.ok) {
@@ -486,7 +565,7 @@ document.addEventListener('click', async function handleDelete(e) {
         try {
             const res = await secureFetch(`/api/departments/${code}`, {
                 method: 'DELETE',
-                headers: {Accept: 'application/json'},
+                headers: { Accept: 'application/json' },
             });
 
             if (res.ok) {
@@ -586,14 +665,14 @@ function renderSchemaSection(title, fields) {
     <table class="w-full text-sm">
         <tbody>
             ${fields
-        .map(
-            (f) => `
+                .map(
+                    (f) => `
 <tr class="border-t">
     <td class="px-4 py-2 font-mono">${f.fieldName}</td>
     <td class="px-4 py-2">${f.dataType}</td>
 </tr>`
-        )
-        .join('')}
+                )
+                .join('')}
         </tbody>
     </table>
 </div>`;

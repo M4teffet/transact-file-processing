@@ -1,159 +1,170 @@
 package com.transact;
 
 import com.transact.processor.model.AppUser;
-import io.smallrye.jwt.build.Jwt;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.NewCookie;
-import jakarta.ws.rs.core.Response;
+import com.transact.processor.model.OtpToken;
+import com.transact.service.EmailService;
+import com.transact.service.PasswordService;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.NoCache;
-import org.mindrot.jbcrypt.BCrypt;
 
-import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
 @Path("/api")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class LoginResource {
 
-    // The code of the cookie we will use for authentication
     private static final String AUTH_COOKIE_NAME = "AuthToken";
-    // Time until the JWT and the cookie expire (in seconds)
-    @ConfigProperty(name = "mp.jwt.expire-seconds", defaultValue = "3600")  // Increased to 1 hour for usability
-            long tokenExpirySeconds;
 
+    @Inject
+    PasswordService passwordService;
+    @Inject
+    EmailService emailService;
+
+    @ConfigProperty(name = "mp.jwt.expire-seconds", defaultValue = "3600")
+    long tokenExpirySeconds;
+
+    @ConfigProperty(name = "app.otp.expiry-seconds", defaultValue = "300")
+    int otpExpirySeconds;
+
+    @ConfigProperty(name = "app.login.max-failed-attempts", defaultValue = "5")
+    int maxFailedAttempts;
+
+    // ── POST /api/login ───────────────────────────────────────────────────────
+
+    /**
+     * Step 1 of login:
+     * - Validates credentials
+     * - If valid + user has email → sends OTP, returns {requiresOtp: true}
+     * - If valid + no email     → issues JWT directly (legacy / no-email users)
+     * - If mustChangePassword   → sets flag in response so frontend redirects
+     */
     @POST
     @Path("/login")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public Response login(LoginRequest request) {
+        if (request == null) return badRequest("Invalid request");
 
-        // 1️⃣ Validate input safely (NO exceptions)
-        if (request == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("message", "Invalid request payload"))
-                    .build();
-        }
+        String username = trim(request.username());
+        String password = request.password();
 
-        String username = Optional.ofNullable(request.username)
-                .map(String::trim)
-                .orElse("");
+        if (isBlank(username)) return badRequest("Username is required");
+        if (isBlank(password)) return badRequest("Password is required");
 
-        String password = Optional.ofNullable(request.password)
-                .map(String::trim)
-                .orElse("");
+        Optional<AppUser> userOpt = AppUser.findByUsername(username.toUpperCase());
 
-        if (username.isEmpty()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("message", "Username is required"))
-                    .build();
-        }
-
-        if (password.isEmpty()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("message", "Password is required"))
-                    .build();
-        }
-
-        if (username.length() < 3 || username.length() > 50) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("message", "Username must be 3-50 characters"))
-                    .build();
-        }
-
-        if (password.length() < 8) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("message", "Password must be at least 8 characters"))
-                    .build();
-        }
-
-        // 2️⃣ Authenticate
-        Optional<AppUser> userOpt = AppUser.findByUsername(username);
+        // Constant-time failure — same response whether user exists or not
         if (userOpt.isEmpty()) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(Map.of("message", "Invalid credentials"))
-                    .build();
+            return unauthorized("Invalid credentials");
         }
 
         AppUser user = userOpt.get();
-        if (!BCrypt.checkpw(password, user.getPasswordHash())) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(Map.of("message", "Invalid credentials"))
-                    .build();
+
+        // Check account lock
+        if (user.isLocked()) {
+            return Response.status(403).entity(Map.of(
+                    "message", "Account locked after too many failed attempts. Contact your administrator.",
+                    "code", "ACCOUNT_LOCKED"
+            )).build();
         }
 
-        // 3️⃣ Generate JWT
-        String token = Jwt.issuer("orange-bank-app")
-                .upn(user.getUsername())
-                .groups(user.getRole().name())
-                .expiresAt(Instant.now().plusSeconds(tokenExpirySeconds))
-                .sign();
+        // Verify password
+        if (!passwordService.verify(password, user.getPasswordHash())) {
+            user.recordFailedLogin(maxFailedAttempts);
+            int remaining = Math.max(0, maxFailedAttempts - user.failedLoginCount);
+            return Response.status(401).entity(Map.of(
+                    "message", "Invalid credentials" + (remaining > 0 ? " (" + remaining + " attempts remaining)" : ""),
+                    "code", "INVALID_CREDENTIALS"
+            )).build();
+        }
 
-        // 4️⃣ Secure cookie
-        NewCookie authCookie = new NewCookie.Builder(AUTH_COOKIE_NAME)
-                .value(token)
-                .path("/")
-                .maxAge((int) tokenExpirySeconds)
-                .secure(false)        // true in prod (HTTPS)
-                .httpOnly(false)
-                .sameSite(NewCookie.SameSite.STRICT)
-                .build();
+        // Credentials are correct — reset failed count
+        // (full recordSuccessfulLogin() called after OTP, not here)
 
-        // 5️⃣ Response body (safe)
-        return Response.ok(Map.of(
-                        "username", user.getUsername(),
-                        "role", user.getRole().name(),
-                        "country", user.getCountryCode(),
-                        "message", "Authentication successful"
-                ))
-                .cookie(authCookie)
-                .build();
+        // If user has an email, send OTP (MFA step)
+        if (user.email != null && !user.email.isBlank()) {
+            String otp = OtpToken.createOtp(user.username, otpExpirySeconds);
+            emailService.sendOtp(user.email, user.username, otp);
+
+            return Response.ok(Map.of(
+                    "requiresOtp", true,
+                    "username", user.getUsername(),
+                    "message", "A verification code has been sent to your email"
+            )).build();
+        }
+
+        // No email configured → issue JWT directly (and handle mustChangePassword)
+        return issueJwt(user);
     }
 
+    // ── POST /api/logout ──────────────────────────────────────────────────────
 
     @POST
     @Path("/logout")
-    @Consumes(MediaType.APPLICATION_JSON)  // Optional; accepts empty JSON {} if needed
-    @Produces(MediaType.APPLICATION_JSON)
-    @NoCache  // Prevents caching of logout response
+    @NoCache
     public Response logout() {
-        // 1. Create a cleared cookie (maxAge=0 deletes it client-side)
-        NewCookie clearedCookie = new NewCookie.Builder(AUTH_COOKIE_NAME)
-                .value("")  // Empty value
-                .path("/")
-                .maxAge(0)  // Immediate expiry
-                .secure(false)  // Match login's secure flag (true in prod)
-                .httpOnly(true)
-                .build();
+        NewCookie cleared = new NewCookie.Builder(AUTH_COOKIE_NAME)
+                .value("").path("/").maxAge(0).secure(false).httpOnly(true).build();
 
-        // 2. Response with cleared cookie, success message, and anti-caching headers
-        Map<String, Object> responseBody = Map.of(
-                "message", "Logged out successfully."
-        );
-
-        return Response.ok(responseBody)
-                .cookie(clearedCookie)
+        return Response.ok(Map.of("message", "Logged out successfully"))
+                .cookie(cleared)
                 .header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
                 .header("Pragma", "no-cache")
-                .header("Expires", "0")
                 .build();
     }
 
-    // Simple auth status check for client-side back navigation detection
-    @POST  // Use POST for consistency, or GET if preferred
+    // ── POST /api/status ──────────────────────────────────────────────────────
+
+    @POST
     @Path("/status")
-    @Produces(MediaType.APPLICATION_JSON)
     public Response authStatus() {
-        // If this endpoint is reached, user is authenticated (via JWT cookie)
         return Response.ok(Map.of("authenticated", true)).build();
     }
 
-    public static class LoginRequest {
-        public String username;
-        public String password;
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    Response issueJwt(AppUser user) {
+        String token = io.smallrye.jwt.build.Jwt.issuer("orange-bank-app")
+                .upn(user.getUsername())
+                .groups(user.getRole().name())
+                .expiresAt(java.time.Instant.now().plusSeconds(tokenExpirySeconds))
+                .sign();
+
+        NewCookie authCookie = new NewCookie.Builder(AUTH_COOKIE_NAME)
+                .value(token).path("/").maxAge((int) tokenExpirySeconds)
+                .secure(false).httpOnly(true)
+                .sameSite(NewCookie.SameSite.STRICT)
+                .build();
+
+        return Response.ok(Map.of(
+                "username", user.getUsername(),
+                "role", user.getRole().name(),
+                "country", user.getCountryCode(),
+                "mustChangePassword", user.mustChangePassword,
+                "requiresOtp", false,
+                "message", "Authentication successful"
+        )).cookie(authCookie).build();
+    }
+
+    private Response badRequest(String msg) {
+        return Response.status(400).entity(Map.of("message", msg)).build();
+    }
+
+    private Response unauthorized(String msg) {
+        return Response.status(401).entity(Map.of("message", msg, "code", "INVALID_CREDENTIALS")).build();
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
+    private String trim(String s) {
+        return s == null ? null : s.trim();
+    }
+
+    public record LoginRequest(String username, String password) {
     }
 }

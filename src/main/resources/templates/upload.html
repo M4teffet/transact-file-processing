@@ -3,95 +3,12 @@
 {#title}Upload Batch - Orange Bank{/title}
 
 {#head}
-<style>
-    /* Styles Globaux & Brand Orange Bank */
-    html {
-        font-size: 0.93rem;
-    }
 
-    body {
-        font-family: 'Inter', sans-serif;
-    }
-
-    /* Zone de Notifications */
-    #snackbar-container {
-        position: fixed;
-        bottom: 1rem;
-        left: 1rem;
-        width: 100%;
-        max-width: 25rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        z-index: 50;
-    }
-
-    /* Bouton Primaire Orange */
-    .chimp-primary-btn {
-        @apply inline-flex items-center text-white bg-brand-primary hover:bg-brand-dark border border-transparent
-               focus:ring-4 focus:ring-brand-medium shadow-xs font-medium rounded-base text-sm px-4 py-2.5
-               transition-colors duration-200;
-    }
-
-    /* Zone de Drag and Drop */
-    .drag-over { @apply ring-4 ring-brand-primary/40 border-brand-primary bg-brand-light/50; }
-
-    /* Éléments de Champ (Drag & Drop) */
-    .field-item {
-        @apply flex items-center justify-between px-6 py-3 bg-white border border-gray-300 rounded-md cursor-move
-        hover:border-brand-primary hover:shadow-xs transition-all duration-200 font-medium text-sm mb-2;
-    }
-    .field-item.dragging { @apply opacity-50 scale-105 border-brand-primary bg-brand-light; }
-
-    /* KPI Background Pattern logic */
-    .kpi-bg {
-        background-image: url('/images/pattern-2k.png');
-        background-size: cover;
-        background-position: center;
-    }
-</style>
 {/head}
 
 {#aside}
-    <aside class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-md border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
-       id="sidebar">
-    <div class="p-6 border-b border-gray-200 text-center flex-shrink-0">
-        <a class="inline-flex items-center justify-center h-10 w-auto hover:opacity-80 transition-opacity" href="."
-           title="Orange Bank">
-            <picture class="h-full w-auto">
-                <img alt="Orange Bank Logo" class="h-full w-auto max-h-10 object-contain"
-                     loading="lazy"
-                     onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'; this.onerror=null;"
-                     src="/images/Logo_Orange_Bank.svg">
-            </picture>
-        </a>
-        <h1 class="mt-4 px-1 font-semibold text-gray-600 text-sm">Utilitaire Batch</h1>
-    </div>
-    <nav class="flex-1 px-4 py-6 space-y-2">
-        <a class="flex items-center px-4 py-3 text-brand-dark transition rounded-md bg-brand-light font-semibold" href="/upload">
-            <i class="w-5 h-5 mr-3" data-lucide="cloud-upload"></i> Upload
-        </a>
-        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-brand-primary hover:bg-gray-100 transition rounded-md"
-           href="/batches">
-            <i class="w-5 h-5 mr-3" data-lucide="list-checks"></i> Batches Uploadés
-        </a>
-        <a class="flex items-center px-4 py-3 text-gray-700 hover:text-brand-primary hover:bg-gray-100 transition rounded-md" href="#">
-            <i class="w-5 h-5 mr-3" data-lucide="help-circle"></i> Support
-        </a>
-    </nav>
-        <div class="absolute bottom-0 left-0 right-0 px-4 py-3
-            border-t border-gray-200 bg-gray-50 text-gray-600
-            flex items-center justify-center gap-3 text-sm"
-             id="app-footer">
+{#insert aside}{#include sidebar-ops/}{/insert}
 
-            <span class="text-[10px] text-gray-500 text-center block font-bold uppercase">&copy; 2025 Orange Bank</span>
-
-            <span aria-hidden="true"
-                  class="text-lg leading-none"
-                  id="country-flag"
-                  title=""></span>
-    </div>
-</aside>
 {/aside}
 
 {#default}
@@ -109,9 +26,9 @@
             <div class="relative bg-white/10 p-4 flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-500">Total Chargés</p>
-                    <p class="text-xl font-semibold text-brand-primary" id="uploadedCount">0</p>
+                    <p class="text-xl font-semibold text-orange-500" id="uploadedCount">0</p>
                 </div>
-                <svg class="w-6 h-6 text-brand-primary" fill="none"
+                <svg class="w-6 h-6 text-orange-500" fill="none"
                      stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 13v8"/>
                     <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
@@ -145,11 +62,11 @@
 
     <div class="bg-white rounded-md shadow-xs border border-gray-200 p-8">
         <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
-            <i class="w-5 h-5 text-brand-primary" data-lucide="settings"></i>
+            <i class="w-5 h-5 text-orange-500" data-lucide="settings"></i>
             Générateur Template
         </h3>
 
-        <select class="w-full px-3 py-3 border border-gray-300 rounded-md mb-4 focus:ring-2 focus:ring-brand-primary outline-none transition"
+        <select class="w-full px-3 py-3 border border-gray-300 rounded-md mb-4 focus:ring-2 focus:ring-orange-400 outline-none transition"
                 id="appSelect" onchange="loadFields(this.value)">
             <option value="">Choisir application cible...</option>
         </select>
@@ -208,10 +125,10 @@
     <div class="hidden bg-white p-8 rounded-md shadow-xs border border-gray-200 transition-all duration-300"
          id="uploadSection">
         <label class="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4 block">Importer Fichier CSV</label>
-        <div class="mb-6 border-2 border-dashed border-gray-300 rounded-md p-10 text-center bg-gray-50 hover:border-brand-primary/50 hover:bg-brand-light/30 transition cursor-pointer group"
+        <div class="mb-6 border-2 border-dashed border-gray-300 rounded-md p-10 text-center bg-gray-50 hover:border-orange-400/50 hover:bg-orange-50/30 transition cursor-pointer group"
              id="csvDropZone"
              onclick="document.getElementById('csvInput').click()">
-            <i class="mx-auto h-12 w-12 mb-3 text-gray-400 group-hover:text-brand-primary transition-colors"
+            <i class="mx-auto h-12 w-12 mb-3 text-gray-400 group-hover:text-orange-500 transition-colors"
                data-lucide="upload-cloud"></i>
             <p class="text-lg font-semibold text-gray-700">Glissez ou cliquez pour sélectionner</p>
             <input accept=".csv" class="hidden" id="csvInput" type="file">
@@ -221,7 +138,7 @@
     <div class="hidden bg-white rounded-md shadow-xs border border-gray-200 overflow-hidden" id="csvPreviewSection">
         <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
             <h4 class="text-lg font-bold text-gray-900 flex items-center gap-3">
-                <i class="w-5 h-5 text-brand-primary" data-lucide="table"></i> Aperçu du Batch
+                <i class="w-5 h-5 text-orange-500" data-lucide="table"></i> Aperçu du Batch
             </h4>
 
         </div>
@@ -232,13 +149,13 @@
             </table>
         </div>
         <div class="p-6 border-t border-gray-200 flex justify-between items-center gap-3">
-            <button class="inline-flex items-center text-gray-600 hover:text-brand-primary font-bold text-sm"
+            <button class="inline-flex items-center text-gray-600 hover:text-orange-500 font-bold text-sm"
                     id="fullPreviewBtn">
                 <i class="w-4 h-4 mr-2" data-lucide="maximize-2"></i> Mode Plein Écran
             </button>
             <div class="flex gap-3">
                 <button class="inline-flex items-center justify-center
-                   text-white bg-brand-primary hover:bg-brand-dark border border-transparent
+                   text-white bg-orange-500 hover:bg-orange-600 border border-transparent
                    focus:ring-4 focus:ring-brand-medium shadow-xs font-medium rounded-base
                    text-sm px-4 py-2.5
                    transition-colors duration-200"
@@ -260,9 +177,9 @@
         </div>
         <h3 class="text-3xl font-black text-gray-900 mb-2">Upload réussi !</h3>
         <p class="text-gray-500 mb-6">Identifiant du batch : <code
-                    class="bg-gray-100 px-4 py-2 rounded text-lg font-mono font-bold text-brand-primary"
-                    id="batchId"></code></p>
-        <button class="inline-flex items-center text-white bg-brand-primary hover:bg-brand-dark border border-transparent
+                class="bg-gray-100 px-4 py-2 rounded text-lg font-mono font-bold text-orange-500" id="batchId"></code>
+        </p>
+        <button class="inline-flex items-center text-white bg-orange-500 hover:bg-orange-600 border border-transparent
                focus:ring-4 focus:ring-brand-medium shadow-xs font-medium rounded-base text-sm px-4 py-2.5
                transition-colors duration-200" onclick="location.reload()">Charger un autre fichier
         </button>
@@ -272,14 +189,14 @@
 
 {#script}
 <script src="/javascript/script.js"></script>
-    <script>
-        // Initialisation des icônes au chargement
-        document.addEventListener('DOMContentLoaded', () => {
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-        });
-    </script>
+<script>
+    // Initialisation des icônes au chargement
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    });
+</script>
 {/script}
 
 {/include}

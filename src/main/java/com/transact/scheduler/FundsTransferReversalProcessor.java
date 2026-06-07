@@ -69,6 +69,7 @@ public class FundsTransferReversalProcessor {
         Log.infof("[FT_REV] %d batch(es) detected for processing", batches.size());
 
         for (FileBatch batch : batches) {
+
             try {
                 processBatch(batch.id);
             } catch (Exception e) {

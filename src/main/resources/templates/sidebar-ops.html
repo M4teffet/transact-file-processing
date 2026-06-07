@@ -1,0 +1,56 @@
+<aside class="fixed left-0 top-0 z-50 w-64 h-full bg-white shadow-md border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
+       id="sidebar">
+
+    <div class="p-5 border-b border-gray-200 text-center flex-shrink-0">
+        <a class="inline-flex items-center justify-center h-9 w-auto hover:opacity-80 transition-opacity" href="."
+           title="Orange Bank">
+            <img alt="Orange Bank" class="h-full w-auto object-contain" loading="lazy"
+                 onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'; this.onerror=null;"
+                 src="/images/Logo_Orange_Bank.svg">
+        </a>
+        <h1 class="mt-2.5 font-semibold text-gray-600" style="font-size:.78rem;">Utilitaire Batch</h1>
+    </div>
+
+    <nav class="flex-1 px-3 py-4 space-y-0.5">
+        {#if activePage == 'upload'}
+        <a class="nav-item nav-item-active" href="/upload">
+            {#else}
+            <a class="nav-item" href="/upload">
+                {/if}
+                <i class="w-4 h-4 flex-shrink-0" data-lucide="cloud-upload"></i> Upload
+            </a>
+
+            {#if activePage == 'batches'}
+            <a class="nav-item nav-item-active" href="/batches">
+                {#else}
+                <a class="nav-item" href="/batches">
+                    {/if}
+                    <i class="w-4 h-4 flex-shrink-0" data-lucide="list-checks"></i> Batches Uploadés
+                </a>
+
+                {#if activePage == 'validate'}
+                <a class="nav-item nav-item-active" href="/validate">
+                    {#else}
+                    <a class="nav-item" href="/validate">
+                        {/if}
+                        <i class="w-4 h-4 flex-shrink-0" data-lucide="shield-check"></i> Batches à Valider
+                    </a>
+
+                    {#if activePage == 'validated'}
+                    <a class="nav-item nav-item-active" href="/validated">
+                        {#else}
+                        <a class="nav-item" href="/validated">
+                            {/if}
+                            <i class="w-4 h-4 flex-shrink-0" data-lucide="check-circle-2"></i> Batches Validés
+                        </a>
+
+                        <a class="nav-item" href="#">
+                            <i class="w-4 h-4 flex-shrink-0" data-lucide="help-circle"></i> Support
+                        </a>
+    </nav>
+
+    <div class="px-3 py-2.5 border-t border-gray-200 bg-gray-50 flex items-center justify-center gap-2">
+        <span class="text-gray-400 font-bold uppercase" style="font-size:.62rem;">&copy; 2025 Orange Bank</span>
+        <span aria-hidden="true" class="leading-none" id="country-flag" style="font-size:.85rem;" title=""></span>
+    </div>
+</aside>

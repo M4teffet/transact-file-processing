@@ -213,15 +213,22 @@ public class BatchResource {
             @QueryParam("to") String toStr
     ) {
         String currentUsername = identity.getPrincipal().getName();
-        AppUser currentUser = AppUser.findByUsername(currentUsername).orElseThrow(() ->
-                new WebApplicationException("Utilisateur non trouvé", 403));
-
-        List<String> allowedUploaders = AppUser.<AppUser>find("countryCode = ?1 and department = ?2",
-                        currentUser.countryCode, currentUser.getDepartment())
-                .stream().map(AppUser::getUsername).toList();
+        boolean isAdmin = identity.hasRole("ADMIN");
 
         // 1. Stage de filtre (Match)
-        Document matchStage = new Document("uploadedById", new Document("$in", allowedUploaders));
+        Document matchStage = new Document();
+
+        // Admins see all data; non-admins are restricted to their country + department
+        if (!isAdmin) {
+            AppUser currentUser = AppUser.findByUsername(currentUsername).orElseThrow(() ->
+                    new WebApplicationException("Utilisateur non trouvé", 403));
+
+            List<String> allowedUploaders = AppUser.<AppUser>find("countryCode = ?1 and department = ?2",
+                            currentUser.countryCode, currentUser.getDepartment())
+                    .stream().map(AppUser::getUsername).toList();
+
+            matchStage.append("uploadedById", new Document("$in", allowedUploaders));
+        }
 
         if (fromStr != null && !fromStr.isBlank() && toStr != null && !toStr.isBlank()) {
             matchStage.append("uploadTimestamp", new Document("$gte", Instant.parse(fromStr + "T00:00:00Z"))

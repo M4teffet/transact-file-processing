@@ -1,209 +1,204 @@
 package com.transact;
 
 import com.transact.processor.model.AppUser;
+import com.transact.processor.model.Country;
+import com.transact.processor.model.Departments;
+import com.transact.service.EmailService;
+import com.transact.service.PasswordService;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.RestForm;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * UserResource - VERSION FRANÇAISE
- * <p>
- * ✅ Tous les messages et logs en français
- * ✅ Validation améliorée
- * ✅ Gestion d'erreurs structurée
- */
 @Path("/api/users")
 @RolesAllowed("ADMIN")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class UserResource {
 
     private static final Logger LOG = Logger.getLogger(UserResource.class);
     private static final Set<String> VALID_ROLES = Set.of("INPUTTER", "ADMIN", "AUTHORISER");
+
     @Inject
     SecurityIdentity identity;
+    @Inject
+    PasswordService passwordService;
+    @Inject
+    EmailService emailService;
 
-    /**
-     * Lister tous les utilisateurs
-     */
+    // ── GET /api/users/list ───────────────────────────────────────────────────
+
     @GET
     @Path("/list")
-    @Produces(MediaType.APPLICATION_JSON)
     public Response findAll() {
-        String adminUsername = identity.getPrincipal().getName();
-
+        String admin = identity.getPrincipal().getName();
         try {
-            LOG.debugf("Admin %s demande la liste des utilisateurs", adminUsername);
-
             List<UserViewDTO> users = AppUser.<AppUser>listAll().stream()
-                    .map(u -> new UserViewDTO(
-                            u.getUsername(),
-                            u.countryCode,
-                            u.getRole().toString(),
-                            u.getDepartment()
-                    ))
+                    .map(UserViewDTO::from)
                     .collect(Collectors.toList());
-
-            LOG.infof("Retour de %d utilisateurs à l'admin %s", users.size(), adminUsername);
-
+            LOG.debugf("Admin %s fetched user list (%d users)", admin, users.size());
             return Response.ok(users).build();
-
         } catch (Exception e) {
-            LOG.errorf(e, "Échec de récupération de la liste des utilisateurs pour l'admin : %s",
-                    adminUsername);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(new ErrorResponse(
-                            "ERREUR_SERVEUR",
-                            "Erreur lors de la récupération de la liste des utilisateurs",
-                            Instant.now()
-                    ))
-                    .build();
+            LOG.errorf(e, "Failed to list users for admin %s", admin);
+            return serverError("Failed to retrieve user list");
         }
     }
+
+    // ── GET /api/users/exists ─────────────────────────────────────────────────
 
     /**
-     * Créer un nouvel utilisateur
+     * Real-time username availability check (debounced from the frontend).
      */
-    @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public Response addUser(
-            @RestForm @NotBlank String username,
-            @RestForm @NotBlank String password,
-            @RestForm @NotBlank String role,
-            @RestForm @NotBlank String country,
-            @RestForm @NotNull Integer department) {
+    @GET
+    @Path("/exists")
+    public Response exists(@QueryParam("username") String username) {
+        if (username == null || username.isBlank()) return badRequest("Username is required");
+        boolean taken = AppUser.findByUsername(username.trim().toUpperCase()).isPresent();
+        return Response.ok(new ExistsResponse(taken)).build();
+    }
 
-        String adminUsername = identity.getPrincipal().getName();
+    // ── POST /api/users ───────────────────────────────────────────────────────
+
+    @POST
+    public Response addUser(CreateUserRequest req) {
+        String admin = identity.getPrincipal().getName();
+
+        if (req == null) return badRequest("Request body is required");
+
+        // Normalise
+        String username = req.username() == null ? null : req.username().trim().toUpperCase();
+        String role = req.role() == null ? null : req.role().trim().toUpperCase();
+        String country = req.country() == null ? null : req.country().trim().toUpperCase();
+        String email = req.email() == null ? null : req.email().trim().toLowerCase();
+
+        // Validate required fields
+        if (isBlank(username)) return badRequest("Username is required");
+        if (isBlank(req.password())) return badRequest("Password is required");
+        if (isBlank(role)) return badRequest("Role is required");
+        if (isBlank(country)) return badRequest("Country is required");
+        if (req.department() == null || req.department() <= 0)
+            return badRequest("Department must be a positive number");
+
+        if (!VALID_ROLES.contains(role)) {
+            return badRequest("Invalid role '" + role + "'. Allowed: " + VALID_ROLES);
+        }
+
+        // Validate email format if provided
+        if (!isBlank(email) && !email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            return badRequest("Invalid email address format");
+        }
+
+        // Validate password policy
+        try {
+            passwordService.validate(req.password());
+        } catch (IllegalArgumentException e) {
+            return badRequest(e.getMessage());
+        }
+
+        // Check username uniqueness (single authoritative check — removed from AppUser.add())
+        if (AppUser.findByUsername(username).isPresent()) {
+            return Response.status(409).entity(new ErrorResponse("USERNAME_TAKEN",
+                    "Username '" + username + "' is already taken", Instant.now())).build();
+        }
+
+        // Validate country and department exist
+        Country countryEntity = Country.find("code", country).firstResult();
+        if (countryEntity == null) return badRequest("Country code not found: " + country);
+
+        Departments deptEntity = Departments.find("code", req.department()).firstResult();
+        if (deptEntity == null) return badRequest("Department code not found: " + req.department());
 
         try {
-            // Sanitisation et normalisation des entrées
-            username = username.trim().toUpperCase();
-            role = role.trim().toUpperCase();
-            country = country.trim().toUpperCase();
+            AppUser user = new AppUser();
+            user.setUsername(username);
+            user.setPasswordHash(passwordService.hash(req.password()));
+            user.setRole(AppUser.UserRole.valueOf(role));
+            user.setCountryCode(countryEntity.code);
+            user.setDepartment(deptEntity.code);
+            user.email = email;
+            user.mustChangePassword = true;      // Always force change on first login
+            user.status = AppUser.UserStatus.ACTIVE;
+            user.createdAt = Instant.now();
+            user.createdBy = admin;
+            user.persist();
 
-            LOG.infof("Admin %s tente de créer l'utilisateur : %s (rôle: %s, pays: %s, dép: %d)",
-                    adminUsername, username, role, country, department);
-
-            // Validation des champs requis
-            if (username.isEmpty() || password.isEmpty() || role.isEmpty() || country.isEmpty()) {
-                LOG.warnf("Création d'utilisateur échouée : champs requis manquants (admin: %s)",
-                        adminUsername);
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(new ErrorResponse(
-                                "CHAMPS_REQUIS",
-                                "Le nom d'utilisateur, le mot de passe, le rôle et le pays sont requis",
-                                Instant.now()
-                        ))
-                        .build();
+            // Send welcome email if address provided
+            if (!isBlank(email)) {
+                emailService.sendWelcome(email, username, req.password());
             }
 
-            // Validation du rôle
-            if (!VALID_ROLES.contains(role)) {
-                LOG.warnf("Rôle invalide fourni : %s par l'admin : %s", role, adminUsername);
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(new ErrorResponse(
-                                "ROLE_INVALIDE",
-                                "Rôle invalide : " + role + ". Valeurs autorisées : " + VALID_ROLES,
-                                Instant.now()
-                        ))
-                        .build();
-            }
+            LOG.infof("[Users] Created user %s (role: %s, country: %s) by admin %s", username, role, country, admin);
 
-            // Validation du département
-            if (department <= 0) {
-                LOG.warnf("ID de département invalide : %d (admin: %s)", department, adminUsername);
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(new ErrorResponse(
-                                "DEPARTEMENT_INVALIDE",
-                                "Le département doit être un nombre positif",
-                                Instant.now()
-                        ))
-                        .build();
-            }
-
-            // Vérification de l'unicité du nom d'utilisateur
-            if (AppUser.findByUsername(username).isPresent()) {
-                LOG.warnf("Tentative de création d'un utilisateur en double : %s (admin: %s)",
-                        username, adminUsername);
-                return Response.status(Response.Status.CONFLICT)
-                        .entity(new ErrorResponse(
-                                "UTILISATEUR_EXISTE",
-                                "Le nom d'utilisateur '" + username + "' existe déjà",
-                                Instant.now()
-                        ))
-                        .build();
-            }
-
-            // Création de l'utilisateur
-            AppUser user = AppUser.add(username, password, role, country, department);
-
-            LOG.infof("Utilisateur créé avec succès : %s par l'admin : %s", username, adminUsername);
-
-            // DTO pour le rendu immédiat de l'interface
-            UserViewDTO dto = new UserViewDTO(
-                    user.getUsername(),
-                    user.countryCode,
-                    user.getRole().toString(),
-                    user.getDepartment()
-            );
-
-            return Response.status(Response.Status.CREATED)
-                    .entity(dto)
-                    .build();
-
-        } catch (IllegalArgumentException e) {
-            // Erreurs de validation métier
-            LOG.warnf("Validation métier échouée pour l'utilisateur %s par l'admin %s : %s",
-                    username, adminUsername, e.getMessage());
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(new ErrorResponse(
-                            "ERREUR_VALIDATION",
-                            e.getMessage(),
-                            Instant.now()
-                    ))
-                    .build();
+            return Response.status(201).entity(UserViewDTO.from(user)).build();
 
         } catch (Exception e) {
-            // Erreurs inattendues
-            LOG.errorf(e, "Échec de création de l'utilisateur : %s par l'admin : %s",
-                    username, adminUsername);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(new ErrorResponse(
-                            "ERREUR_SERVEUR",
-                            "Échec de création de l'utilisateur. Veuillez contacter le support.",
-                            Instant.now()
-                    ))
-                    .build();
+            LOG.errorf(e, "[Users] Failed to create user %s by admin %s", username, admin);
+            return serverError("Failed to create user. Please contact support.");
         }
     }
 
-    // ========================================
-    // DTOs
-    // ========================================
+    // ── DTOs ──────────────────────────────────────────────────────────────────
+
+    private Response badRequest(String msg) {
+        return Response.status(400).entity(new ErrorResponse("BAD_REQUEST", msg, Instant.now())).build();
+    }
+
+    private Response serverError(String msg) {
+        return Response.status(500).entity(new ErrorResponse("SERVER_ERROR", msg, Instant.now())).build();
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
+    public record CreateUserRequest(
+            String username,
+            String password,
+            String role,
+            String country,
+            Integer department,
+            String email
+    ) {}
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     public record UserViewDTO(
             String username,
             String countryCode,
             String role,
-            Integer department
+            Integer department,
+            String email,
+            String status,
+            boolean mustChangePassword,
+            Instant createdAt,
+            String createdBy
     ) {
+        static UserViewDTO from(AppUser u) {
+            return new UserViewDTO(
+                    u.getUsername(),
+                    u.countryCode,
+                    u.getRole().toString(),
+                    u.getDepartment(),
+                    u.email,
+                    u.status != null ? u.status.name() : "ACTIVE",
+                    u.mustChangePassword,
+                    u.createdAt,
+                    u.createdBy
+            );
+        }
     }
 
-    public record ErrorResponse(
-            String code,
-            String message,
-            Instant timestamp
-    ) {
+    public record ExistsResponse(boolean taken) {
+    }
+
+    public record ErrorResponse(String code, String message, Instant timestamp) {
     }
 }

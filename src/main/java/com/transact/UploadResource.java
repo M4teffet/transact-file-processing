@@ -37,7 +37,7 @@ import java.util.Map;
 @RolesAllowed("INPUTTER")
 public class UploadResource {
 
-    @ConfigProperty(name = "com.transact.upload.max-lines", defaultValue = "100")
+    @ConfigProperty(name = "com.transact.upload.max-lines", defaultValue = "1000")
     int maxLines;
 
     @Inject
