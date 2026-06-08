@@ -97,13 +97,13 @@ async function loadBatchData() {
 
 function populateFilterDropdowns() {
     // Populate Inputter filter
-    const inputters = [...new Set(allBatches.map(b => b.uploadedBy).filter(Boolean))].sort();
+    const inputters = [...new Set(allBatches.map(b => b.uploadedById || b.uploadedBy).filter(Boolean))].sort();
     const inputterSelect = document.getElementById('inputterFilter');
-    inputterSelect.innerHTML = '<option value="">Tous les inputters</option>' +
+    inputterSelect.innerHTML = '<option value="">Tous les initiateurs</option>' +
         inputters.map(i => `<option value="${i}">${i}</option>`).join('');
 
     // Populate Validator filter
-    const validators = [...new Set(allBatches.map(b => b.validatedBy).filter(Boolean))].sort();
+    const validators = [...new Set(allBatches.map(b => b.validatedById || b.validatedBy).filter(Boolean))].sort();
     const validatorSelect = document.getElementById('validatorFilter');
     validatorSelect.innerHTML = '<option value="">Tous les validateurs</option>' +
         validators.map(v => `<option value="${v}">${v}</option>`).join('');
@@ -122,8 +122,8 @@ function applyFilters() {
         if (filters.country && batch.country !== filters.country) return false;
         if (filters.department && batch.department !== filters.department) return false;
         if (filters.status && batch.status !== filters.status) return false;
-        if (filters.inputter && batch.uploadedBy !== filters.inputter) return false;
-        if (filters.validator && batch.validatedBy !== filters.validator) return false;
+        if (filters.inputter && (batch.uploadedById || batch.uploadedBy) !== filters.inputter) return false;
+        if (filters.validator && (batch.validatedById || batch.validatedBy) !== filters.validator) return false;
         return true;
     });
 
@@ -149,7 +149,7 @@ function updateActiveFilters(filters) {
     if (filters.country) activeFilters.push({ label: 'Pays', value: getCountryName(filters.country), key: 'country' });
     if (filters.department) activeFilters.push({ label: 'Département', value: filters.department, key: 'department' });
     if (filters.status) activeFilters.push({ label: 'Statut', value: filters.status, key: 'status' });
-    if (filters.inputter) activeFilters.push({ label: 'Inputter', value: filters.inputter, key: 'inputter' });
+    if (filters.inputter) activeFilters.push({ label: 'Initiateur', value: filters.inputter, key: 'inputter' });
     if (filters.validator) activeFilters.push({ label: 'Validateur', value: filters.validator, key: 'validator' });
 
     if (activeFilters.length === 0) {
@@ -247,16 +247,16 @@ function renderBatchTable() {
             <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
                     <div class="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center text-orange-600 font-bold text-xs">
-                        ${(batch.uploadedBy || 'U').charAt(0).toUpperCase()}
+                        ${((batch.uploadedById || batch.uploadedBy || 'S').charAt(0).toUpperCase())}
                     </div>
-                    <span class="text-sm font-medium text-gray-900">${batch.uploadedBy || '-'}</span>
+                    <span class="text-sm font-medium text-gray-900">${batch.uploadedById || batch.uploadedBy || '—'}</span>
                 </div>
             </td>
             <td class="px-4 py-3">
-                ${batch.validatedBy ? `
+                ${batch.validatedById || batch.validatedBy ? `
                     <div class="flex items-center gap-2">
                         <div class="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-xs">
-                            ${batch.validatedBy.charAt(0).toUpperCase()}
+                            ${(batch.validatedById || batch.validatedBy || 'V').charAt(0).toUpperCase()}
                         </div>
                         <span class="text-sm font-medium text-gray-900">${batch.validatedBy}</span>
                     </div>
@@ -340,7 +340,7 @@ function searchInTable() {
 }
 
 function exportTableToCSV() {
-    const headers = ['Batch ID', 'Application', 'Statut', 'Inputter', 'Validateur', 'Pays', 'Département', 'Records', 'Erreurs', 'Date Upload', 'Date Validation'];
+    const headers = ['Batch ID', 'Application', 'Statut', 'Initiateur', 'Validateur', 'Pays', 'Département', 'Records', 'Erreurs', 'Date Upload', 'Date Validation'];
 
     const rows = filteredBatches.map(batch => [
         batch.batchId || '',
@@ -430,7 +430,7 @@ function exportToPDF() {
         (batch.batchId || '-').substring(0, 20),
         (batch.application || '-').substring(0, 15),
         batch.status || '-',
-        (batch.uploadedBy || '-').substring(0, 12),
+        (batch.uploadedById || batch.uploadedBy || '—').substring(0, 12),
         (batch.validatedBy || '-').substring(0, 12),
         batch.country || '-',
         batch.department || '-',
@@ -441,7 +441,7 @@ function exportToPDF() {
     ]);
 
     doc.autoTable({
-        head: [['Batch ID', 'Application', 'Statut', 'Inputter', 'Validateur', 'Pays', 'Dept', 'Records', 'Err.', 'Upload', 'Validation']],
+        head: [['Batch ID', 'Application', 'Statut', 'Initiateur', 'Validateur', 'Pays', 'Dept', 'Records', 'Err.', 'Upload', 'Validation']],
         body: tableData,
         startY: yPos + 6,
         styles: {

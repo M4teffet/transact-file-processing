@@ -3,19 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>{#insert title}Utilitaire Batch Orange Bank{/insert}</title>
+    <title>{#insert title}FLUX Orange Bank{/insert}</title>
     <link href="/css/tailwind.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <link href="/images/favicon.ico" rel="shortcut icon"/>
     <style>
+        /* ── Base — font reduced from 0.93rem to 0.82rem ── */
         html { font-size: 0.92rem; }
         body { font-family: 'Inter', sans-serif; }
 
         #snackbar-container {
-            position: fixed; bottom: 1rem; left: 1rem;
-            width: 100%; max-width: 24rem;
-            display: flex; flex-direction: column; gap: 0.5rem; z-index: 9999;
+            position: fixed;
+            bottom: 1.5rem;
+            left: 1.5rem;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 0.5rem;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .snackbar-item {
+            pointer-events: all;
+            min-width: 20rem;
+            max-width: min(34rem, calc(100vw - 3rem));
+            background: #323232;
+            color: rgba(255,255,255,0.87);
+            border-radius: 4px;
+            box-shadow: 0 3px 5px -1px rgba(0,0,0,.2),
+                        0 6px 10px 0 rgba(0,0,0,.14),
+                        0 1px 18px 0 rgba(0,0,0,.12);
+            display: flex;
+            align-items: center;
+            gap: 0;
+            font-size: .875rem;
+            font-weight: 400;
+            letter-spacing: .0178571429em;
+            line-height: 1.25rem;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity .2s cubic-bezier(0,0,.2,1),
+                        transform .2s cubic-bezier(0,0,.2,1);
+        }
+        .snackbar-item.snackbar-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .snackbar-item.snackbar-hiding {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        .snackbar-msg {
+            flex: 1;
+            padding: .875rem 1rem;
+            word-break: break-word;
+        }
+        .snackbar-action {
+            flex-shrink: 0;
+            padding: .875rem 1rem .875rem 0;
+            font-size: .875rem;
+            font-weight: 500;
+            letter-spacing: .0892857143em;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: #e86e00;
+            line-height: 1;
+            white-space: nowrap;
+            transition: color .15s;
+        }
+        .snackbar-action:hover { color: #ffb07a; }
+        .snackbar-progress {
+            position: absolute;
+            bottom: 0; left: 0;
+            height: 2px;
+            background: rgba(255,255,255,0.25);
+            animation: snackbar-shrink linear forwards;
+        }
+        @keyframes snackbar-shrink {
+            from { width: 100%; }
+            to   { width: 0%; }
         }
 
         /* Stats cards */
@@ -27,35 +96,35 @@
         }
         .stats-card:hover { box-shadow: 0 2px 8px 0 rgb(0 0 0 / 0.08); transform: translateY(-1px); }
         .stats-icon { width: 2rem; height: 2rem; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .stats-label { font-size: 0.65rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.15rem; }
-        .stats-value { font-size: 1.6rem; font-weight: 700; color: #111827; line-height: 1; }
+        .stats-label { font-size: 0.7rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.15rem; }
+        .stats-value { font-size: 1.65rem; font-weight: 700; color: #111827; line-height: 1; }
         .card-green  { border-left: 3px solid #10b981; }
-        .card-orange { border-left: 3px solid #ff7900; }
+        .card-orange { border-left: 3px solid #e86e00; }
         .card-red    { border-left: 3px solid #ef4444; }
         .card-blue   { border-left: 3px solid #3b82f6; }
 
         /* Nav */
-        .nav-item { display: flex; align-items: center; gap: 0.65rem; padding: 0.55rem 0.75rem; border-radius: 0.375rem; font-size: 0.8rem; font-weight: 500; transition: all 0.15s; cursor: pointer; text-decoration: none; color: #4b5563; }
-        .nav-item:hover { color: #ff7900; background-color: #fff7ed; }
-        .nav-item-active { color: #a55600; background-color: #fff7ed; font-weight: 600; }
+        .nav-item { display: flex; align-items: center; gap: 0.65rem; padding: 0.55rem 0.75rem; border-radius: 0.375rem; font-size: 0.9rem; font-weight: 500; transition: all 0.15s; cursor: pointer; text-decoration: none; color: #4b5563; }
+        .nav-item:hover { color: #e86e00; background-color: #fff3e8; }
+        .nav-item-active { color: #c45d00; background-color: #fff3e8; font-weight: 600; }
 
         /* Form inputs */
         .form-input, .form-select {
             width: 100%; padding: 0.45rem 0.7rem;
             border: 1px solid #d1d5db; border-radius: 0.375rem;
-            font-size: 0.8rem; background: white; outline: none;
+            font-size: 0.9rem; background: white; outline: none;
             transition: border-color 0.15s, box-shadow 0.15s;
         }
         .form-input:focus, .form-select:focus {
-            border-color: #ff7900;
+            border-color: #e86e00;
             box-shadow: 0 0 0 3px rgba(255,121,0,0.12);
         }
 
         /* Page header */
         .page-header { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 0.75rem; padding-bottom: 1rem; margin-bottom: 1.25rem; border-bottom: 1px solid #e5e7eb; }
         @media (min-width: 640px) { .page-header { flex-direction: row; align-items: center; } }
-        .page-title    { font-size: 1.25rem; font-weight: 700; color: #111827; }
-        .page-subtitle { font-size: 0.78rem; color: #6b7280; margin-top: 0.1rem; }
+        .page-title    { font-size: 1.3rem; font-weight: 700; color: #111827; }
+        .page-subtitle { font-size: 0.82rem; color: #6b7280; margin-top: 0.1rem; }
 
         /* User dropdown */
         #user-dropdown {
@@ -85,7 +154,7 @@
                         id="sidebar-toggle">
                     <i class="w-4 h-4" data-lucide="menu"></i>
                 </button>
-                <span class="text-white font-semibold" style="font-size:.8rem;">Utilitaire Batch — Orange Bank</span>
+                <span class="text-white font-semibold">FLUX — Orange Bank</span>
             </div>
 
             <!-- User dropdown -->
@@ -97,15 +166,15 @@
                               style="font-size:.6rem;">?</span>
                     </div>
                     <div class="hidden sm:block text-left leading-tight">
-                        <p class="text-white font-semibold" id="header-username" style="font-size:.75rem;">—</p>
-                        <p class="text-gray-400 uppercase tracking-wide" id="header-role" style="font-size:.6rem;">—</p>
+                        <p class="text-white font-semibold" id="header-username">—</p>
+                        <p class="text-gray-400 uppercase tracking-wide" id="header-role" style="font-size:.7rem;">—</p>
                     </div>
                     <i class="w-3 h-3 text-gray-400" data-lucide="chevron-down"></i>
                 </button>
 
                 <div id="user-dropdown">
                     <div class="px-3 py-2.5 bg-gray-50 border-b border-gray-100">
-                        <p class="font-bold text-gray-800" id="dropdown-username" style="font-size:.78rem;">—</p>
+                        <p class="font-bold text-gray-800" id="dropdown-username">—</p>
                         <p class="text-gray-500 mt-0.5" id="dropdown-role" style="font-size:.68rem;">—</p>
                         <div class="text-gray-400 mt-1 flex items-center gap-1" id="dropdown-country"
                              style="font-size:.68rem;"></div>
@@ -130,7 +199,7 @@
         </div>
     </header>
 
-    <main class="flex-1 overflow-x-hidden overflow-y-auto p-5">
+    <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
         {#insert default}{/insert}
     </main>
 </div>
@@ -138,15 +207,15 @@
 <!-- Delete modal -->
 <div class="fixed inset-0 z-50 hidden bg-black/60 flex items-center justify-center" id="deleteConfirmationModal">
     <div class="bg-white rounded-lg shadow-xl p-5 max-w-md mx-4 w-full">
-        <h3 class="font-bold text-gray-900 mb-2" style="font-size:.9rem;">Confirmer la suppression</h3>
-        <p class="text-gray-600 mb-5" style="font-size:.8rem;">Voulez-vous vraiment supprimer ce batch ? Cette action
+        <h3 class="font-bold text-gray-900 mb-2" style="font-size:1rem;">Confirmer la suppression</h3>
+        <p class="text-gray-600 mb-5" style="font-size:.85rem;">Voulez-vous vraiment supprimer ce batch ? Cette action
             est irréversible.</p>
         <div class="flex justify-end gap-2">
             <button class="px-3 py-1.5 rounded text-gray-700 bg-gray-100 hover:bg-gray-200 transition"
-                    onclick="cancelDelete()" style="font-size:.8rem;">Annuler
+                    onclick="cancelDelete()" style="font-size:.85rem;">Annuler
             </button>
             <button class="px-3 py-1.5 rounded text-white bg-red-600 hover:bg-red-700 transition"
-                    onclick="confirmDelete()" style="font-size:.8rem;">Supprimer
+                    onclick="confirmDelete()" style="font-size:.85rem;">Supprimer
             </button>
         </div>
     </div>
@@ -158,7 +227,7 @@
     <div class="absolute inset-0 bg-black/60"></div>
     <div class="relative bg-white w-11/12 max-w-6xl rounded-lg shadow-xl p-5 z-10 overflow-y-auto max-h-[90vh]">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="font-semibold text-gray-900" style="font-size:.9rem;">Détails du batch</h2>
+            <h2 class="font-semibold text-gray-900" style="font-size:1rem;">Détails du batch</h2>
             <button class="p-1.5 rounded hover:bg-gray-100 text-gray-500 transition"
                     onclick="closeModal('batchDetailsModal')">
                 <i class="w-4 h-4" data-lucide="x"></i>
@@ -172,13 +241,13 @@
 <div class="fixed inset-0 hidden items-center justify-center z-50 bg-black/60" id="batchSummaryModal">
     <div class="relative bg-white w-11/12 max-w-4xl rounded-lg shadow-xl z-10 overflow-y-auto max-h-[90vh]">
         <div class="flex justify-between items-center px-5 py-3 border-b border-gray-200">
-            <h3 class="font-semibold text-gray-900" id="batchSummaryTitle" style="font-size:.9rem;">Résumé du batch</h3>
+            <h3 class="font-semibold text-gray-900" id="batchSummaryTitle" style="font-size:1rem;">Résumé du batch</h3>
             <button class="p-1.5 rounded hover:bg-gray-100 text-gray-500 transition"
                     onclick="closeModal('batchSummaryModal')">
                 <i class="w-4 h-4" data-lucide="x"></i>
             </button>
         </div>
-        <div class="p-5 text-gray-700" id="batchSummaryContent" style="font-size:.8rem;"></div>
+        <div class="p-5 text-gray-700" id="batchSummaryContent" style="font-size:.85rem;"></div>
     </div>
 </div>
 

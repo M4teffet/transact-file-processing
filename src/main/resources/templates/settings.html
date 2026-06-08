@@ -2,274 +2,368 @@
 {#title}Paramètres - Administration{/title}
 
 {#aside}
-{#insert aside}{#include sidebar-admin/}{/insert}
-
+{#include sidebar-admin/}
 {/aside}
 
 {#default}
-<div class="max-w-6xl mx-auto space-y-8 pb-10">
+<div class="max-w-6xl mx-auto pb-10">
 
-    <div class="flex justify-between items-end border-b border-gray-200 pb-4">
+    <!-- Page header -->
+    <div class="flex justify-between items-end border-b border-gray-200 pb-4 mb-6">
         <div>
-            <h2 class="text-3xl font-bold text-gray-900">Paramètres</h2>
-            <p class="text-sm text-gray-600 mt-1">
-                Gestion des référentiels et accès
-            </p>
+            <h2 class="text-2xl font-bold text-gray-900">Paramètres</h2>
+            <p class="text-xs text-gray-500 mt-1">Référentiels, utilisateurs et configuration</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-        <div class="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col h-full">
-            <div class="p-5 border-b border-gray-100 bg-gray-50">
-                <h3 class="text-lg font-bold flex items-center gap-2 text-gray-800">
-                    <i class="w-5 h-5 text-orange-500" data-lucide="globe"></i>
-                    Gestion des Pays
-                </h3>
-            </div>
-            <div class="p-6 flex-grow">
-                <form class="space-y-4" id="countryForm">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Code Pays <span
-                                    class="text-red-500">*</span></label>
-                            <input class="appearance-none rounded-md block w-full px-3 py-2 border border-gray-300 text-sm"
-                                   autocapitalize="on" id="countryCode" placeholder="Ex: CI" required>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Company ID <span
-                                    class="text-red-500">*</span></label>
-                            <input class="appearance-none rounded-md block w-full px-3 py-2 border border-gray-300 text-sm"
-                                   id="companyId" placeholder="Ex: CI001" required>
-                        </div>
-                    </div>
-                    <button class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 transition-all"
-                            type="submit">
-                        Ajouter le pays
-                    </button>
-                </form>
-                <div class="mt-6 border-t pt-4">
-                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Pays actifs</h4>
-                    <div class="flex-grow overflow-y-auto max-h-[400px]">
-                        <ul class="text-sm" id="countryList"></ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col h-full">
-            <div class="p-5 border-b border-gray-100 bg-gray-50">
-                <h3 class="text-lg font-bold flex items-center gap-2 text-gray-800">
-                    <i class="w-5 h-5 text-orange-500" data-lucide="briefcase"></i>
-                    Départements
-                </h3>
-            </div>
-            <div class="p-6 flex-grow">
-                <form class="space-y-4" id="departmentForm">
-                    <div class="grid grid-cols-3 gap-4">
-                        <div class="col-span-1">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Code <span
-                                    class="text-red-500">*</span></label>
-                            <input class="appearance-none rounded-md block w-full px-3 py-2 border border-gray-300 text-sm"
-                                   id="deptCode"
-                                   min="1"
-                                   placeholder="101"
-                                   required
-                                   step="1" type="number">
-                        </div>
-
-                        <div class="col-span-2">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Description <span
-                                    class="text-red-500">*</span></label>
-                            <input class="appearance-none rounded-md block w-full px-3 py-2 border border-gray-300 text-sm"
-                                   id="deptDesc" placeholder="Ex: Finance" required>
-                        </div>
-                    </div>
-                    <button class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 transition-all"
-                            type="submit">
-                        Créer Département
-                    </button>
-                </form>
-                <div class="mt-6 border-t pt-4">
-                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Départements existants</h4>
-                    <div class="flex-grow overflow-y-auto max-h-[400px]">
-                        <ul class="text-sm" id="departmentList"></ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+    <!-- Tab navigation -->
+    <div class="flex border-b border-gray-200 mb-6 gap-0" id="settings-tabs" role="tablist">
+        <button class="settings-tab active" data-tab="users" role="tab">
+            <i class="w-3.5 h-3.5" data-lucide="users"></i> Utilisateurs
+        </button>
+        <button class="settings-tab" data-tab="refs" role="tab">
+            <i class="w-3.5 h-3.5" data-lucide="globe"></i> Pays &amp; Départements
+        </button>
+        <button class="settings-tab" data-tab="apps" role="tab">
+            <i class="w-3.5 h-3.5" data-lucide="layers"></i> Applications
+        </button>
+        <button class="settings-tab" data-tab="security" role="tab">
+            <i class="w-3.5 h-3.5" data-lucide="shield"></i> Sécurité
+        </button>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- ── TAB: USERS ──────────────────────────────────────── -->
+    <div class="settings-panel" id="panel-users">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-        <!-- CREATE USER -->
-        <div class="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col h-full">
-            <div class="p-5 border-b border-gray-100 bg-gray-50">
-                <h3 class="text-lg font-bold flex items-center gap-2 text-gray-800">
-                    <i class="w-5 h-5 text-orange-500" data-lucide="user-plus"></i>
-                    Nouvel Utilisateur
-                </h3>
-            </div>
+            <!-- Create user -->
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                    <i class="w-4 h-4 text-orange-600" data-lucide="user-plus"></i>
+                    <span class="text-sm font-semibold text-gray-800">Nouvel utilisateur</span>
+                </div>
+                <div class="p-4">
+                    <form class="space-y-3" id="userForm">
 
-            <div class="p-6">
-                <form class="space-y-4" id="userForm">
-
-                    <!-- USERNAME -->
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">
-                            Identifiant <span class="text-red-500">*</span>
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="h-4 w-4 text-gray-400" data-lucide="user"></i>
-                            </div>
-                            <input
-                                    class="appearance-none rounded-md block w-full pl-10 px-3 py-2 border border-gray-300 text-sm"
-                                    id="username"
-                                    placeholder="3-50 caractères"
-                                    autocomplete="off" required>
-                        </div>
-                        <p class="text-xs mt-1 h-4" id="usernameHint"></p>
-                    </div>
-
-                    <!-- PASSWORD -->
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">
-                            Mot de passe <span class="text-red-500">*</span>
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="h-4 w-4 text-gray-400" data-lucide="lock"></i>
-                            </div>
-                            <input
-                                    class="appearance-none rounded-md block w-full pl-10 pr-10 px-3 py-2 border border-gray-300 text-sm"
-                                    id="password"
-                                    min="8"
-                                    required
-                                    type="password">
-                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
-                                 onclick="togglePasswordVisibility()">
-                                <i class="h-4 w-4 text-gray-400" data-lucide="eye" id="eyeIcon"></i>
-                            </div>
-                        </div>
-                        <div class="h-1 mt-1.5 bg-gray-200 rounded overflow-hidden">
-                            <div class="h-full w-0 rounded transition-all duration-300" id="settingsMeterBar"></div>
-                        </div>
-                        <p class="text-xs mt-0.5 h-4 text-gray-500" id="settingsMeterLabel"></p>
-                    </div>
-
-                    <!-- EMAIL -->
-                    <div id="emailFieldWrapper">
-                        <label class="block text-xs font-medium text-gray-700 mb-1">
-                            E-mail <span class="text-red-500" id="emailRequiredMark">*</span>
-                            <span class="hidden text-gray-400 font-normal text-xs" id="emailOptionalNote">(optionnel pour ADMIN)</span>
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="h-4 w-4 text-gray-400" data-lucide="mail"></i>
-                            </div>
-                            <input class="appearance-none rounded-md block w-full pl-10 px-3 py-2 border border-gray-300 text-sm"
-                                   id="userEmail" placeholder="utilisateur@orangebank.com" type="email">
-                        </div>
-                        <p class="text-xs text-gray-500 mt-1" id="emailHint">Requis pour MFA et réinitialisation du mot
-                            de passe</p>
-                    </div>
-
-                    <!-- ROLE / COUNTRY -->
-                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Username -->
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Rôle</label>
-                            <select class="rounded-md block w-full px-3 py-2 border border-gray-300 text-sm bg-white"
-                                    id="role">
-                                <option value="">-- Sélectionner un role --</option>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">
+                                Identifiant <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <i class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
+                                   data-lucide="user"></i>
+                                <input autocomplete="off"
+                                       class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+                                       id="username" placeholder="3–50 caractères" required>
+                            </div>
+                            <p class="text-[11px] mt-1 min-h-[14px]" id="usernameHint"></p>
+                        </div>
+
+                        <!-- Password -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">
+                                Mot de passe <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <i class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
+                                   data-lucide="lock"></i>
+                                <input class="w-full pl-8 pr-8 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition" id="password"
+                                       placeholder="Min. 10 caractères"
+                                       required type="password">
+                                <button class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition" onclick="togglePasswordVisibility()"
+                                        type="button">
+                                    <i class="w-3.5 h-3.5" data-lucide="eye" id="eyeIcon"></i>
+                                </button>
+                            </div>
+                            <div class="h-1 mt-1.5 bg-gray-200 rounded overflow-hidden">
+                                <div class="h-full w-0 rounded transition-all duration-300" id="settingsMeterBar"></div>
+                            </div>
+                            <p class="text-[11px] mt-0.5 min-h-[14px] text-gray-500" id="settingsMeterLabel"></p>
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">
+                                E-mail
+                                <span class="text-red-500" id="emailRequiredMark">*</span>
+                                <span class="hidden text-gray-400 font-normal" id="emailOptionalNote">(optionnel pour ADMIN)</span>
+                            </label>
+                            <div class="relative">
+                                <i class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
+                                   data-lucide="mail"></i>
+                                <input class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition" id="userEmail"
+                                       placeholder="prenom.nom@orangebank.com"
+                                       type="email">
+                            </div>
+                            <p class="text-[11px] mt-0.5 text-gray-400" id="emailHint">Requis pour MFA et
+                                réinitialisation</p>
+                        </div>
+
+                        <!-- Role -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Rôle <span class="text-red-500">*</span></label>
+                            <select class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                    id="role"
+                                    required>
+                                <option value="">— Sélectionner un rôle —</option>
                                 <option value="INPUTTER">INPUTTER</option>
                                 <option value="AUTHORISER">AUTHORISER</option>
                                 <option value="ADMIN">ADMIN</option>
                             </select>
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Pays</label>
-                            <select class="rounded-md block w-full px-3 py-2 border border-gray-300 text-sm bg-white"
-                                    id="userCountry">
-                                <option value="">-- Sélectionner un pays --</option>
-                            </select>
+                        <!-- Country + Department -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Pays <span
+                                        class="text-red-500">*</span></label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                        id="userCountry"
+                                        required>
+                                    <option value="">— Pays —</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Département <span
+                                        class="text-red-500">*</span></label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                        id="department"
+                                        required>
+                                    <option value="">— Département —</option>
+                                </select>
+                            </div>
                         </div>
+
+                        <button class="w-full py-2 px-4 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5" id="createUserBtn"
+                                type="submit">
+                            <i class="w-3.5 h-3.5" data-lucide="user-plus"></i>
+                            Créer l'utilisateur
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- User list -->
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between flex-shrink-0">
+                    <div class="flex items-center gap-2">
+                        <i class="w-4 h-4 text-orange-600" data-lucide="users"></i>
+                        <span class="text-sm font-semibold text-gray-800">Utilisateurs</span>
                     </div>
-
-                    <!-- DEPARTMENT -->
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">
-                            Département <span class="text-red-500">*</span>
-                        </label>
-                        <select
-                                class="rounded-md block w-full px-3 py-2 border border-gray-300 text-sm bg-white"
-                                id="department"
-                                required>
-                            <option value="">-- Sélectionner un département --</option>
-                        </select>
+                    <span class="text-[10px] text-gray-400" id="users-count-badge"></span>
+                </div>
+                <div class="px-3 py-2 border-b border-gray-100 flex-shrink-0">
+                    <div class="relative">
+                        <i class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none"
+                           data-lucide="search"></i>
+                        <input class="w-full pl-7 pr-3 py-1.5 border border-gray-200 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-orange-500 transition" id="userSearchInput" oninput="filterUserList(this.value)"
+                               placeholder="Rechercher…"
+                               type="text">
                     </div>
-
-                    <!-- SUBMIT -->
-                    <button
-                            class="w-full py-2 px-4 rounded-md text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 transition"
-                            id="createUserBtn"
-                            type="submit">
-                        Créer l’utilisateur
-                    </button>
-
-                </form>
+                </div>
+                <div class="overflow-y-auto" style="max-height:440px;">
+                    <ul class="divide-y divide-gray-100 px-0" id="userList"></ul>
+                </div>
             </div>
         </div>
-
-        <!-- USER LIST -->
-        <div class="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col h-full">
-            <div class="p-5 border-b border-gray-100 bg-gray-50">
-                <h3 class="text-lg font-bold flex items-center gap-2 text-gray-800">
-                    <i class="w-5 h-5 text-orange-500" data-lucide="users"></i>
-                    Utilisateurs Enregistrés
-                </h3>
-            </div>
-            <div class="p-6 flex-grow overflow-y-auto max-h-[400px]">
-                <ul class="text-sm" id="userList"></ul>
-            </div>
-        </div>
-
     </div>
 
+    <!-- ── TAB: PAYS & DEPTS ───────────────────────────────── -->
+    <div class="settings-panel hidden" id="panel-refs">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-    <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
-        <div class="p-5 border-b border-gray-100 bg-gray-50">
-            <h3 class="text-lg font-bold flex items-center gap-2 text-gray-800">
-                <i class="w-5 h-5 text-orange-500" data-lucide="layers"></i>
-                Applications Core Banking
-            </h3>
+            <!-- Countries -->
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                    <i class="w-4 h-4 text-orange-600" data-lucide="globe"></i>
+                    <span class="text-sm font-semibold text-gray-800">Pays</span>
+                </div>
+                <div class="p-4">
+                    <form class="space-y-3" id="countryForm">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Code <span
+                                        class="text-red-500">*</span></label>
+                                <input autocapitalize="on" class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition uppercase" id="countryCode"
+                                       maxlength="2"
+                                       placeholder="CI" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Company ID <span
+                                        class="text-red-500">*</span></label>
+                                <input class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                       id="companyId"
+                                       placeholder="CI2250001" required>
+                            </div>
+                        </div>
+                        <button class="w-full py-2 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
+                                type="submit">
+                            <i class="w-3.5 h-3.5" data-lucide="plus"></i> Ajouter le pays
+                        </button>
+                    </form>
+                    <div class="mt-4 border-t pt-3">
+                        <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Pays actifs</p>
+                        <ul class="space-y-1" id="countryList"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Departments -->
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                    <i class="w-4 h-4 text-orange-600" data-lucide="building-2"></i>
+                    <span class="text-sm font-semibold text-gray-800">Départements</span>
+                </div>
+                <div class="p-4">
+                    <form class="space-y-3" id="departmentForm">
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Code <span
+                                        class="text-red-500">*</span></label>
+                                <input class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition" id="deptCode" min="1" placeholder="101"
+                                       required
+                                       step="1" type="number">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Description <span
+                                        class="text-red-500">*</span></label>
+                                <input class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                       id="deptDesc"
+                                       placeholder="Ex: Finance" required>
+                            </div>
+                        </div>
+                        <button class="w-full py-2 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
+                                type="submit">
+                            <i class="w-3.5 h-3.5" data-lucide="plus"></i> Créer le département
+                        </button>
+                    </form>
+                    <div class="mt-4 border-t pt-3">
+                        <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                            Départements</p>
+                        <ul class="space-y-1" id="departmentList"></ul>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="border rounded-md">
+    </div>
+
+    <!-- ── TAB: APPLICATIONS ───────────────────────────────── -->
+    <div class="settings-panel hidden" id="panel-apps">
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                <i class="w-4 h-4 text-orange-600" data-lucide="layers"></i>
+                <span class="text-sm font-semibold text-gray-800">Applications Core Banking</span>
+            </div>
+            <div class="grid" style="grid-template-columns:200px 1fr;min-height:300px;">
+                <!-- App list -->
+                <div class="border-r border-gray-100 p-2">
                     <ul class="divide-y divide-gray-100" id="appList"></ul>
                 </div>
-                <div class="md:col-span-2 space-y-4">
+                <!-- App detail -->
+                <div class="p-4 space-y-3">
                     <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Nom du module</label>
-                        <input class="bg-gray-100 w-full rounded-md border-gray-300 text-sm px-3 py-2" disabled
-                               id="appNameDisplay">
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Module</label>
+                        <input class="w-full px-3 py-2 border border-gray-200 rounded-md text-xs bg-gray-50 cursor-not-allowed text-gray-500"
+                               disabled
+                               id="appNameDisplay" placeholder="Sélectionnez un module">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Description</label>
-                        <textarea class="w-full rounded-md border-gray-300 text-sm" id="appDescription" rows="2"></textarea>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition resize-none" id="appDescription"
+                                  rows="2"></textarea>
                     </div>
-                    <div class="bg-gray-50 p-4 rounded border text-center text-sm text-gray-500" id="schemaPlaceholder">
-                        Visualisation du schéma JSON (Lecture seule pour l'admin)
+                    <div id="schemaContainer">
+                        <p class="text-xs text-gray-400 text-center py-8">
+                            Sélectionnez un module pour visualiser le schéma
+                        </p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB: SÉCURITÉ ─────────────────────────────────────────── -->
+    <div class="settings-panel hidden" id="panel-security">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+            <!-- Password Policy -->
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                    <i class="w-4 h-4 text-orange-600" data-lucide="key-round"></i>
+                    <span class="text-sm font-semibold text-gray-800">Politique de mot de passe</span>
+                </div>
+                <div class="p-4 space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">
+                            Longueur minimale <span class="text-red-500">*</span>
+                        </label>
+                        <input class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition" id="pol-minLength" max="32" min="6"
+                               type="number">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-xs font-medium text-gray-600">Règles de complexité</label>
+                        <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                            <input class="w-3.5 h-3.5 accent-orange-500" id="pol-digit" type="checkbox">
+                            Exiger au moins un chiffre
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                            <input class="w-3.5 h-3.5 accent-orange-500" id="pol-upper" type="checkbox">
+                            Exiger au moins une majuscule
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                            <input class="w-3.5 h-3.5 accent-orange-500" id="pol-special" type="checkbox">
+                            Exiger au moins un caractère spécial (!@#$%...)
+                        </label>
+                    </div>
+                    <div class="bg-orange-50 border border-orange-200 rounded-md p-3 text-xs text-orange-800">
+                        <strong>Aperçu :</strong> <span id="pol-preview">Chargement...</span>
+                    </div>
+                    <button class="w-full py-2 px-4 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
+                            id="savePolicyBtn">
+                        <i class="w-3.5 h-3.5" data-lucide="save"></i> Enregistrer la politique
+                    </button>
+                    <div class="hidden text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2 text-center"
+                         id="pol-success">
+                        ✓ Politique enregistrée avec succès
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lock / Unlock users -->
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="w-4 h-4 text-orange-600" data-lucide="lock"></i>
+                        <span class="text-sm font-semibold text-gray-800">Gestion des accès</span>
+                    </div>
+                    <button class="p-1 text-gray-400 hover:text-orange-600 transition"
+                            onclick="loadSecurityUserList()" title="Rafraîchir">
+                        <i class="w-3.5 h-3.5" data-lucide="refresh-cw"></i>
+                    </button>
+                </div>
+                <div class="p-3">
+                    <input class="w-full px-3 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-orange-500 mb-3" id="sec-search" oninput="filterSecurityList(this.value)"
+                           placeholder="Rechercher un utilisateur…"
+                           type="text">
+                    <div class="space-y-1.5 max-h-80 overflow-y-auto" id="sec-user-list"></div>
                 </div>
             </div>
         </div>
     </div>
 
 </div>
+
+<style>
+    .settings-tab {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 8px 16px; font-size: .85rem; font-weight: 400;
+        color: #6b7280; border: none; background: none; cursor: pointer;
+        border-bottom: 2px solid transparent; transition: all .15s; white-space: nowrap;
+    }
+    .settings-tab:hover { color: #111827; }
+    .settings-tab.active { color: #e86e00; border-bottom-color: #e86e00; font-weight: 500; }
+</style>
 {/default}
 
 {#script}

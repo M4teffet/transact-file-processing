@@ -55,8 +55,11 @@ public class WebPageResource {
     @Location("sidebar-admin")
     Template sidebarAdminTemplate;
     @Inject
-    @Location("sidebar-ops")
-    Template sidebarOpsTemplate;
+    @Location("sidebar-inputter")
+    Template sidebarInputterTemplate;
+    @Inject
+    @Location("sidebar-authoriser")
+    Template sidebarAuthoriserTemplate;
 
     // ── Admin ─────────────────────────────────────────────────────────────────
 

@@ -1,5 +1,5 @@
 {#include layout}
-{#title}Rapports - Batch Manager{/title}
+{#title}Rapports - FLUX{/title}
 
 {#head}
 
@@ -15,18 +15,18 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-gray-200">
         <div>
-            <h2 class="text-3xl font-bold text-gray-900">Rapports Détaillés</h2>
+            <h2 class="text-2xl font-bold text-gray-900">Rapports Détaillés</h2>
             <p class="text-sm text-gray-600 mt-1">Analyse complète des batchs avec traçabilité</p>
         </div>
         <div class="flex items-center gap-3 bg-gray-50 rounded-md px-4 py-3 border border-gray-200">
-            <button class="flex items-center gap-2 px-4 py-2 bg-white rounded-md border border-gray-300 hover:border-orange-400 hover:shadow-sm transition-all duration-200 group"
+            <button class="flex items-center gap-2 px-4 py-2 bg-white rounded-md border border-gray-300 hover:border-orange-500 hover:shadow-sm transition-all duration-200 group"
                     onclick="refreshAllReports()">
-                <i class="w-4 h-4 text-gray-600 group-hover:text-orange-500 transition-all duration-300"
+                <i class="w-4 h-4 text-gray-600 group-hover:text-orange-600 transition-all duration-300"
                    data-lucide="refresh-cw"></i>
                 <span class="text-sm font-medium text-gray-700">Actualiser</span>
             </button>
             <div class="h-8 w-px bg-gray-300"></div>
-            <button class="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-all duration-200"
+            <button class="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md transition-all duration-200"
                     onclick="exportToPDF()">
                 <i class="w-4 h-4" data-lucide="file-text"></i>
                 <span class="text-sm font-medium">Exporter PDF</span>
@@ -36,28 +36,28 @@
 
     <!-- Filters Section -->
     <div class="bg-white rounded-md shadow-sm border border-gray-200 p-6">
-        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <i class="w-5 h-5 text-orange-500" data-lucide="filter"></i>
+        <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+            <i class="w-5 h-5 text-orange-600" data-lucide="filter"></i>
             Filtres de Recherche
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Date Range -->
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Date de début</label>
-                <input class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-400 text-sm"
+                <input class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
                        id="startDate"
                        type="date">
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Date de fin</label>
-                <input class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-400 text-sm"
+                <input class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
                        id="endDate"
                        type="date">
             </div>
             <!-- Country Filter -->
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Pays</label>
-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-400 text-sm"
+                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
                         id="countryFilter">
                     <option value="">Tous les pays</option>
                 </select>
@@ -65,7 +65,7 @@
             <!-- Department Filter -->
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Département</label>
-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-400 text-sm"
+                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
                         id="departmentFilter">
                     <option value="">Tous les départements</option>
                 </select>
@@ -73,7 +73,7 @@
             <!-- Status Filter -->
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Statut</label>
-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-400 text-sm"
+                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
                         id="statusFilter">
                     <option value="">Tous les statuts</option>
                     <option value="PROCESSED">Traité avec succès</option>
@@ -84,23 +84,23 @@
             </div>
             <!-- Inputter Filter -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Inputter</label>
-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-400 text-sm"
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Initiateur</label>
+                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
                         id="inputterFilter">
-                    <option value="">Tous les inputters</option>
+                    <option value="">Tous les initiateurs</option>
                 </select>
             </div>
             <!-- Validator Filter -->
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Validateur</label>
-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-400 text-sm"
+                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
                         id="validatorFilter">
                     <option value="">Tous les validateurs</option>
                 </select>
             </div>
             <!-- Apply Button -->
             <div class="flex items-end">
-                <button class="w-full px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-md transition-colors"
+                <button class="w-full px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold rounded-md transition-colors"
                         onclick="applyFilters()">
                     Appliquer les filtres
                 </button>
@@ -117,16 +117,16 @@
     <div class="bg-white rounded-md shadow-sm border border-gray-200">
         <div class="p-6 border-b border-gray-200">
             <div class="flex justify-between items-center">
-                <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                    <i class="w-5 h-5 text-orange-500" data-lucide="table"></i>
+                <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <i class="w-5 h-5 text-orange-600" data-lucide="table"></i>
                     Détails des Batchs
                 </h3>
                 <div class="flex items-center gap-3">
-                    <input class="px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-orange-400"
+                    <input class="px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-orange-500"
                            id="searchTable" onkeyup="searchInTable()"
                            placeholder="Rechercher dans le tableau..."
                            type="text">
-                    <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 hover:border-orange-400 rounded-md text-sm transition-colors"
+                    <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 hover:border-orange-500 rounded-md text-sm transition-colors"
                             onclick="exportTableToCSV()">
                         <i class="w-4 h-4" data-lucide="download"></i>
                         CSV
@@ -141,7 +141,7 @@
                     <th class="px-4 py-3 text-left font-bold text-gray-700">Batch ID</th>
                     <th class="px-4 py-3 text-left font-bold text-gray-700">Application</th>
                     <th class="px-4 py-3 text-center font-bold text-gray-700">Statut</th>
-                    <th class="px-4 py-3 text-left font-bold text-gray-700">Inputter</th>
+                    <th class="px-4 py-3 text-left font-bold text-gray-700">Initiateur</th>
                     <th class="px-4 py-3 text-left font-bold text-gray-700">Validateur</th>
                     <th class="px-4 py-3 text-center font-bold text-gray-700">Pays</th>
                     <th class="px-4 py-3 text-center font-bold text-gray-700">Département</th>
@@ -155,7 +155,7 @@
                 <tr>
                     <td class="px-4 py-12 text-center text-gray-500" colspan="11">
                         <div class="flex flex-col items-center gap-3">
-                            <i class="w-10 h-10 animate-spin text-orange-500" data-lucide="loader"></i>
+                            <i class="w-10 h-10 animate-spin text-orange-600" data-lucide="loader"></i>
                             <span>Chargement des données...</span>
                         </div>
                     </td>

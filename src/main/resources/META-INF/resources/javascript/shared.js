@@ -106,51 +106,67 @@ function addCountryFlagToFooter() {
 /**
 // SNACKBAR (UPDATED)
  */
-const showSnackbar = (msg, type = "info") => {
+const showSnackbar = (msg, type = "info", actionLabel, actionFn) => {
     const container = document.getElementById("snackbar-container");
     if (!container) return;
 
-    if (container.children.length >= 6) {
-            container.children[0].remove();
+    // Material Design: max 3 stacked, dismiss oldest
+    while (container.children.length >= 3) {
+        container.lastElementChild?.remove();
     }
 
-    const div = document.createElement("div");
+    // Duration per Material spec: 4s default, longer for errors
+    const duration = type === "error" ? 10000 : 4000;
 
-    // Improved color mapping with consistent border classes
-    const colors = {
-        error: "bg-red-50/90 border-red-200 text-red-900 shadow-[0_4px_12px_rgba(239,68,68,0.15)]",
-        success: "bg-emerald-50/90 border-emerald-200 text-emerald-900 shadow-[0_4px_12px_rgba(16,185,129,0.15)]",
-        info: "bg-indigo-50/90 border-indigo-200 text-indigo-900 shadow-[0_4px_12px_rgba(99,102,241,0.15)]"
-    };
+    const item = document.createElement("div");
+    item.className = "snackbar-item";
+    item.style.position = "relative";
 
-    // Base styling
-    div.className = `
-        p-4 rounded-lg border shadow-sm text-sm font-medium
-        flex items-start gap-3 w-full
-        transform transition-all duration-300 ease-out
-        opacity-0 translate-y-4
-        ${colors[type] || colors.info}
-    `;
+    // Action label: "Fermer" for errors, custom or none otherwise
+    const label = actionLabel || (type === "error" ? "Fermer" : "OK");
+    const action = actionFn || (() => dismiss());
 
-    // Add content (using innerHTML in case you want to add icons later)
-    div.innerHTML = `
-        <span class="flex-1 whitespace-pre-line">${msg}</span>
-        <button onclick="this.parentElement.remove()" class="opacity-40 hover:opacity-100 transition-opacity">✕</button>
-    `;
+    item.innerHTML =
+        '<span class="snackbar-msg">' + msg + '</span>' +
+        '<button class="snackbar-action" type="button">' + label + '</button>' +
+        '<div class="snackbar-progress" style="animation-duration:' + duration + 'ms"></div>';
 
-    // Prepend puts the new notification at the bottom of the stack
-    container.prepend(div);
+    container.prepend(item);
 
-    // Trigger entrance animation
-    requestAnimationFrame(() => {
-        div.classList.remove("opacity-0", "translate-y-4");
+    // Dismiss logic
+    let dismissed = false;
+    function dismiss() {
+        if (dismissed) return;
+        dismissed = true;
+        item.classList.remove("snackbar-visible");
+        item.classList.add("snackbar-hiding");
+        setTimeout(() => item.remove(), 220);
+    }
+
+    item.querySelector(".snackbar-action").addEventListener("click", () => {
+        action();
+        dismiss();
     });
 
-    // Auto-remove logic
-    setTimeout(() => {
-        div.classList.add("opacity-0", "translate-x-8"); // Slide out effect
-        setTimeout(() => div.remove(), 300);
-    }, 10000);
+    // Animate in
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => item.classList.add("snackbar-visible"));
+    });
+
+    // Auto-dismiss
+    const timer = setTimeout(dismiss, duration);
+
+    // Pause timer on hover (Material behaviour)
+    item.addEventListener("mouseenter", () => {
+        const bar = item.querySelector(".snackbar-progress");
+        if (bar) bar.style.animationPlayState = "paused";
+        clearTimeout(timer);
+    });
+    item.addEventListener("mouseleave", () => {
+        const bar = item.querySelector(".snackbar-progress");
+        if (bar) bar.style.animationPlayState = "running";
+        setTimeout(dismiss, 1500);
+    });
 };
 
 
@@ -212,36 +228,46 @@ const secureFetch = async (url, options = {}) => {
  */
 const loadStats = async (mapping) => {
     try {
-
-        const currentInputter = Auth.getUsername();
         const pathname = window.location.pathname;
+        const params = new URLSearchParams();
 
-        const params = new URLSearchParams({
-            size: '999',
-        });
-
+        // Use sessionStorage username (set on login) — Auth.getUsername() reads
+        // HttpOnly cookie which is always inaccessible from JS
         if (pathname === '/batches' || pathname === '/upload') {
-            params.set('uploadedById', currentInputter);
+            const username = sessionStorage.getItem('username');
+            if (username && username !== 'Invité') {
+                params.set('uploadedById', username);
+            }
         }
 
-        const res = await secureFetch(`${API_BASE}/batches/counts?${params.toString()}`);
-        if (!res) return; // Exit if redirected
-        if (!res.ok) return; // Exit if redirected
+        const url = params.toString()
+            ? `${API_BASE}/batches/counts?${params.toString()}`
+            : `${API_BASE}/batches/counts`;
+
+        const res = await secureFetch(url);
+        if (!res || !res.ok) return;
 
         const stats = await res.json();
         const totals = {};
 
-        // Aggregate the counts based on the mapping provided in the script
         Object.entries(mapping).forEach(([status, elementId]) => {
             const count = stats[status] || 0;
             if (!totals[elementId]) totals[elementId] = 0;
             totals[elementId] += count;
         });
 
-        // Update DOM elements
         Object.entries(totals).forEach(([elementId, finalSum]) => {
             const el = document.getElementById(elementId);
-            if (el) el.textContent = finalSum;
+            if (el) {
+                const prev = parseInt(el.textContent) || 0;
+                if (prev !== finalSum) {
+                    el.textContent = finalSum;
+                    // Flash animation on change
+                    el.style.transition = 'color .3s';
+                    el.style.color = '#e86e00';
+                    setTimeout(() => { el.style.color = ''; }, 600);
+                }
+            }
         });
     } catch (err) {
         console.error("Erreur stats:", err);
@@ -267,8 +293,8 @@ const getStatusBadge = (status) => {
     const def = types[status] || { color: "bg-gray-100 text-gray-700 border-gray-200", icon: "help-circle", label: status.replace(/_/g, ' ') };
 
     return `
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border uppercase tracking-tighter shadow-xs ${def.color}">
-            <i data-lucide="${def.icon}" class="w-3.5 h-3.5 ${status === 'PROCESSING' ? 'animate-spin' : ''}"></i>
+        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wide ${def.color}">
+            <i data-lucide="${def.icon}" class="w-3 h-3 ${status === 'PROCESSING' ? 'animate-spin' : ''}"></i>
             ${def.label}
         </span>
     `;
@@ -328,7 +354,7 @@ const viewBatchDetails = async (batchId, modalId = "batchDetailsModal", contentI
             ${table}
             <button
                 onclick="downloadBatchNonNull('${batchId}')"
-                class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors">
+                class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors">
                 <i data-lucide="download" class="w-4 h-4"></i> Télécharger le CSV complet
             </button>
         `;
@@ -434,6 +460,41 @@ window.getCountryName = getCountryName;
 window.addCountryFlagToFooter = addCountryFlagToFooter;
 window.showSnackbar = showSnackbar;
 window.loadStats = loadStats;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REAL-TIME STATS POLLING
+// Starts a polling loop that refreshes stats every N seconds.
+// Returns a stop function — call it on page unload to prevent memory leaks.
+//
+// Usage in any page script:
+//   const stopStats = startStatsPolling(mapping, 15);
+//   window.addEventListener('beforeunload', stopStats);
+// ─────────────────────────────────────────────────────────────────────────────
+const startStatsPolling = (mapping, intervalSeconds = 15) => {
+    let timer = null;
+    let active = true;
+
+    const tick = async () => {
+        if (!active) return;
+        await loadStats(mapping).catch(() => {});
+        if (active) {
+            timer = setTimeout(tick, intervalSeconds * 1000);
+        }
+    };
+
+    // Fire immediately then schedule
+    tick();
+
+    const stop = () => {
+        active = false;
+        if (timer) { clearTimeout(timer); timer = null; }
+    };
+
+    window.addEventListener('beforeunload', stop);
+    return stop;
+};
+
+window.startStatsPolling = startStatsPolling;
 window.getStatusBadge = getStatusBadge;
 window.viewBatchDetails = viewBatchDetails;
 window.downloadBatchNonNull = downloadBatchNonNull;

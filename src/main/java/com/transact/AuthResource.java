@@ -4,13 +4,13 @@ import com.transact.processor.model.AppUser;
 import com.transact.processor.model.OtpToken;
 import com.transact.service.EmailService;
 import com.transact.service.PasswordService;
-import io.smallrye.jwt.build.Jwt;
 import io.quarkus.security.Authenticated;
-import jakarta.annotation.security.PermitAll;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.jwt.build.Jwt;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
-import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -23,13 +23,13 @@ import java.util.Optional;
 
 /**
  * AuthResource - handles all post-login security flows:
- * <p>
- * POST /api/auth/change-password   — first-login forced change (authenticated)
- * POST /api/auth/forgot-password   — request reset link via email
- * POST /api/auth/reset-password    — submit new password with reset token
- * POST /api/auth/verify-otp        — verify OTP code after password, complete login
- * POST /api/auth/resend-otp        — resend OTP code to email
- * GET  /api/auth/password-policy   — return policy rules for frontend strength meter
+ *
+ *  POST /api/auth/change-password   — first-login forced change (authenticated)
+ *  POST /api/auth/forgot-password   — request reset link via email
+ *  POST /api/auth/reset-password    — submit new password with reset token
+ *  POST /api/auth/verify-otp        — verify OTP code after password, complete login
+ *  POST /api/auth/resend-otp        — resend OTP code to email
+ *  GET  /api/auth/password-policy   — return policy rules for frontend strength meter
  */
 @Path("/api/auth")
 @Produces(MediaType.APPLICATION_JSON)
@@ -258,10 +258,51 @@ public class AuthResource {
         user.update();
 
         LOG.infof("[Auth] Account unlocked: %s by %s", username, identity.getPrincipal().getName());
-        return Response.ok(Map.of("message", "Account unlocked successfully", "username", username)).build();
+        return Response.ok(Map.of("message", "Compte déverrouillé avec succès", "username", username)).build();
+    }
+
+    // ── POST /api/auth/lock/:username ─────────────────────────────────────────
+
+    @POST
+    @Path("/lock/{username}")
+    @RolesAllowed("ADMIN")
+    public Response lockUser(@PathParam("username") String username) {
+        String admin = identity.getPrincipal().getName();
+        AppUser user = AppUser.findByUsername(username.trim().toUpperCase()).orElse(null);
+        if (user == null) return notFound("User not found: " + username);
+
+        // Prevent admin from locking themselves
+        if (user.getUsername().equalsIgnoreCase(admin)) {
+            return Response.status(400)
+                    .entity(Map.of("message", "Vous ne pouvez pas verrouiller votre propre compte."))
+                    .build();
+        }
+
+        user.status = AppUser.UserStatus.LOCKED;
+        user.update();
+
+        LOG.infof("[Auth] Account locked: %s by %s", username, admin);
+        return Response.ok(Map.of("message", "Compte verrouillé avec succès", "username", username)).build();
     }
 
     // ── Request records ───────────────────────────────────────────────────────
+
+    public record ChangePasswordRequest(String currentPassword, String newPassword) {
+    }
+
+    public record ForgotPasswordRequest(String email) {
+    }
+
+    public record ResetPasswordRequest(String token, String newPassword) {
+    }
+
+    public record VerifyOtpRequest(String username, String otp) {
+    }
+
+    public record ResendOtpRequest(String username) {
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private Response badRequest(String msg) {
         return Response.status(400).entity(Map.of("message", msg)).build();
@@ -273,22 +314,5 @@ public class AuthResource {
 
     private Response unauthorized(String msg) {
         return Response.status(401).entity(Map.of("message", msg)).build();
-    }
-
-    public record ChangePasswordRequest(String currentPassword, String newPassword) {
-    }
-
-    public record ForgotPasswordRequest(String email) {
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    public record ResetPasswordRequest(String token, String newPassword) {
-    }
-
-    public record VerifyOtpRequest(String username, String otp) {
-    }
-
-    public record ResendOtpRequest(String username) {
     }
 }

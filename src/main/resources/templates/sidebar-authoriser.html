@@ -12,29 +12,28 @@
     </div>
 
     <nav class="flex-1 px-3 py-4 space-y-2">
-        {#if activePage == 'dashboard'}
-        <a class="nav-item nav-item-active" href="/dashboard">
+        <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 pb-1">Validation</p>
+
+        {#if activePage == 'validate'}
+        <a class="nav-item nav-item-active" href="/validate">
             {#else}
-            <a class="nav-item" href="/dashboard">
+            <a class="nav-item" href="/validate">
                 {/if}
-                <i class="w-4 h-4 flex-shrink-0" data-lucide="layout-dashboard"></i> Administration
-        </a>
+                <i class="w-4 h-4 flex-shrink-0" data-lucide="shield-check"></i> À Valider
+            </a>
 
-            {#if activePage == 'reports'}
-            <a class="nav-item nav-item-active" href="/reports">
+            {#if activePage == 'validated'}
+            <a class="nav-item nav-item-active" href="/validated">
                 {#else}
-                <a class="nav-item" href="/reports">
+                <a class="nav-item" href="/validated">
                     {/if}
-                    <i class="w-4 h-4 flex-shrink-0" data-lucide="bar-chart-3"></i> Rapports
-        </a>
+                    <i class="w-4 h-4 flex-shrink-0" data-lucide="check-circle-2"></i> Batches Validés
+                </a>
 
-                {#if activePage == 'settings'}
-                <a class="nav-item nav-item-active" href="/settings">
-                    {#else}
-                    <a class="nav-item" href="/settings">
-                        {/if}
-                        <i class="w-4 h-4 flex-shrink-0" data-lucide="settings-2"></i> Paramètres
-        </a>
+                <div class="my-2 border-t border-gray-100"></div>
+                <a class="nav-item" href="#">
+                    <i class="w-4 h-4 flex-shrink-0" data-lucide="help-circle"></i> Support
+                </a>
     </nav>
 
     <div class="px-3 py-2.5 border-t border-gray-200 bg-gray-50 flex items-center justify-center gap-2">

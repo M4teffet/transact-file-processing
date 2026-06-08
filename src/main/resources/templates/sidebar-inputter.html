@@ -8,10 +8,12 @@
                  onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'; this.onerror=null;"
                  src="/images/Logo_Orange_Bank.svg">
         </a>
-        <h1 class="mt-2.5 font-semibold text-gray-600" style="font-size:.78rem;">Utilitaire Batch</h1>
+        <h1 class="mt-2.5 font-semibold text-gray-600" style="font-size:.78rem;">FLUX</h1>
     </div>
 
-    <nav class="flex-1 px-3 py-4 space-y-0.5">
+    <nav class="flex-1 px-3 py-4 space-y-2">
+        <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 pb-1">Opérations</p>
+
         {#if activePage == 'upload'}
         <a class="nav-item nav-item-active" href="/upload">
             {#else}
@@ -21,37 +23,17 @@
             </a>
 
             {#if activePage == 'batches'}
-
             <a class="nav-item nav-item-active" href="/batches">
                 {#else}
                 <a class="nav-item" href="/batches">
                     {/if}
-                    <i class="w-4 h-4 flex-shrink-0" data-lucide="list-checks"></i> Batches Uploadés
+                    <i class="w-4 h-4 flex-shrink-0" data-lucide="list-checks"></i> Mes Batches
                 </a>
 
-                {#if activePage == 'validate'}
-                <a class="nav-item nav-item-active" href="/validate">
-                    {#else}
-                    <a class="nav-item" href="/validate">
-                        {/if}
-                        <i class="w-4 h-4 flex-shrink-0" data-lucide="shield-check"></i> Batches à Valider
-                    </a>
-
-                    {#if activePage == 'validated'}
-                    <a class="nav-item nav-item-active" href="/validated">
-                        {#else}
-                        <a class="nav-item" href="/validated">
-                            {/if}
-                            <i class="w-4 h-4 flex-shrink-0" data-lucide="check-circle-2"></i> Batches Validés
-                        </a>
-
-                        <a class="nav-item" href="#">
-                            <i class="w-4 h-4 flex-shrink-0" data-lucide="help-circle"></i> Support
-                        </a>
-                    </a>
+                <div class="my-2 border-t border-gray-100"></div>
+                <a class="nav-item" href="#">
+                    <i class="w-4 h-4 flex-shrink-0" data-lucide="help-circle"></i> Support
                 </a>
-            </a>
-        </a>
     </nav>
 
     <div class="px-3 py-2.5 border-t border-gray-200 bg-gray-50 flex items-center justify-center gap-2">

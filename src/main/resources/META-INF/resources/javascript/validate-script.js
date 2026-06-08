@@ -98,17 +98,17 @@ const renderUploadedBatches = () => {
                         <td class="px-4 py-2.5 text-xs text-gray-500">
                             ${b.uploadedAt ? new Date(b.uploadedAt).toLocaleString('fr-FR') : '---'}
                         </td>
-                        <td class="px-6 py-4">${getStatusBadge(b.status)}</td>
-                        <td class="px-6 py-4 flex justify-start items-center gap-3">
+                        <td class="px-4 py-2.5">${getStatusBadge(b.status)}</td>
+                        <td class="px-4 py-2.5 flex justify-start items-center gap-2">
                             <button onclick="viewBatchDetails('${b.batchId}')" class="p-1.5 hover:bg-blue-50 rounded-full transition" title="Détails">
-                                <i data-lucide="eye" class="w-5 h-5 text-blue-500"></i>
+                                <i data-lucide="eye" class="w-4 h-4 text-blue-500"></i>
                             </button>
                             <button onclick="openDeleteModal('${b.batchId}')" class="p-1.5 hover:bg-red-50 rounded-full transition" title="Supprimer">
-                                <i data-lucide="trash-2" class="w-5 h-5 text-red-400"></i>
+                                <i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i>
                             </button>
                             <button onclick="validateBatchNow('${b.batchId}')"
-                                    class="px-4 py-1.5 rounded-md text-xs font-bold text-white bg-green-500 hover:bg-green-600 transition-all flex items-center gap-2 shadow-sm">
-                                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                    class="px-3 py-1.5 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-700 transition flex items-center gap-1.5">
+                                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
                                 VALIDER
                             </button>
                         </td>

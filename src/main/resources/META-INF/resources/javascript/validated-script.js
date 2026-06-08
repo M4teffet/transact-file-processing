@@ -97,13 +97,13 @@ const renderValidatedBatches = () => {
                             <td class="px-4 py-2.5 text-xs text-gray-500">
                                 ${new Date(b.uploadedAt).toLocaleString('fr-FR')}
                             </td>
-                            <td class="px-6 py-4">${getStatusBadge(b.status)}</td>
-                            <td class="px-6 py-4 flex justify-start items-center gap-3">
+                            <td class="px-4 py-2.5">${getStatusBadge(b.status)}</td>
+                            <td class="px-4 py-2.5 flex justify-start items-center gap-2">
                                 <button onclick="viewBatchDetails('${b.batchId}')" class="p-1.5 hover:bg-blue-50 rounded-full transition" title="Voir données">
-                                    <i data-lucide="eye" class="w-5 h-5 text-blue-500"></i>
+                                    <i data-lucide="eye" class="w-4 h-4 text-blue-500"></i>
                                 </button>
                                 <button onclick="viewBatchSummary('${b.batchId}')" class="p-1.5 hover:bg-teal-50 rounded-full transition" title="Résumé d'exécution">
-                                    <i data-lucide="file-text" class="w-5 h-5 text-teal-600"></i>
+                                    <i data-lucide="file-text" class="w-4 h-4 text-teal-600"></i>
                                 </button>
                             </td>
                         </tr>

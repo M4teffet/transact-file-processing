@@ -148,7 +148,7 @@ class AdminDashboard {
                         <p class="text-[10px] text-gray-400 mt-1">Mis à jour : ${feature.lastUpdated ? new Date(feature.lastUpdated).toLocaleString('fr-FR') : '—'}</p>
                     </div>
                     <button data-key="${feature.configKey}" data-enabled="${enabled}" aria-pressed="${enabled}"
-                            class="feature-toggle-btn relative inline-flex h-7 w-14 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-1 ${enabled ? 'bg-orange-500' : 'bg-gray-300'}">
+                            class="feature-toggle-btn relative inline-flex h-7 w-14 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-1 ${enabled ? 'bg-orange-600' : 'bg-gray-300'}">
                         <span class="absolute left-0.5 h-6 w-6 transform rounded-full bg-white shadow transition-transform duration-200 ${enabled ? 'translate-x-7' : ''}"></span>
                     </button>
                 `;
@@ -175,8 +175,8 @@ class AdminDashboard {
                         const knob  = btn.querySelector('span');
                         const badge = document.getElementById(`feat-badge-${key}`);
 
-                        btn.classList.toggle('bg-orange-500', newState);
-                        btn.classList.toggle('bg-gray-300',   !newState);
+                        btn.classList.toggle('bg-orange-600', newState);
+                        btn.classList.toggle('bg-gray-300', !newState);
                         knob.classList.toggle('translate-x-7', newState);
 
                         if (badge) {
@@ -419,9 +419,9 @@ class AdminDashboard {
         const bg   = this.elements.autoRefreshBg;
         const knob = this.elements.autoRefreshKnob;
         const ind  = this.elements.autoRefreshIndicator;
-        if (bg)   { bg.style.background = isOn ? '#ff7900' : '#d1d5db'; }
+        if (bg)   { bg.style.background = isOn ? '#e86e00' : '#d1d5db'; }
         if (knob) { knob.style.transform = isOn ? 'translateX(14px)' : 'translateX(0)'; }
-        if (ind)  { ind.textContent = isOn ? 'ON' : 'OFF'; ind.style.color = isOn ? '#ff7900' : '#6b7280'; }
+        if (ind)  { ind.textContent = isOn ? 'ON' : 'OFF'; ind.style.color = isOn ? '#e86e00' : '#6b7280'; }
     }
 
     startAutoRefresh() {

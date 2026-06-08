@@ -61,15 +61,18 @@ const parseCsvRow = (row) => {
 // 4. CORE LOGIC: APPLICATIONS & FIELDS
 async function loadApplications() {
     const el = elements.appSelect();
-    if (!el) return;
     el.innerHTML = '<option value="">Chargement...</option>';
     try {
-        const res = await secureFetch(`${DEV_API_BASE}/applications`);
-        if (!res || !res.ok) throw new Error("Erreur serveur");
+        const res = await fetch(`/api/applications`, {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const apps = await res.json();
         el.innerHTML = '<option value="">Choisir une application...</option>';
         apps.forEach(app => el.add(new Option(`${app.code} – ${app.label}`, app.code)));
     } catch (err) {
+        console.error("[upload] loadApplications failed:", err);
         el.innerHTML = '<option value="">Erreur de chargement</option>';
     }
 }
@@ -86,7 +89,8 @@ async function loadFields(appCode) {
     oDiv.innerHTML = "";
 
     try {
-        const res = await fetch(`${DEV_API_BASE}/applications/${appCode}/fields`);
+        const res = await secureFetch(`${DEV_API_BASE}/applications/${appCode}/fields`);
+        if (!res || !res.ok) throw new Error(`Erreur HTTP ${res?.status}`);
         const data = await res.json();
 
         mDiv.innerHTML = '';
@@ -210,7 +214,7 @@ function previewCsv(file) {
             const data = lines.slice(1).map(parseCsvRow);
             state.fullCsvData = { header, data };
 
-            elements.previewHeader().innerHTML = `<tr class="bg-gray-100 border-b">${header.map(h => `<th class="px-4 py-2 text-xs font-bold text-gray-600 uppercase text-left whitespace-nowrap">${h}</th>`).join('')}</tr>`;
+            elements.previewHeader().innerHTML = '<tr class="bg-gray-100 border-b">' + header.map(function(h) { return '<th class="px-3 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wide text-left whitespace-nowrap">' + h + '</th>'; }).join('') + '</tr>';
             elements.previewBody().innerHTML = data.slice(0, 5).map((row, i) => `
                 <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b">
                     ${row.map(cell => `<td class="px-4 py-2 text-sm text-gray-600 whitespace-nowrap">${cell || ''}</td>`).join('')}
@@ -371,7 +375,7 @@ async function handleUpload() {
     const filename = file.name;
     try {
         const params = new URLSearchParams({ applicationName: app, filename });
-        const checkRes = await fetch(`${DEV_API_BASE}/inputter/check-filename?${params}`);
+        const checkRes = await secureFetch(`${DEV_API_BASE}/inputter/check-filename?${params}`);
         if (checkRes.ok) {
             const checkData = await checkRes.json();
             if (checkData.exists) return showAppSnackbar(`Le fichier "${filename}" existe déjà.`, "error");
@@ -386,7 +390,7 @@ async function handleUpload() {
         btn.disabled = true;
         btn.innerHTML = "⏳ Envoi...";
 
-        const res = await fetch(`${DEV_API_BASE}/inputter/upload`, { method: "POST", body: formData });
+        const res = await secureFetch(`${DEV_API_BASE}/inputter/upload`, { method: "POST", body: formData });
 
         // ✅ UPDATED: Better error handling
         if (!res.ok) {
@@ -426,19 +430,24 @@ async function handleUpload() {
 }
 
 // 7. INITIALIZATION
-document.addEventListener("DOMContentLoaded", () => {
+// Fire immediately if DOM already loaded, otherwise wait
+function initUploadPage() {
+    console.log('[upload] initUploadPage() fired, readyState:', document.readyState);
     state.originalBtnHTML = elements.sendCsvBtn()?.innerHTML || "Soumettre";
 
     loadApplications();
 
-    loadStats({
-        UPLOADED: 'uploadedCount',
-        VALIDATED: 'validatedCount',
-        PROCESSING: 'validatedCount',
-        PROCESSED: 'validatedCount',
-        PROCESSED_WITH_ERROR: 'validatedCount',
-        PROCESSED_FAILED: 'validatedCount'
-    });
+    // Stats polling — uses startStatsPolling from shared.js
+    if (typeof startStatsPolling === 'function') {
+        startStatsPolling({
+            UPLOADED: 'uploadedCount',
+            VALIDATED: 'validatedCount',
+            PROCESSING: 'validatedCount',
+            PROCESSED: 'validatedCount',
+            PROCESSED_WITH_ERROR: 'validatedCount',
+            PROCESSED_FAILED: 'validatedCount'
+        }, 15);
+    }
 
     elements.appSelect()?.addEventListener("change", (e) => {
         if (e.target.value) { loadFields(e.target.value); clearCsvPreview(); }
@@ -459,11 +468,11 @@ document.addEventListener("DOMContentLoaded", () => {
             zone.addEventListener(name, e => { e.preventDefault(); e.stopPropagation(); });
         });
 
-        zone.addEventListener("dragover", () => zone.classList.add("bg-blue-50", "border-blue-400"));
-        zone.addEventListener("dragleave", () => zone.classList.remove("bg-blue-50", "border-blue-400"));
+        zone.addEventListener("dragover", () => zone.classList.add("bg-orange-50", "border-orange-400"));
+        zone.addEventListener("dragleave", () => zone.classList.remove("bg-orange-50", "border-orange-400"));
 
         zone.addEventListener("drop", (e) => {
-            zone.classList.remove("bg-blue-50", "border-blue-400");
+            zone.classList.remove("bg-orange-50", "border-orange-400");
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 const dt = new DataTransfer();
@@ -484,4 +493,10 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     if (window.lucide) window.lucide.createIcons();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initUploadPage);
+} else {
+    initUploadPage();
+}
