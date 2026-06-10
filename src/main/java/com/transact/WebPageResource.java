@@ -3,7 +3,6 @@ package com.transact;
 import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.security.Authenticated;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -39,9 +38,6 @@ public class WebPageResource {
     @Inject
     @Location("reports")
     Template reportsTemplate;
-    @Inject
-    @Location("access-denied")
-    Template accessDeniedTemplate;
     @Inject
     @Location("change-password")
     Template changePasswordTemplate;
@@ -155,13 +151,5 @@ public class WebPageResource {
         return resetPasswordTemplate.data("title", "Réinitialisation — Orange Bank");
     }
 
-    // ── Utility ───────────────────────────────────────────────────────────────
 
-    @GET
-    @Path("/access-denied")
-    @Authenticated
-    @Produces(MediaType.TEXT_HTML)
-    public TemplateInstance getAccessDeniedPage() {
-        return accessDeniedTemplate.data("title", "Accès refusé — Orange Bank");
-    }
 }

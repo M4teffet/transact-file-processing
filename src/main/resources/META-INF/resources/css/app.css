@@ -1,0 +1,61 @@
+/* app.css — FLUX Orange Bank layout styles */
+html { font-size: 0.92rem; }
+body { font-family: 'Inter', sans-serif; }
+
+/* ── Snackbar ── */
+#snackbar-container { position:fixed;bottom:1.5rem;left:1.5rem;display:flex;flex-direction:column-reverse;gap:.5rem;z-index:9999;pointer-events:none; }
+.snackbar-item { pointer-events:all;min-width:20rem;max-width:min(34rem,calc(100vw - 3rem));background:#1e293b;color:rgba(255,255,255,.87);border-left:3px solid #f97316;border-radius:2px;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;font-size:.82rem;font-weight:400;line-height:1.25rem;overflow:hidden;opacity:0;transform:translateY(8px);transition:opacity .2s cubic-bezier(0,0,.2,1),transform .2s cubic-bezier(0,0,.2,1); }
+.snackbar-item.snackbar-visible { opacity:1;transform:translateY(0); }
+.snackbar-item.snackbar-hiding  { opacity:0;transform:translateY(8px); }
+.snackbar-msg { flex:1;padding:.875rem 1rem;word-break:break-word; }
+.snackbar-action { flex-shrink:0;padding:.875rem 1rem .875rem 0;font-size:.82rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:none;background:none;color:#f97316;line-height:1;white-space:nowrap;transition:color .15s; }
+.snackbar-action:hover { color:#fb923c; }
+.snackbar-progress { position:absolute;bottom:0;left:0;height:2px;background:rgba(255,255,255,.2);animation:snackbar-shrink linear forwards; }
+@keyframes snackbar-shrink { from { width:100%; } to { width:0%; } }
+
+/* ── KPI cards ── */
+.stats-card { background:#fff;padding:.9rem 1.1rem;border:1px solid #e2e8f0;border-radius:2px;transition:box-shadow .15s;position:relative;overflow:hidden; }
+.stats-card::after { content:'';position:absolute;top:0;left:0;right:0;height:2px; }
+.stats-card:hover { box-shadow:0 2px 12px rgba(0,0,0,.07); }
+.stats-icon { width:2rem;height:2rem;border-radius:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+.stats-label { font-size:.65rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.15rem; }
+.stats-value { font-size:1.6rem;font-weight:800;color:#0f172a;line-height:1; }
+.card-green::after  { background:#10b981; }
+.card-orange::after { background:#f97316; }
+.card-red::after    { background:#ef4444; }
+.card-blue::after   { background:#3b82f6; }
+
+/* ── Nav ── */
+.nav-item { display:flex;align-items:center;gap:.6rem;padding:.48rem .7rem;border-radius:2px;font-size:.8rem;font-weight:500;transition:all .12s;cursor:pointer;text-decoration:none;color:#64748b; }
+.nav-item:hover { color:#f97316;background:#fff7ed; }
+.nav-item-active { color:#c2410c;background:#fff7ed;font-weight:600;border-right:2px solid #f97316; }
+
+/* ── Form elements ── */
+.form-input, .form-select { width:100%;padding:.42rem .65rem;border:1.5px solid #e2e8f0;border-radius:2px;font-size:.82rem;background:#fff;outline:none;font-family:inherit;transition:border-color .12s; }
+.form-input:focus, .form-select:focus { border-color:#f97316; }
+
+/* ── Page header ── */
+.page-header { display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;gap:.75rem;padding-bottom:1.1rem;margin-bottom:1.5rem;border-bottom:1px solid #e2e8f0; }
+@media (min-width:640px) { .page-header { flex-direction:row;align-items:center; } }
+.page-title    { font-size:1.1rem;font-weight:800;color:#0f172a;line-height:1.3; }
+.page-subtitle { font-size:.75rem;color:#94a3b8;margin-top:.15rem; }
+
+/* ── Section card header ── */
+.card-header { display:flex;align-items:center;gap:.5rem;font-size:.7rem;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:.07em; }
+.card-header i { width:1rem;height:1rem;color:#f97316;flex-shrink:0; }
+
+/* ── Inline banners ── */
+.page-error   { display:flex;align-items:flex-start;gap:.5rem;background:#fef2f2;border-left:3px solid #ef4444;color:#991b1b;font-size:.78rem;padding:.6rem .8rem;margin-top:.75rem;line-height:1.5; }
+.page-success { display:flex;align-items:flex-start;gap:.5rem;background:#f0fdf4;border-left:3px solid #22c55e;color:#166534;font-size:.78rem;padding:.6rem .8rem;margin-top:.75rem;line-height:1.5; }
+.page-warning { display:flex;align-items:flex-start;gap:.5rem;background:#fff7ed;border-left:3px solid #f97316;color:#7c2d12;font-size:.78rem;padding:.6rem .8rem;margin-top:.75rem;line-height:1.5; }
+
+/* ── User dropdown ── */
+#user-dropdown { display:none;position:absolute;right:0;top:calc(100% + 4px);width:215px;background:#fff;border:1px solid #e2e8f0;border-radius:2px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:100;overflow:hidden; }
+
+/* ── Settings tabs ── */
+.settings-tab { display:inline-flex;align-items:center;gap:5px;padding:8px 16px;font-size:.78rem;font-weight:500;color:#64748b;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;white-space:nowrap;letter-spacing:.01em; }
+.settings-tab:hover { color:#0f172a; }
+.settings-tab.active { color:#f97316;border-bottom-color:#f97316;font-weight:700; }
+
+/* ── Nav hover (inline-style overrides need JS, use CSS instead) ── */
+.nav-item:hover { color:#f97316 !important; background:#fff7ed !important; }

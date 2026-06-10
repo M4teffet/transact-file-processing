@@ -79,7 +79,41 @@ public class PasswordService {
     }
 
     /**
-     * Returns a JSON-serialisable policy descriptor for the frontend strength meter.
+     * Generate a random password that satisfies the current policy.
+     */
+    public String generate() {
+        String lower = "abcdefghijkmnpqrstuvwxyz";
+        String upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        String digits = "23456789";
+        String special = "!@#$%^&*_+-=?";
+        String pool = lower + upper + digits + special;
+
+        java.util.List<Character> chars = new java.util.ArrayList<>();
+        java.util.Random rng = new java.security.SecureRandom();
+
+        // Guarantee at least one of each required type
+        chars.add(lower.charAt(rng.nextInt(lower.length())));
+        chars.add(lower.charAt(rng.nextInt(lower.length())));
+        if (requireUppercase) chars.add(upper.charAt(rng.nextInt(upper.length())));
+        if (requireDigit) chars.add(digits.charAt(rng.nextInt(digits.length())));
+        if (requireSpecial) chars.add(special.charAt(rng.nextInt(special.length())));
+
+        int target = Math.max(minLength, 12);
+        while (chars.size() < target) chars.add(pool.charAt(rng.nextInt(pool.length())));
+
+        // Fisher-Yates shuffle
+        for (int i = chars.size() - 1; i > 0; i--) {
+            int j = rng.nextInt(i + 1);
+            char tmp = chars.get(i);
+            chars.set(i, chars.get(j));
+            chars.set(j, tmp);
+        }
+        StringBuilder sb = new StringBuilder();
+        chars.forEach(sb::append);
+        return sb.toString();
+    }
+
+    /**
      */
     public PasswordPolicy getPolicy() {
         return new PasswordPolicy(minLength, requireDigit, requireUppercase, requireSpecial);

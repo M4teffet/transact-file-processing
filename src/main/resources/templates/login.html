@@ -4,32 +4,45 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Connexion - Orange Bank</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="/css/auth.css" rel="stylesheet">
+    <link href="/images/favicon.ico" rel="shortcut icon"/>
 </head>
 <body>
 <div class="auth-card" role="main">
 
     <div class="auth-header">
-        <img alt="Orange Bank" class="auth-logo" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'"
+        <img alt="Orange Bank" class="auth-logo"
+             onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'"
              src="/images/Logo_Orange_Bank.svg">
-        <h1 class="auth-title">Connexion sécurisée</h1>
-        <p class="auth-subtitle">Accédez à votre tableau de bord</p>
+        <div class="auth-eyebrow">Connexion</div>
+        <h1 class="auth-title">Bon retour</h1>
+        <p class="auth-subtitle">Identifiez-vous pour accéder à FLUX</p>
+    </div>
+
+    <div class="step-dots">
+        <div class="step-dot active" id="dot-1"></div>
+        <div class="step-dot" id="dot-2"></div>
     </div>
 
     <!-- Step 1: Credentials -->
     <div class="step active" id="step-credentials">
         <form id="credentialsForm">
             <div class="auth-group">
-                <label class="auth-label" for="username">Nom d'utilisateur</label>
+                <label class="auth-label" for="username">Identifiant</label>
                 <input autocomplete="username" autofocus class="auth-input"
                        id="username" placeholder="Nom d'utilisateur" required type="text">
             </div>
             <div class="auth-group">
                 <label class="auth-label" for="password">Mot de passe</label>
-                <input autocomplete="current-password" class="auth-input" id="password"
-                       placeholder="Mot de passe" required type="password">
+                <input autocomplete="current-password" class="auth-input auth-input-pwd"
+                       id="password" placeholder="••••••••••" required type="password">
+                <button aria-label="Afficher le mot de passe" class="eye-btn"
+                        onclick="var i=document.getElementById('password');i.type=i.type==='password'?'text':'password'"
+                        type="button">&#128065;
+                </button>
             </div>
-            <button class="auth-btn" id="loginBtn" type="submit">
+            <button class="auth-btn auth-btn-primary" id="loginBtn" type="submit">
                 <span id="loginBtnText">Se connecter</span>
             </button>
         </form>
@@ -43,16 +56,17 @@
 
     <!-- Step 2: OTP -->
     <div class="step" id="step-otp">
-        <p class="auth-subtitle" id="otpHintMsg" style="margin-bottom:1rem">Un code vous a été envoyé par e-mail</p>
+        <p id="otpHintMsg" style="font-size:.82rem;color:#64748b;margin-bottom:1rem">Un code a été envoyé à votre
+            adresse e-mail</p>
         <form id="otpForm">
             <div class="auth-group">
                 <label class="auth-label" for="otpCode">Code de vérification</label>
                 <input autocomplete="one-time-code" class="otp-input" id="otpCode"
                        inputmode="numeric" maxlength="6"
-                       placeholder="● ● ● ● ● ●" required type="text">
+                       placeholder="· · · · · ·" required type="text">
             </div>
-            <button class="auth-btn" id="otpBtn" type="submit">
-                <span>Valider</span>
+            <button class="auth-btn auth-btn-primary" id="otpBtn" type="submit">
+                <span>Valider le code</span>
             </button>
             <button class="auth-btn auth-btn-ghost" id="resendBtn" type="button">
                 <span>Renvoyer le code</span>
@@ -62,11 +76,12 @@
             <span id="otpErrorMsg"></span>
         </div>
         <div style="text-align:center;margin-top:1rem">
-            <button class="auth-link" onclick="backToCredentials()" style="background:none;border:none;cursor:pointer"
-                    type="button">← Retour
+            <button class="auth-link" onclick="backToCredentials()"
+                    style="background:none;border:none;cursor:pointer" type="button">
+                &larr; Retour
             </button>
         </div>
-        <p id="otpTimer" style="text-align:center;margin-top:.5rem;font-size:.8rem;color:#6b7280"></p>
+        <p id="otpTimer" style="text-align:center;margin-top:.5rem;font-size:.75rem;color:#94a3b8"></p>
     </div>
 
     <div class="auth-footer">&copy; 2025 Orange Bank. Tous droits réservés.</div>

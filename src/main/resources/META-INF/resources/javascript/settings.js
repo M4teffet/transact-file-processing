@@ -17,15 +17,6 @@ const getCountryData = (code) => {
     }
 };
 
-function togglePasswordVisibility() {
-    const inp = document.getElementById('password');
-    const ico = document.getElementById('eyeIcon');
-    if (!inp || !ico) return;
-    const isPassword = inp.type === 'password';
-    inp.type = isPassword ? 'text' : 'password';
-    ico.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
-    if (window.lucide) lucide.createIcons();
-}
 
 async function parseErrorResponse(res) {
     const ct = res.headers.get('content-type') || '';
@@ -321,28 +312,7 @@ function renderApplicationSchema(data) {
 
 // ── Form submissions ──────────────────────────────────────────────────────────
 
-// Password policy + strength
-const SPECIAL_CHARS = '!@#$%^&*()_+-=[]{}|;\':\",./<>?';
-let _pwdPolicy = { minLength: 10, requireDigit: true, requireUppercase: true, requireSpecial: true };
-fetch('/api/auth/password-policy').then(r => r.json()).then(p => { _pwdPolicy = p; }).catch(() => {});
 
-function checkSettingsStrength(val) {
-    const p = _pwdPolicy;
-    const ok = {
-        length:  val.length >= p.minLength,
-        upper:   !p.requireUppercase || /[A-Z]/.test(val),
-        digit:   !p.requireDigit     || /\d/.test(val),
-        special: !p.requireSpecial   || SPECIAL_CHARS.split('').some(c => val.includes(c)),
-        space:   !val.includes(' ')
-    };
-    const score = Object.values(ok).filter(Boolean).length;
-    const bar   = document.getElementById('settingsMeterBar');
-    const label = document.getElementById('settingsMeterLabel');
-    if (!bar || !label) return;
-    bar.style.width = (score / 5 * 100) + '%';
-    const [c, t] = score <= 2 ? ['#ef4444','Trop faible'] : score === 3 ? ['#f59e0b','Moyen'] : score === 4 ? ['#3b82f6','Bon'] : ['#22c55e','Excellent'];
-    bar.style.background = c; label.textContent = t; label.style.color = c;
-}
 
 // Username availability check
 let _usernameTimer = null;
@@ -364,7 +334,6 @@ document.getElementById('username')?.addEventListener('input', e => {
     }, 450);
 });
 
-document.getElementById('password')?.addEventListener('input', e => checkSettingsStrength(e.target.value));
 
 // Email required toggle
 function updateEmailRequirement() {
@@ -385,13 +354,12 @@ function updateEmailRequirement() {
 document.getElementById('userForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     const username   = document.getElementById('username')?.value.trim().toUpperCase();
-    const password   = document.getElementById('password')?.value;
     const role       = document.getElementById('role')?.value;
     const country    = document.getElementById('userCountry')?.value;
     const department = parseInt(document.getElementById('department')?.value);
     const email      = document.getElementById('userEmail')?.value.trim();
 
-    if (!username || !password || !role || !country || !department) {
+    if (!username || !role || !country || !department) {
         showSnackbar('Tous les champs obligatoires sont requis', 'error');
         return;
     }
@@ -405,16 +373,12 @@ document.getElementById('userForm')?.addEventListener('submit', async e => {
         const res = await secureFetch('/api/users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, role, country, department, email: email || null }),
+            body: JSON.stringify({ username, role, country, department, email: email || null }),
         });
         if (res && res.ok) {
             showSnackbar('Utilisateur créé avec succès !', 'success');
             e.target.reset();
             document.getElementById('usernameHint').textContent = '';
-            const bar = document.getElementById('settingsMeterBar');
-            const lbl = document.getElementById('settingsMeterLabel');
-            if (bar) bar.style.width = '0';
-            if (lbl) lbl.textContent = '';
             updateEmailRequirement();
             await loadUsersList();
         } else {

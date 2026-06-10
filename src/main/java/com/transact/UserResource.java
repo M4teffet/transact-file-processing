@@ -81,7 +81,6 @@ public class UserResource {
 
         // Validate required fields
         if (isBlank(username)) return badRequest("Username is required");
-        if (isBlank(req.password())) return badRequest("Password is required");
         if (isBlank(role)) return badRequest("Role is required");
         if (isBlank(country)) return badRequest("Country is required");
         if (req.department() == null || req.department() <= 0) return badRequest("Department must be a positive number");
@@ -100,12 +99,8 @@ public class UserResource {
             return badRequest("Format d\'adresse e-mail invalide.");
         }
 
-        // Validate password policy
-        try {
-            passwordService.validate(req.password());
-        } catch (IllegalArgumentException e) {
-            return badRequest(e.getMessage());
-        }
+        // Generate a policy-compliant password on the backend
+        String generatedPassword = passwordService.generate();
 
         // Check username uniqueness (single authoritative check — removed from AppUser.add())
         if (AppUser.findByUsername(username).isPresent()) {
@@ -123,7 +118,7 @@ public class UserResource {
         try {
             AppUser user = new AppUser();
             user.setUsername(username);
-            user.setPasswordHash(passwordService.hash(req.password()));
+            user.setPasswordHash(passwordService.hash(generatedPassword));
             user.setRole(AppUser.UserRole.valueOf(role));
             user.setCountryCode(countryEntity.code);
             user.setDepartment(deptEntity.code);
@@ -136,7 +131,7 @@ public class UserResource {
 
             // Send welcome email if address provided
             if (!isBlank(email)) {
-                emailService.sendWelcome(email, username, req.password());
+                emailService.sendWelcome(email, username, generatedPassword);
             }
 
             LOG.infof("[Users] Created user %s (role: %s, country: %s) by admin %s", username, role, country, admin);
@@ -153,7 +148,6 @@ public class UserResource {
 
     public record CreateUserRequest(
             String username,
-            String password,
             String role,
             String country,
             Integer department,

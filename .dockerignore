@@ -1,5 +1,23 @@
-*
-!target/*-runner
-!target/*-runner.jar
-!target/lib/*
-!target/quarkus-app/*
+# Exclude files/dirs not needed for Docker build
+.git
+.gitignore
+.env
+.env.*
+README.md
+LICENSE
+.DS_Store
+.idea
+.vscode
+*.swp
+*.swo
+*~
+.gradle
+.npm
+coverage
+.nyc_output
+node_modules
+npm-debug.log
+
+# Keep these for Maven build:
+# pom.xml (needed for dependency resolution)
+# src (needed for compilation)
