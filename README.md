@@ -11,17 +11,57 @@ and a background scheduler sends each record to the T24 API automatically.
 ## Architecture
 
 ```
-CSV Upload  →  FileParser  →  FileValidator  →  FileBatch [UPLOADED]
-                                                        ↓
-                                              Human Validator (PUT /api/batches/{id})
-                                                        ↓
-                                              FileBatch [VALIDATED]
-                                                        ↓
-                                       FundsTransferProcessor (every 1 min)
-                                                        ↓
-                                              T24 REST API (per row, concurrent)
-                                                        ↓
-                                   [PROCESSED | PROCESSED_WITH_ERROR | PROCESSED_FAILED]
+┌────────────┐
+│ CSV Upload │
+└─────┬──────┘
+      │
+      ▼
+┌──────────────────────────────┐
+│ Ingestion Layer              │
+│ • FileParser                 │
+│ • FileValidator              │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│ Batch Management             │
+│ Status = UPLOADED            │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│ Human Approval Workflow      │
+│ PUT /api/batches/{id}        │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│ Status = VALIDATED           │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│ Processing Engine            │
+│ FundsTransferProcessor       │
+│ (Scheduled Every 1 Minute)   │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│ Integration Layer            │
+│ T24 REST API                 │
+│ Concurrent Transfer Calls    │
+└──────────────┬───────────────┘
+               │
+               ▼
+        ┌───────────────┐
+        │ Final Status  │
+        └───────┬───────┘
+                │
+     ┌──────────┼──────────┐
+     ▼          ▼          ▼
+ PROCESSED  PROCESSED_   PROCESSED_
+            WITH_ERROR     FAILED
 ```
 
 **Supported transaction types:** `FUNDS_TRANSFER`, `FUNDS_TRANSFER_REVERSAL`, `DATA_CAPTURE`
