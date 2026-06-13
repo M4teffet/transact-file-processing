@@ -1,0 +1,1953 @@
+Subject: [PATCH] Front end optimisation v3
+---
+Index: src/main/resources/templates/batches.html
+===================================================================
+diff --git a/src/main/resources/templates/batches.html b/src/main/resources/templates/batches.html
+deleted file mode 100644
+--- a/src/main/resources/templates/batches.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,82 +0,0 @@
+-
+-{#include layout}
+-{#title}Batches Uploadés - Orange Bank{/title}
+-
+-{#head}
+-
+-{/head}
+-
+-{#aside}
+-{#insert aside}{#include sidebar-inputter/}{/insert}
+-
+-{/aside}
+-
+-{#default}
+-<div class="max-w-7xl mx-auto space-y-8">
+-
+-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+-
+-        <!-- Card 1 -->
+-        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
+-            <!-- Background pattern -->
+-            <div class="absolute inset-0 opacity-[0.75]"
+-                 style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
+-            </div>
+-            <!-- Content -->
+-            <div class="relative bg-white/10 p-4 flex items-center justify-between">
+-                <div>
+-                    <p class="text-sm text-gray-500">Total Chargés</p>
+-                    <p class="text-xl font-semibold text-orange-600" id="uploadedCount">0</p>
+-                </div>
+-                <svg class="w-6 h-6 text-orange-600" fill="none"
+-                     stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+-                    <path d="M12 13v8"/>
+-                    <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+-                    <path d="m8 17 4-4 4 4"/>
+-                </svg>
+-            </div>
+-        </div>
+-
+-        <!-- Card 2 -->
+-        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
+-            <!-- Background pattern -->
+-            <div class="absolute inset-0 opacity-[0.75]"
+-                 style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
+-            </div>
+-
+-            <!-- Content -->
+-            <div class="relative bg-white/10 p-4 flex items-center justify-between">
+-                <div>
+-                    <p class="text-sm text-gray-500">Total Validés</p>
+-                    <p class="text-xl font-semibold text-emerald-600" id="validatedCount">0</p>
+-                </div>
+-                <svg class="w-6 h-6 text-emerald-600" fill="none"
+-                     stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+-                    <path d="M21.801 10A10 10 0 1 1 17 3.335"/>
+-                    <path d="m9 11 3 3L22 4"/>
+-                </svg>
+-            </div>
+-        </div>
+-
+-    </div>
+-
+-    <div class="bg-white rounded-md shadow-xs border border-gray-200 overflow-hidden">
+-        <div class="p-4">
+-            <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-3">
+-                <i class="w-5 h-5 text-orange-600" data-lucide="list"></i>
+-                Liste des Batches Uploadés
+-            </h3>
+-        </div>
+-        <div class="p-4 divide-y divide-gray-200" id="uploadedBatchesContainer">
+-        </div>
+-    </div>
+-
+-</div>
+-{/default}
+-
+-{#script}
+-<script src="/javascript/batches.js"></script>
+-<script>lucide.createIcons();</script>
+-{/script}
+-
+-{/include}
+\ No newline at end of file
+Index: src/main/resources/templates/change-password.html
+===================================================================
+diff --git a/src/main/resources/templates/change-password.html b/src/main/resources/templates/change-password.html
+deleted file mode 100644
+--- a/src/main/resources/templates/change-password.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,89 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="fr">
+-<head>
+-    <meta charset="UTF-8">
+-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+-    <title>Changer le mot de passe - Orange Bank</title>
+-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+-    <link href="/css/auth.css" rel="stylesheet">
+-    <link href="/images/favicon.ico" rel="shortcut icon"/>
+-    <script src="/javascript/lucide.min.js"></script>
+-</head>
+-<body>
+-<div class="auth-card">
+-
+-    <div class="auth-header">
+-        <img alt="Orange Bank" class="auth-logo"
+-             onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'"
+-             src="/images/Logo_Orange_Bank.svg">
+-        <div class="auth-eyebrow">Sécurité</div>
+-        <h1 class="auth-title">Changement de mot de passe</h1>
+-        <p class="auth-subtitle">Définissez votre nouveau mot de passe</p>
+-    </div>
+-
+-    <div class="auth-notice">
+-        <i data-lucide="shield-alert" style="width:15px;height:15px;flex-shrink:0;margin-top:1px"></i>
+-        <span>Vous devez définir un nouveau mot de passe avant de continuer.</span>
+-    </div>
+-
+-    <form id="changeForm">
+-        <div class="auth-group">
+-            <label class="auth-label" for="currentPwd">Mot de passe actuel</label>
+-            <input autocomplete="current-password" class="auth-input auth-input-pwd"
+-                   id="currentPwd" required type="password">
+-            <button aria-label="Afficher" class="eye-btn" data-target="currentPwd" type="button">
+-                <i data-lucide="eye-off" style="width:15px;height:15px"></i>
+-            </button>
+-        </div>
+-
+-        <div class="auth-group">
+-            <label class="auth-label" for="newPwd">Nouveau mot de passe</label>
+-            <input autocomplete="new-password" class="auth-input auth-input-pwd"
+-                   id="newPwd" oninput="checkStrength(this.value)" required type="password">
+-            <button aria-label="Afficher" class="eye-btn" data-target="newPwd" type="button">
+-                <i data-lucide="eye-off" style="width:15px;height:15px"></i>
+-            </button>
+-            <div class="strength-meter">
+-                <div class="strength-bar" id="meterBar"></div>
+-            </div>
+-            <p class="strength-hint" id="meterLabel"></p>
+-            <ul class="pwd-rules">
+-                <li id="r-length">Au moins 10 caractères</li>
+-                <li id="r-upper">Une lettre majuscule</li>
+-                <li id="r-digit">Un chiffre</li>
+-                <li id="r-special">Un caractère spécial (!@#$%…)</li>
+-                <li id="r-space">Sans espaces</li>
+-            </ul>
+-        </div>
+-
+-        <div class="auth-group">
+-            <label class="auth-label" for="confirmPwd">Confirmer le mot de passe</label>
+-            <input autocomplete="new-password" class="auth-input auth-input-pwd"
+-                   id="confirmPwd" required type="password">
+-            <button aria-label="Afficher" class="eye-btn" data-target="confirmPwd" type="button">
+-                <i data-lucide="eye-off" style="width:15px;height:15px"></i>
+-            </button>
+-        </div>
+-
+-        <button class="auth-btn auth-btn-primary" disabled id="submitBtn" type="submit">
+-            <i data-lucide="save" style="width:15px;height:15px"></i>
+-            <span>Enregistrer le mot de passe</span>
+-        </button>
+-    </form>
+-
+-    <div class="auth-error" id="errBox">
+-        <i data-lucide="triangle-alert" style="width:15px;height:15px;flex-shrink:0;margin-top:1px"></i>
+-        <span id="errMsg"></span>
+-    </div>
+-    <div class="auth-success" id="okBox">
+-        <i data-lucide="check-circle" style="width:15px;height:15px;flex-shrink:0;margin-top:1px"></i>
+-        <span id="okMsg"></span>
+-    </div>
+-
+-    <div class="auth-footer">&copy; 2025 Orange Bank. Tous droits réservés.</div>
+-</div>
+-
+-<script src="/javascript/change-password.js"></script>
+-<script>if(window.lucide)lucide.createIcons();</script>
+-</body>
+-</html>
+Index: src/main/resources/templates/dashboard.html
+===================================================================
+diff --git a/src/main/resources/templates/dashboard.html b/src/main/resources/templates/dashboard.html
+deleted file mode 100644
+--- a/src/main/resources/templates/dashboard.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,212 +0,0 @@
+-{#include layout}
+-{#title}Administration - Batch Manager{/title}
+-
+-{#head}
+-
+-{/head}
+-
+-{#aside}
+-{#include sidebar-admin/}
+-{/aside}
+-
+-{#default}
+-<div class="max-w-7xl mx-auto space-y-8">
+-    <!-- Barre d'actions redesignée -->
+-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-gray-200">
+-        <div>
+-            <h2 class="text-2xl font-bold text-gray-900">Tableau de bord</h2>
+-            <p class="text-sm text-gray-600 mt-1">Gérez les fonctionnalités et suivez les statistiques en temps réel</p>
+-        </div>
+-
+-        <div class="flex items-center gap-3 bg-gray-50 rounded-md px-4 py-3 border border-gray-200">
+-            <!-- Bouton Actualiser -->
+-            <button class="flex items-center gap-2 px-4 py-2 bg-white rounded-md border border-gray-300 hover:border-orange-500 hover:shadow-sm transition-all duration-200 group"
+-                    id="refreshStats">
+-                <i class="w-4 h-4 text-gray-600 group-hover:text-orange-600 transition-all duration-300"
+-                   data-lucide="refresh-cw"
+-                   id="refreshIcon"></i>
+-                <span class="text-sm font-medium text-gray-700">Actualiser</span>
+-            </button>
+-
+-            <!-- Séparateur -->
+-            <div class="h-8 w-px bg-gray-300"></div>
+-
+-            <!-- Auto-refresh toggle -->
+-            <div class="flex items-center gap-3">
+-                <span class="text-sm text-gray-600 font-medium">Auto-refresh</span>
+-                <button aria-pressed="true"
+-                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+-                        id="toggleAutoRefresh">
+-                    <span class="absolute inset-0 rounded-full bg-orange-600 transition-colors"
+-                          id="autoRefreshBg"></span>
+-                    <span
+-                            class="absolute left-0.5 top-0.5 h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform translate-x-5"
+-                          id="autoRefreshKnob"></span>
+-                </button>
+-                <span class="text-sm font-semibold text-orange-600" id="autoRefreshIndicator">ON</span>
+-            </div>
+-        </div>
+-    </div>
+-
+-    <!-- Statistiques Globales -->
+-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+-        <div class="stats-card">
+-            <div class="flex items-center justify-between">
+-                <div>
+-                    <p class="stats-label">Total Batches</p>
+-                    <p class="stats-value" id="stat-total-batches">0</p>
+-                </div>
+-                <div class="stats-icon">
+-                    <i class="w-6 h-6" data-lucide="database"></i>
+-                </div>
+-            </div>
+-        </div>
+-        <div class="stats-card">
+-            <div class="flex items-center justify-between">
+-                <div>
+-                    <p class="stats-label">En Attente</p>
+-                    <p class="stats-value text-yellow-600" id="stat-pending">0</p>
+-                </div>
+-                <div class="stats-icon bg-yellow-100">
+-                    <i class="w-6 h-6 text-yellow-700" data-lucide="clock"></i>
+-                </div>
+-            </div>
+-        </div>
+-        <div class="stats-card">
+-            <div class="flex items-center justify-between">
+-                <div>
+-                    <p class="stats-label">Traité</p>
+-                    <p class="stats-value text-emerald-600" id="stat-validated">0</p>
+-                </div>
+-                <div class="stats-icon bg-green-100">
+-                    <i class="w-6 h-6 text-green-700" data-lucide="check-circle"></i>
+-                </div>
+-            </div>
+-        </div>
+-    </div>
+-
+-    <!-- Détail des Statuts -->
+-    <div class="bg-white rounded-md shadow-sm border border-gray-200 p-6">
+-        <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-3">
+-            <i class="w-6 h-6 text-orange-600" data-lucide="bar-chart-3"></i>
+-            Détail des Statuts de Batches
+-        </h3>
+-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+-            <div class="text-center p-3 bg-gray-50 rounded-md">
+-                <p class="font-medium text-gray-600">Uploadés</p>
+-                <p class="text-xl font-bold text-orange-600" id="detail-uploaded">0</p>
+-            </div>
+-            <div class="text-center p-3 bg-yellow-50 rounded-md">
+-                <p class="font-medium text-gray-600">En validation</p>
+-                <p class="text-xl font-bold text-yellow-600" id="detail-validated">0</p>
+-            </div>
+-            <div class="text-center p-3 bg-blue-50 rounded-md">
+-                <p class="font-medium text-gray-600">En traitement</p>
+-                <p class="text-xl font-bold text-blue-600" id="detail-processing">0</p>
+-            </div>
+-            <div class="text-center p-3 bg-green-50 rounded-md">
+-                <p class="font-medium text-gray-600">Traité OK</p>
+-                <p class="text-xl font-bold text-green-600" id="detail-processed">0</p>
+-            </div>
+-            <div class="text-center p-3 bg-red-50 rounded-md col-span-2 md:col-span-4">
+-                <p class="font-medium text-gray-600">Traité avec Erreurs</p>
+-                <p class="text-xl font-bold text-red-600" id="detail-errors">0</p>
+-            </div>
+-        </div>
+-    </div>
+-
+-    <!-- Gestion des Fonctionnalités -->
+-    <div class="bg-white rounded-md shadow-sm border border-gray-200 p-6">
+-        <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-3">
+-            <i class="w-6 h-6 text-orange-600" data-lucide="settings"></i>
+-            Gestion des Fonctionnalités
+-        </h3>
+-        <p class="text-sm text-gray-600 mb-6">
+-            Activez ou désactivez les fonctionnalités du système.
+-        </p>
+-
+-        <div class="flex items-center gap-2 text-orange-600 mb-4" id="featuresLoader">
+-            <i class="w-5 h-5 animate-spin" data-lucide="loader-2"></i>
+-            <span>Chargement des fonctionnalités...</span>
+-        </div>
+-
+-        <div class="space-y-4" id="featuresList"></div>
+-
+-        <div class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm" id="featuresError">
+-            Impossible de charger les fonctionnalités. Réessayez plus tard.
+-        </div>
+-    </div>
+-
+-    <!-- Logs de Traitement des Batches -->
+-    <div class="bg-white rounded-md shadow-sm border border-gray-200 p-6">
+-        <div class="flex justify-between items-center mb-4">
+-            <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-3">
+-                <i class="w-6 h-6 text-orange-600" data-lucide="file-text"></i>
+-                Logs de Traitement
+-            </h3>
+-            <div class="flex items-center gap-3">
+-                <!-- Sélecteur de batch -->
+-                <select class="px-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+-                        id="batchSelector">
+-                    <option value="">Tous les batches récents</option>
+-                </select>
+-
+-                <!-- NOUVEAU : Filtre par niveau -->
+-                <select class="px-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+-                        id="levelFilter">
+-                    <option value="">Tous les niveaux</option>
+-                    <option value="ERROR">ERROR</option>
+-                    <option value="WARN">WARN</option>
+-                    <option value="INFO">INFO</option>
+-                </select>
+-
+-                <!-- Bouton rafraîchir -->
+-                <button class="p-2 text-gray-600 hover:text-orange-600 hover:bg-gray-100 rounded-md transition"
+-                        id="refreshLogsBtn">
+-                    <i class="w-5 h-5" data-lucide="refresh-cw"></i>
+-                </button>
+-            </div>
+-        </div>
+-        <p class="text-sm text-gray-600 mb-6">
+-            Suivez les logs détaillés du traitement des fichiers CSV (erreurs, succès, lignes traitées).
+-        </p>
+-
+-        <div class="flex items-center gap-2 text-orange-600 mb-4" id="processingLogsLoader">
+-            <i class="w-5 h-5 animate-spin" data-lucide="loader-2"></i>
+-            <span>Chargement des logs...</span>
+-        </div>
+-
+-        <div class="max-h-96 overflow-y-auto bg-gray-50 rounded-md border border-gray-200" id="processingLogsContainer">
+-            <div class="p-4 space-y-2 text-sm font-mono" id="processingLogsList"></div>
+-        </div>
+-
+-        <div class="text-center text-gray-500 text-sm py-12 hidden" id="processingLogsEmpty">
+-            <i class="w-12 h-12 mx-auto mb-3 text-gray-300" data-lucide="file-search"></i>
+-            <p>Aucun log de traitement disponible</p>
+-            <p class="text-xs mt-2">Sélectionnez un batch ou attendez qu’un traitement démarre.</p>
+-        </div>
+-
+-        <div class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm" id="processingLogsError">
+-            Impossible de charger les logs de traitement.
+-        </div>
+-
+-        <!-- Bouton Exporter CSV stylé -->
+-        <div class="mt-6 flex justify-end">
+-            <button
+-                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-medium text-sm rounded-md transition-all duration-200 shadow-xs hover:shadow focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+-                    id="exportLogsBtn">
+-                <i class="w-4 h-4" data-lucide="download"></i>
+-                Exporter en CSV
+-            </button>
+-        </div>
+-    </div>
+-</div>
+-{/default}
+-
+-{#script}
+-<script src="/javascript/admin.js"></script>
+-<script>
+-    lucide.createIcons();
+-</script>
+-{/script}
+-{/include}
+\ No newline at end of file
+Index: src/main/resources/templates/forgot-password.html
+===================================================================
+diff --git a/src/main/resources/templates/forgot-password.html b/src/main/resources/templates/forgot-password.html
+deleted file mode 100644
+--- a/src/main/resources/templates/forgot-password.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,48 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="fr">
+-<head>
+-    <meta charset="UTF-8">
+-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+-    <title>Mot de passe oublié - Orange Bank</title>
+-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+-    <link href="/css/auth.css" rel="stylesheet">
+-    <link href="/images/favicon.ico" rel="shortcut icon"/>
+-    <script src="/javascript/lucide.min.js"></script>
+-</head>
+-<body>
+-<div class="auth-card">
+-    <div class="auth-header">
+-        <img alt="Orange Bank" class="auth-logo"
+-             onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'"
+-             src="/images/Logo_Orange_Bank.svg">
+-        <div class="auth-eyebrow">Récupération</div>
+-        <h1 class="auth-title">Mot de passe oublié</h1>
+-        <p class="auth-subtitle">Entrez votre e-mail pour recevoir un lien de réinitialisation</p>
+-    </div>
+-    <form id="forgotForm">
+-        <div class="auth-group">
+-            <label class="auth-label" for="email">Adresse e-mail</label>
+-            <input autocomplete="email" autofocus class="auth-input" id="email" placeholder="votre.email@orangebank.com"
+-                   required type="email">
+-        </div>
+-        <button class="auth-btn auth-btn-primary" id="submitBtn" type="submit">
+-            <i data-lucide="send" style="width:15px;height:15px"></i>
+-            <span>Envoyer le lien</span>
+-        </button>
+-        <a class="auth-btn auth-btn-ghost" href="/login"
+-           style="text-decoration:none;text-align:center;justify-content:center;display:flex;align-items:center">&larr;
+-            Retour à la connexion</a>
+-    </form>
+-    <div class="auth-success" id="okBox">
+-        <i data-lucide="mail-check" style="width:15px;height:15px;flex-shrink:0;margin-top:1px"></i>
+-        <span>Si cette adresse est enregistrée, vous recevrez les instructions dans quelques minutes.</span>
+-    </div>
+-    <div class="auth-error" id="errBox">
+-        <i data-lucide="triangle-alert" style="width:15px;height:15px;flex-shrink:0;margin-top:1px"></i>
+-        <span id="errMsg"></span>
+-    </div>
+-    <div class="auth-footer">© 2025 Orange Bank. Tous droits réservés.</div>
+-    <script src="/javascript/forgot-password.js"></script>
+-    <script>if(window.lucide)lucide.createIcons();</script>
+-</body>
+-</html>
+\ No newline at end of file
+Index: src/main/resources/templates/layout.html
+===================================================================
+diff --git a/src/main/resources/templates/layout.html b/src/main/resources/templates/layout.html
+deleted file mode 100644
+--- a/src/main/resources/templates/layout.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,182 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="fr">
+-<head>
+-    <meta charset="UTF-8">
+-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+-    <title>{#insert title}FLUX Orange Bank{/insert}</title>
+-    <link href="/css/tailwind.css" rel="stylesheet">
+-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+-    <script src="/javascript/lucide.min.js"></script>
+-    <link href="/images/favicon.ico" rel="shortcut icon"/>
+-    <link href="/css/app.css" rel="stylesheet">
+-    {#insert head}{/insert}
+-</head>
+-
+-<body class="bg-gray-100 antialiased min-h-screen flex">
+-<div class="fixed inset-0 z-40 bg-black/50 lg:hidden hidden" id="mobile-overlay"></div>
+-
+-{#insert aside}{/insert}
+-
+-<div class="flex-1 flex flex-col overflow-hidden lg:ml-64">
+-
+-    <!-- Topbar -->
+-    <header class="flex-shrink-0"
+-            style="background:#0f172a;border-bottom:1px solid #1e293b;border-top:3px solid #f97316;position:relative;overflow:visible;z-index:50">
+-        <div style="position:absolute;inset:0;opacity:.04;pointer-events:none;background-image:repeating-linear-gradient(0deg,#fff 0,#fff 1px,transparent 1px,transparent 36px),repeating-linear-gradient(90deg,#fff 0,#fff 1px,transparent 1px,transparent 36px)"></div>
+-        <div class="px-5 py-2.5 flex justify-between items-center">
+-            <div class="flex items-center gap-3">
+-                <button aria-label="Menu" class="lg:hidden p-1.5 transition" id="sidebar-toggle" style="color:#94a3b8">
+-                    <i class="w-4 h-4" data-lucide="menu"></i>
+-                </button>
+-                <div class="flex items-center gap-2">
+-                    <div class="w-6 h-6 bg-orange-500 flex items-center justify-center flex-shrink-0"
+-                         style="border-radius:2px">
+-                        <span class="text-white font-black" style="font-size:.58rem;letter-spacing:-.01em">FX</span>
+-                    </div>
+-                    <span style="font-size:.8rem;font-weight:700;color:#fff;letter-spacing:.05em">FLUX <span
+-                            style="color:#f97316">·</span> Orange Bank</span>
+-                </div>
+-            </div>
+-            <div class="relative" id="user-menu-wrapper">
+-                <button class="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/10 transition"
+-                        onclick="toggleUserDropdown()">
+-                    <div class="w-6 h-6 bg-orange-500 flex items-center justify-center flex-shrink-0"
+-                         style="border-radius:2px">
+-                        <span class="text-white font-black" id="header-user-initials" style="font-size:.58rem">?</span>
+-                    </div>
+-                    <div class="hidden sm:block text-left leading-tight">
+-                        <p class="font-semibold" id="header-username" style="font-size:.78rem;color:#fff">—</p>
+-                        <p class="uppercase" id="header-role"
+-                           style="font-size:.6rem;color:#64748b;letter-spacing:.06em">—</p>
+-                    </div>
+-                    <i data-lucide="chevron-down" style="width:.75rem;height:.75rem;color:#64748b"></i>
+-                </button>
+-                <div id="user-dropdown"
+-                     style="display:none;position:absolute;right:0;top:calc(100% + 4px);width:215px;background:#fff;border:1px solid #e2e8f0;border-radius:2px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:9999;overflow:hidden">
+-                    <div style="padding:.65rem .75rem;border-bottom:1px solid #1e293b;background:#0f172a">
+-                        <p id="dropdown-username" style="font-size:.82rem;font-weight:700;color:#fff">—</p>
+-                        <p id="dropdown-role" style="font-size:.68rem;color:#94a3b8;margin-top:2px">—</p>
+-                    </div>
+-                    <div style="padding:4px 0">
+-                        <a href="/change-password"
+-                           onmouseout="this.style.background='transparent';this.style.color='#334155'"
+-                           onmouseover="this.style.background='#fff7ed';this.style.color='#c2410c'"
+-                           style="font-size:.78rem;display:flex;align-items:center;gap:8px;padding:8px 12px;color:#334155;text-decoration:none">
+-                            <i data-lucide="key-round" style="width:14px;height:14px;color:#94a3b8;flex-shrink:0"></i>
+-                            Changer le mot de passe
+-                        </a>
+-                        <div style="border-top:1px solid #f1f5f9;margin:4px 0"></div>
+-                        <button onclick="logoutUser()"
+-                                onmouseout="this.style.background='transparent'"
+-                                onmouseover="this.style.background='#fef2f2'"
+-                                style="font-size:.78rem;width:100%;display:flex;align-items:center;gap:8px;padding:8px 12px;color:#dc2626;background:none;border:none;cursor:pointer;text-align:left;font-family:inherit">
+-                            <i data-lucide="log-out" style="width:14px;height:14px;flex-shrink:0"></i> Déconnexion
+-                        </button>
+-                    </div>
+-                </div>
+-            </div>
+-        </div>
+-    </header>
+-
+-    <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+-        {#insert default}{/insert}
+-    </main>
+-</div>
+-
+-<!-- Delete modal -->
+-<div class="fixed inset-0 z-50 hidden bg-black/60 flex items-center justify-center" id="deleteConfirmationModal">
+-    <div class="bg-white shadow-xl p-5 max-w-md mx-4 w-full">
+-        <h3 class="font-bold text-gray-900 mb-2" style="font-size:1rem;">Confirmer la suppression</h3>
+-        <p class="text-gray-600 mb-5" style="font-size:.85rem;">Voulez-vous vraiment supprimer ce batch ? Cette action
+-            est irréversible.</p>
+-        <div class="flex justify-end gap-2">
+-            <button class="px-3 py-1.5 text-gray-700 bg-gray-100 hover:bg-gray-200 transition"
+-                    onclick="cancelDelete()" style="font-size:.85rem;">Annuler
+-            </button>
+-            <button class="px-3 py-1.5 text-white bg-red-600 hover:bg-red-700 transition"
+-                    onclick="confirmDelete()" style="font-size:.85rem;">Supprimer
+-            </button>
+-        </div>
+-    </div>
+-</div>
+-
+-<!-- Batch details modal -->
+-<div class="fixed inset-0 hidden items-center justify-center z-50" id="batchDetailsModal"
+-     onclick="if(event.target===this)closeModal('batchDetailsModal')">
+-    <div class="absolute inset-0 bg-black/60"></div>
+-    <div class="relative bg-white w-11/12 max-w-6xl shadow-xl p-5 z-10 overflow-y-auto max-h-[90vh]">
+-        <div class="flex justify-between items-center mb-4">
+-            <h2 class="font-semibold text-gray-900" style="font-size:1rem;">Détails du batch</h2>
+-            <button class="p-1.5 rounded hover:bg-gray-100 text-gray-500 transition"
+-                    onclick="closeModal('batchDetailsModal')">
+-                <i class="w-4 h-4" data-lucide="x"></i>
+-            </button>
+-        </div>
+-        <div id="batchDetailsContent"></div>
+-    </div>
+-</div>
+-
+-<!-- Batch summary modal -->
+-<div class="fixed inset-0 hidden items-center justify-center z-50 bg-black/60" id="batchSummaryModal">
+-    <div class="relative bg-white w-11/12 max-w-4xl shadow-xl z-10 overflow-y-auto max-h-[90vh]">
+-        <div class="flex justify-between items-center px-5 py-3 border-b border-gray-200">
+-            <h3 class="font-semibold text-gray-900" id="batchSummaryTitle" style="font-size:1rem;">Résumé du batch</h3>
+-            <button class="p-1.5 rounded hover:bg-gray-100 text-gray-500 transition"
+-                    onclick="closeModal('batchSummaryModal')">
+-                <i class="w-4 h-4" data-lucide="x"></i>
+-            </button>
+-        </div>
+-        <div class="p-5 text-gray-700" id="batchSummaryContent" style="font-size:.85rem;"></div>
+-    </div>
+-</div>
+-
+-<div id="snackbar-container"></div>
+-<script src="/javascript/shared.js"></script>
+-{#insert script}{/insert}
+-<script>
+-    document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
+-        document.getElementById('sidebar').classList.toggle('-translate-x-full');
+-        document.getElementById('mobile-overlay').classList.remove('hidden');
+-    });
+-    document.getElementById('mobile-overlay')?.addEventListener('click', () => {
+-        document.getElementById('sidebar').classList.add('-translate-x-full');
+-        document.getElementById('mobile-overlay').classList.add('hidden');
+-    });
+-    document.addEventListener('keydown', e => {
+-        if (e.key === 'Escape') {
+-            document.getElementById('sidebar')?.classList.add('-translate-x-full');
+-            document.getElementById('mobile-overlay')?.classList.add('hidden');
+-            document.getElementById('user-dropdown').style.display = 'none';
+-        }
+-    });
+-    document.addEventListener('click', e => {
+-        const w = document.getElementById('user-menu-wrapper');
+-        const dd = document.getElementById('user-dropdown');
+-        if (w && !w.contains(e.target) && dd) dd.style.display = 'none';
+-    });
+-    function toggleUserDropdown() {
+-        const dd = document.getElementById('user-dropdown');
+-        dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+-    }
+-    (function() {
+-        // Auth.getUsername() returns 'Invité' as default — we want the actual name
+-        const authUser = (typeof Auth !== 'undefined') ? Auth.getUsername() : null;
+-        const storedUser = sessionStorage.getItem('username');
+-        const username = (authUser && authUser !== 'Invité' ? authUser : null) || storedUser || '—';
+-        const role     = sessionStorage.getItem('role')    || '—';
+-        const country  = sessionStorage.getItem('country') || '';
+-        const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+-        set('header-user-initials', username.slice(0,2).toUpperCase());
+-        set('header-username', username);
+-        set('header-role', role);
+-        set('dropdown-username', username);
+-        set('dropdown-role', role);
+-        const dc = document.getElementById('dropdown-country');
+-        if (dc && country && typeof getCountryFlag !== 'undefined') {
+-            dc.innerHTML = getCountryFlag(country) + ' ' + country;
+-        }
+-    })();
+-    lucide.createIcons();
+-</script>
+-</body>
+-</html>
+\ No newline at end of file
+Index: src/main/resources/templates/login.html
+===================================================================
+diff --git a/src/main/resources/templates/login.html b/src/main/resources/templates/login.html
+deleted file mode 100644
+--- a/src/main/resources/templates/login.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,92 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="fr">
+-<head>
+-    <meta charset="UTF-8">
+-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+-    <title>Connexion - Orange Bank</title>
+-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+-    <link href="/css/auth.css" rel="stylesheet">
+-    <link href="/images/favicon.ico" rel="shortcut icon"/>
+-</head>
+-<body>
+-<div class="auth-card" role="main">
+-
+-    <div class="auth-header">
+-        <img alt="Orange Bank" class="auth-logo"
+-             onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'"
+-             src="/images/Logo_Orange_Bank.svg">
+-        <div class="auth-eyebrow">Connexion</div>
+-        <h1 class="auth-title">Bon retour</h1>
+-        <p class="auth-subtitle">Identifiez-vous pour accéder à FLUX</p>
+-    </div>
+-
+-    <div class="step-dots">
+-        <div class="step-dot active" id="dot-1"></div>
+-        <div class="step-dot" id="dot-2"></div>
+-    </div>
+-
+-    <!-- Step 1: Credentials -->
+-    <div class="step active" id="step-credentials">
+-        <form id="credentialsForm">
+-            <div class="auth-group">
+-                <label class="auth-label" for="username">Identifiant</label>
+-                <input autocomplete="username" autofocus class="auth-input"
+-                       id="username" placeholder="Nom d'utilisateur" required type="text">
+-            </div>
+-            <div class="auth-group">
+-                <label class="auth-label" for="password">Mot de passe</label>
+-                <input autocomplete="current-password" class="auth-input auth-input-pwd"
+-                       id="password" placeholder="••••••••••" required type="password">
+-                <button aria-label="Afficher le mot de passe" class="eye-btn"
+-                        onclick="var i=document.getElementById('password');i.type=i.type==='password'?'text':'password'"
+-                        type="button">&#128065;
+-                </button>
+-            </div>
+-            <button class="auth-btn auth-btn-primary" id="loginBtn" type="submit">
+-                <span id="loginBtnText">Se connecter</span>
+-            </button>
+-        </form>
+-        <div style="text-align:center;margin-top:1rem">
+-            <a class="auth-link" href="/forgot-password">Mot de passe oublié ?</a>
+-        </div>
+-        <div class="auth-error" id="credError" role="alert">
+-            <span id="credErrorMsg"></span>
+-        </div>
+-    </div>
+-
+-    <!-- Step 2: OTP -->
+-    <div class="step" id="step-otp">
+-        <p id="otpHintMsg" style="font-size:.82rem;color:#64748b;margin-bottom:1rem">Un code a été envoyé à votre
+-            adresse e-mail</p>
+-        <form id="otpForm">
+-            <div class="auth-group">
+-                <label class="auth-label" for="otpCode">Code de vérification</label>
+-                <input autocomplete="one-time-code" class="otp-input" id="otpCode"
+-                       inputmode="numeric" maxlength="6"
+-                       placeholder="· · · · · ·" required type="text">
+-            </div>
+-            <button class="auth-btn auth-btn-primary" id="otpBtn" type="submit">
+-                <span>Valider le code</span>
+-            </button>
+-            <button class="auth-btn auth-btn-ghost" id="resendBtn" type="button">
+-                <span>Renvoyer le code</span>
+-            </button>
+-        </form>
+-        <div class="auth-error" id="otpError" role="alert">
+-            <span id="otpErrorMsg"></span>
+-        </div>
+-        <div style="text-align:center;margin-top:1rem">
+-            <button class="auth-link" onclick="backToCredentials()"
+-                    style="background:none;border:none;cursor:pointer" type="button">
+-                &larr; Retour
+-            </button>
+-        </div>
+-        <p id="otpTimer" style="text-align:center;margin-top:.5rem;font-size:.75rem;color:#94a3b8"></p>
+-    </div>
+-
+-    <div class="auth-footer">&copy; 2025 Orange Bank. Tous droits réservés.</div>
+-</div>
+-
+-<script src="/javascript/login-script.js"></script>
+-</body>
+-</html>
+Index: src/main/resources/templates/reports.html
+===================================================================
+diff --git a/src/main/resources/templates/reports.html b/src/main/resources/templates/reports.html
+deleted file mode 100644
+--- a/src/main/resources/templates/reports.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,202 +0,0 @@
+-{#include layout}
+-{#title}Rapports - FLUX{/title}
+-
+-{#head}
+-
+-{/head}
+-
+-{#aside}
+-{#insert aside}{#include sidebar-admin/}{/insert}
+-
+-{/aside}
+-
+-{#default}
+-<div class="max-w-7xl mx-auto space-y-8">
+-    <!-- Header -->
+-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-gray-200">
+-        <div>
+-            <h2 class="text-2xl font-bold text-gray-900">Rapports Détaillés</h2>
+-            <p class="text-sm text-gray-600 mt-1">Analyse complète des batchs avec traçabilité</p>
+-        </div>
+-        <div class="flex items-center gap-3 bg-gray-50 rounded-md px-4 py-3 border border-gray-200">
+-            <button class="flex items-center gap-2 px-4 py-2 bg-white rounded-md border border-gray-300 hover:border-orange-500 hover:shadow-sm transition-all duration-200 group"
+-                    onclick="refreshAllReports()">
+-                <i class="w-4 h-4 text-gray-600 group-hover:text-orange-600 transition-all duration-300"
+-                   data-lucide="refresh-cw"></i>
+-                <span class="text-sm font-medium text-gray-700">Actualiser</span>
+-            </button>
+-            <div class="h-8 w-px bg-gray-300"></div>
+-            <button class="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md transition-all duration-200"
+-                    onclick="exportToPDF()">
+-                <i class="w-4 h-4" data-lucide="file-text"></i>
+-                <span class="text-sm font-medium">Exporter PDF</span>
+-            </button>
+-        </div>
+-    </div>
+-
+-    <!-- Filters Section -->
+-    <div class="bg-white rounded-md shadow-sm border border-gray-200 p-6">
+-        <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+-            <i class="w-5 h-5 text-orange-600" data-lucide="filter"></i>
+-            Filtres de Recherche
+-        </h3>
+-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+-            <!-- Date Range -->
+-            <div>
+-                <label class="block text-sm font-semibold text-gray-700 mb-2">Date de début</label>
+-                <input class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
+-                       id="startDate"
+-                       type="date">
+-            </div>
+-            <div>
+-                <label class="block text-sm font-semibold text-gray-700 mb-2">Date de fin</label>
+-                <input class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
+-                       id="endDate"
+-                       type="date">
+-            </div>
+-            <!-- Country Filter -->
+-            <div>
+-                <label class="block text-sm font-semibold text-gray-700 mb-2">Pays</label>
+-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
+-                        id="countryFilter">
+-                    <option value="">Tous les pays</option>
+-                </select>
+-            </div>
+-            <!-- Department Filter -->
+-            <div>
+-                <label class="block text-sm font-semibold text-gray-700 mb-2">Département</label>
+-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
+-                        id="departmentFilter">
+-                    <option value="">Tous les départements</option>
+-                </select>
+-            </div>
+-            <!-- Status Filter -->
+-            <div>
+-                <label class="block text-sm font-semibold text-gray-700 mb-2">Statut</label>
+-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
+-                        id="statusFilter">
+-                    <option value="">Tous les statuts</option>
+-                    <option value="PROCESSED">Traité avec succès</option>
+-                    <option value="PROCESSED_WITH_ERROR">Traité avec erreurs</option>
+-                    <option value="VALIDATED">Validé</option>
+-                    <option value="UPLOADED">Uploadé</option>
+-                </select>
+-            </div>
+-            <!-- Inputter Filter -->
+-            <div>
+-                <label class="block text-sm font-semibold text-gray-700 mb-2">Initiateur</label>
+-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
+-                        id="inputterFilter">
+-                    <option value="">Tous les initiateurs</option>
+-                </select>
+-            </div>
+-            <!-- Validator Filter -->
+-            <div>
+-                <label class="block text-sm font-semibold text-gray-700 mb-2">Validateur</label>
+-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
+-                        id="validatorFilter">
+-                    <option value="">Tous les validateurs</option>
+-                </select>
+-            </div>
+-            <!-- Apply Button -->
+-            <div class="flex items-end">
+-                <button class="w-full px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold rounded-md transition-colors"
+-                        onclick="applyFilters()">
+-                    Appliquer les filtres
+-                </button>
+-            </div>
+-        </div>
+-        <!-- Active Filters Display -->
+-        <div class="mt-4 flex flex-wrap gap-2 hidden" id="activeFilters"></div>
+-    </div>
+-
+-    <!-- Summary KPIs -->
+-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" id="reportKpis"></div>
+-
+-    <!-- Detailed Batch Table -->
+-    <div class="bg-white rounded-md shadow-sm border border-gray-200">
+-        <div class="p-6 border-b border-gray-200">
+-            <div class="flex justify-between items-center">
+-                <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
+-                    <i class="w-5 h-5 text-orange-600" data-lucide="table"></i>
+-                    Détails des Batchs
+-                </h3>
+-                <div class="flex items-center gap-3">
+-                    <input class="px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-orange-500"
+-                           id="searchTable" onkeyup="searchInTable()"
+-                           placeholder="Rechercher dans le tableau..."
+-                           type="text">
+-                    <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 hover:border-orange-500 rounded-md text-sm transition-colors"
+-                            onclick="exportTableToCSV()">
+-                        <i class="w-4 h-4" data-lucide="download"></i>
+-                        CSV
+-                    </button>
+-                </div>
+-            </div>
+-        </div>
+-        <div class="overflow-x-auto">
+-            <table class="w-full text-sm" id="batchDetailsTable">
+-                <thead>
+-                <tr class="border-b border-gray-200 bg-gray-50">
+-                    <th class="px-4 py-3 text-left font-bold text-gray-700">Batch ID</th>
+-                    <th class="px-4 py-3 text-left font-bold text-gray-700">Application</th>
+-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Statut</th>
+-                    <th class="px-4 py-3 text-left font-bold text-gray-700">Initiateur</th>
+-                    <th class="px-4 py-3 text-left font-bold text-gray-700">Validateur</th>
+-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Pays</th>
+-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Département</th>
+-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Records</th>
+-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Erreurs</th>
+-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Date Upload</th>
+-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Date Validation</th>
+-                </tr>
+-                </thead>
+-                <tbody class="divide-y divide-gray-200" id="batchTableBody">
+-                <tr>
+-                    <td class="px-4 py-12 text-center text-gray-500" colspan="11">
+-                        <div class="flex flex-col items-center gap-3">
+-                            <i class="w-10 h-10 animate-spin text-orange-600" data-lucide="loader"></i>
+-                            <span>Chargement des données...</span>
+-                        </div>
+-                    </td>
+-                </tr>
+-                </tbody>
+-            </table>
+-        </div>
+-        <!-- Pagination -->
+-        <div class="p-4 border-t border-gray-200 flex items-center justify-between">
+-            <div class="text-sm text-gray-600">
+-                Affichage de <span id="showingFrom">0</span> à <span id="showingTo">0</span> sur <span
+-                    id="totalItems">0</span>
+-                batchs
+-            </div>
+-            <div class="flex items-center gap-2">
+-                <button class="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+-                        id="prevPageBtn"
+-                        onclick="previousPage()">
+-                    Précédent
+-                </button>
+-                <span class="text-sm text-gray-600">Page <span id="currentPage">1</span> sur <span
+-                        id="totalPages">1</span></span>
+-                <button class="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+-                        id="nextPageBtn"
+-                        onclick="nextPage()">
+-                    Suivant
+-                </button>
+-            </div>
+-        </div>
+-    </div>
+-
+-</div>
+-
+-{/default}
+-
+-{#script}
+-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+-<script src="/javascript/reports.js"></script>
+-<script>
+-    lucide.createIcons();
+-</script>
+-{/script}
+-{/include}
+\ No newline at end of file
+Index: src/main/resources/templates/reset-password.html
+===================================================================
+diff --git a/src/main/resources/templates/reset-password.html b/src/main/resources/templates/reset-password.html
+deleted file mode 100644
+--- a/src/main/resources/templates/reset-password.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,42 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="fr">
+-<head>
+-    <meta charset="UTF-8">
+-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+-    <title>Réinitialisation - Orange Bank</title>
+-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+-    <link href="/css/auth.css" rel="stylesheet">
+-    <link href="/images/favicon.ico" rel="shortcut icon"/>
+-    <script src="/javascript/lucide.min.js"></script>
+-</head>
+-<body>
+-<div class="auth-card">
+-    <div class="auth-header">
+-        <img alt="Orange Bank" class="auth-logo"
+-             onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg'"
+-             src="/images/Logo_Orange_Bank.svg">
+-        <div class="auth-eyebrow">Réinitialisation</div>
+-        <h1 class="auth-title">Nouveau mot de passe</h1>
+-        <p class="auth-subtitle">Choisissez un mot de passe sécurisé</p>
+-    </div>
+-    <div class="auth-invalid" id="invalidBox">
+-        <i data-lucide="link-2-off" style="width:28px;height:28px;color:#dc2626;margin:0 auto .75rem;display:block"></i>
+-        <p style="font-size:.88rem;color:#991b1b;font-weight:700;margin-bottom:.4rem">Lien invalide ou expiré</p>
+-        <p style="font-size:.78rem;color:#64748b;margin-bottom:.85rem">Ce lien de réinitialisation n'est plus
+-            valide.</p>
+-        <a class="auth-link" href="/forgot-password">&rarr; Demander un nouveau lien</a>
+-    </div>
+-    <form id="resetForm">
+-        <div class="auth-group">
+-            <label class="auth-label" for="newPwd">Nouveau mot de passe</label>
+-            <input autocomplete="new-password" class="auth-input auth-input-pwd" id="newPwd"
+-                   oninput="checkStrength(this.value)" required type="password">
+-            <button aria-label="Afficher" class="eye-btn" data-target="newPwd" type="button"><i data-lucide="eye-off"
+-                                                                                                style="width:15px;height:15px"></i>
+-            </button>
+-            <div class="strength-meter">
+-                <div class="strength-bar" id="meterBar"></div>
+-<script src="/javascript/reset-password.js"></script>
+-                <script>if(window.lucide)lucide.createIcons();</script>
+-</body>
+-</html>
+Index: src/main/resources/templates/settings.html
+===================================================================
+diff --git a/src/main/resources/templates/settings.html b/src/main/resources/templates/settings.html
+deleted file mode 100644
+--- a/src/main/resources/templates/settings.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,355 +0,0 @@
+-{#include layout}
+-{#title}Paramètres - Administration{/title}
+-
+-{#aside}
+-{#include sidebar-admin/}
+-{/aside}
+-
+-{#default}
+-<div class="max-w-6xl mx-auto pb-10">
+-
+-    <!-- Page header -->
+-    <div class="page-header">
+-        <div>
+-            <h2 class="page-title">Paramètres</h2>
+-            <p class="page-subtitle">Référentiels, utilisateurs et configuration</p>
+-        </div>
+-    </div>
+-
+-    <!-- Tab navigation -->
+-    <div class="flex border-b border-slate-200 mb-6 gap-0" id="settings-tabs" role="tablist">
+-        <button class="settings-tab active" data-tab="users" role="tab">
+-            <i class="w-3.5 h-3.5" data-lucide="users"></i> Utilisateurs
+-        </button>
+-        <button class="settings-tab" data-tab="refs" role="tab">
+-            <i class="w-3.5 h-3.5" data-lucide="globe"></i> Pays &amp; Départements
+-        </button>
+-        <button class="settings-tab" data-tab="apps" role="tab">
+-            <i class="w-3.5 h-3.5" data-lucide="layers"></i> Applications
+-        </button>
+-        <button class="settings-tab" data-tab="security" role="tab">
+-            <i class="w-3.5 h-3.5" data-lucide="shield"></i> Sécurité
+-        </button>
+-    </div>
+-
+-    <!-- ── TAB: USERS ──────────────────────────────────────── -->
+-    <div class="settings-panel" id="panel-users">
+-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+-
+-            <!-- Create user -->
+-            <div class="bg-white border border-slate-200 overflow-hidden">
+-                <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+-                    <i class="w-4 h-4 text-orange-500" data-lucide="user-plus"></i>
+-                    <span class="text-sm font-semibold text-slate-800">Nouvel utilisateur</span>
+-                </div>
+-                <div class="p-4">
+-                    <form class="space-y-3" id="userForm">
+-
+-                        <!-- Username -->
+-                        <div>
+-                            <label class="block text-xs font-medium text-slate-600 mb-1">
+-                                Identifiant <span class="text-red-500">*</span>
+-                            </label>
+-                            <div class="relative">
+-                                <i class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none"
+-                                   data-lucide="user"></i>
+-                                <input autocomplete="off"
+-                                       class="w-full pl-8 pr-3 py-2 border border-slate-300 text-xs bg-white focus:outline-none focus:border-orange-400 focus:outline-none transition"
+-                                       id="username" placeholder="3–50 caractères" required>
+-                            </div>
+-                            <p class="text-[11px] mt-1 min-h-[14px]" id="usernameHint"></p>
+-                        </div>
+-
+-
+-
+-                        <!-- Email -->
+-                        <div>
+-                            <label class="block text-xs font-medium text-slate-600 mb-1">
+-                                E-mail
+-                                <span class="text-red-500" id="emailRequiredMark">*</span>
+-                                <span class="hidden text-slate-400 font-normal" id="emailOptionalNote">(optionnel pour ADMIN)</span>
+-                            </label>
+-                            <div class="relative">
+-                                <i class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none"
+-                                   data-lucide="mail"></i>
+-                                <input class="w-full pl-8 pr-3 py-2 border border-slate-300 text-xs bg-white focus:outline-none focus:border-orange-400 focus:outline-none transition"
+-                                       id="userEmail"
+-                                       placeholder="prenom.nom@orangebank.com"
+-                                       type="email">
+-                            </div>
+-                            <p class="text-[11px] mt-0.5 text-slate-400" id="emailHint">Requis pour MFA et
+-                                réinitialisation</p>
+-                        </div>
+-
+-                        <!-- Role -->
+-                        <div>
+-                            <label class="block text-xs font-medium text-slate-600 mb-1">Rôle <span
+-                                    class="text-red-500">*</span></label>
+-                            <select class="w-full px-3 py-2 border border-slate-300 text-xs bg-white focus:outline-none focus:border-orange-400 focus:outline-none transition"
+-                                    id="role"
+-                                    required>
+-                                <option value="">— Sélectionner un rôle —</option>
+-                                <option value="INPUTTER">INPUTTER</option>
+-                                <option value="AUTHORISER">AUTHORISER</option>
+-                                <option value="ADMIN">ADMIN</option>
+-                            </select>
+-                        </div>
+-
+-                        <!-- Country + Department -->
+-                        <div class="grid grid-cols-2 gap-3">
+-                            <div>
+-                                <label class="block text-xs font-medium text-slate-600 mb-1">Pays <span
+-                                        class="text-red-500">*</span></label>
+-                                <select class="w-full px-3 py-2 border border-slate-300 text-xs bg-white focus:outline-none focus:border-orange-400 focus:outline-none transition"
+-                                        id="userCountry"
+-                                        required>
+-                                    <option value="">— Pays —</option>
+-                                </select>
+-                            </div>
+-                            <div>
+-                                <label class="block text-xs font-medium text-slate-600 mb-1">Département <span
+-                                        class="text-red-500">*</span></label>
+-                                <select class="w-full px-3 py-2 border border-slate-300 text-xs bg-white focus:outline-none focus:border-orange-400 focus:outline-none transition"
+-                                        id="department"
+-                                        required>
+-                                    <option value="">— Département —</option>
+-                                </select>
+-                            </div>
+-                        </div>
+-
+-                        <button class="w-full py-2 px-4 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 transition flex items-center justify-center gap-1.5"
+-                                id="createUserBtn"
+-                                type="submit">
+-                            <i class="w-3.5 h-3.5" data-lucide="user-plus"></i>
+-                            Créer l'utilisateur
+-                        </button>
+-                    </form>
+-                </div>
+-            </div>
+-
+-            <!-- User list -->
+-            <div class="bg-white border border-slate-200 overflow-hidden flex flex-col">
+-                <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between flex-shrink-0">
+-                    <div class="flex items-center gap-2">
+-                        <i class="w-4 h-4 text-orange-500" data-lucide="users"></i>
+-                        <span class="text-sm font-semibold text-slate-800">Utilisateurs</span>
+-                    </div>
+-                    <span class="text-[10px] text-slate-400" id="users-count-badge"></span>
+-                </div>
+-                <div class="px-3 py-2 border-b border-slate-100 flex-shrink-0">
+-                    <div class="relative">
+-                        <i class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 pointer-events-none"
+-                           data-lucide="search"></i>
+-                        <input class="w-full pl-7 pr-3 py-1.5 border border-slate-200 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-orange-400 transition"
+-                               id="userSearchInput" oninput="filterUserList(this.value)"
+-                               placeholder="Rechercher…"
+-                               type="text">
+-                    </div>
+-                </div>
+-                <div class="overflow-y-auto" style="max-height:440px;">
+-                    <ul class="divide-y divide-slate-100 px-0" id="userList"></ul>
+-                </div>
+-            </div>
+-        </div>
+-    </div>
+-
+-    <!-- ── TAB: PAYS & DEPTS ───────────────────────────────── -->
+-    <div class="settings-panel hidden" id="panel-refs">
+-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+-
+-            <!-- Countries -->
+-            <div class="bg-white border border-slate-200 overflow-hidden">
+-                <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+-                    <i class="w-4 h-4 text-orange-500" data-lucide="globe"></i>
+-                    <span class="text-sm font-semibold text-slate-800">Pays</span>
+-                </div>
+-                <div class="p-4">
+-                    <form class="space-y-3" id="countryForm">
+-                        <div class="grid grid-cols-2 gap-3">
+-                            <div>
+-                                <label class="block text-xs font-medium text-slate-600 mb-1">Code <span
+-                                        class="text-red-500">*</span></label>
+-                                <input autocapitalize="on"
+-                                       class="w-full px-3 py-2 border border-slate-300 text-xs bg-white focus:outline-none focus:border-orange-400 focus:outline-none transition uppercase"
+-                                       id="countryCode"
+-                                       maxlength="2"
+-                                       placeholder="CI" required>
+-                            </div>
+-                            <div>
+-                                <label class="block text-xs font-medium text-slate-600 mb-1">Company ID <span
+-                                        class="text-red-500">*</span></label>
+-                                <input class="w-full px-3 py-2 border border-slate-300 text-xs bg-white focus:outline-none focus:border-orange-400 focus:outline-none transition"
+-                                       id="companyId"
+-                                       placeholder="CI2250001" required>
+-                            </div>
+-                        </div>
+-                        <button class="w-full py-2 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 transition flex items-center justify-center gap-1.5"
+-                                type="submit">
+-                            <i class="w-3.5 h-3.5" data-lucide="plus"></i> Ajouter le pays
+-                        </button>
+-                    </form>
+-                    <div class="mt-4 border-t pt-3">
+-                        <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Pays
+-                            actifs</p>
+-                        <ul class="space-y-1" id="countryList"></ul>
+-                    </div>
+-                </div>
+-            </div>
+-
+-            <!-- Departments -->
+-            <div class="bg-white border border-slate-200 overflow-hidden">
+-                <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+-                    <i class="w-4 h-4 text-orange-500" data-lucide="building-2"></i>
+-                    <span class="text-sm font-semibold text-slate-800">Départements</span>
+-                </div>
+-                <div class="p-4">
+-                    <form class="space-y-3" id="departmentForm">
+-                        <div class="grid grid-cols-3 gap-3">
+-                            <div>
+-                                <label class="block text-xs font-medium text-slate-600 mb-1">Code <span
+-                                        class="text-red-500">*</span></label>
+-                                <input class="w-full px-3 py-2 border border-slate-300 text-xs bg-white focus:outline-none focus:border-orange-400 focus:outline-none transition"
+-                                       id="deptCode" min="1" placeholder="101"
+-                                       required
+-                                       step="1" type="number">
+-                            </div>
+-                            <div class="col-span-2">
+-                                <label class="block text-xs font-medium text-slate-600 mb-1">Description <span
+-                                        class="text-red-500">*</span></label>
+-                                <input class="w-full px-3 py-2 border border-slate-300 text-xs bg-white focus:outline-none focus:border-orange-400 focus:outline-none transition"
+-                                       id="deptDesc"
+-                                       placeholder="Ex: Finance" required>
+-                            </div>
+-                        </div>
+-                        <button class="w-full py-2 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 transition flex items-center justify-center gap-1.5"
+-                                type="submit">
+-                            <i class="w-3.5 h-3.5" data-lucide="plus"></i> Créer le département
+-                        </button>
+-                    </form>
+-                    <div class="mt-4 border-t pt-3">
+-                        <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+-                            Départements</p>
+-                        <ul class="space-y-1" id="departmentList"></ul>
+-                    </div>
+-                </div>
+-            </div>
+-        </div>
+-    </div>
+-
+-    <!-- ── TAB: APPLICATIONS ───────────────────────────────── -->
+-    <div class="settings-panel hidden" id="panel-apps">
+-        <div class="bg-white border border-slate-200 overflow-hidden">
+-            <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+-                <i class="w-4 h-4 text-orange-500" data-lucide="layers"></i>
+-                <span class="text-sm font-semibold text-slate-800">Applications Core Banking</span>
+-            </div>
+-            <div class="grid" style="grid-template-columns:200px 1fr;min-height:300px;">
+-                <!-- App list -->
+-                <div class="border-r border-slate-100 p-2">
+-                    <ul class="divide-y divide-slate-100" id="appList"></ul>
+-                </div>
+-                <!-- App detail -->
+-                <div class="p-4 space-y-3">
+-                    <div>
+-                        <label class="block text-xs font-medium text-slate-600 mb-1">Module</label>
+-                        <input class="w-full px-3 py-2 border border-slate-200 text-xs bg-slate-50 cursor-not-allowed text-slate-500"
+-                               disabled
+-                               id="appNameDisplay" placeholder="Sélectionnez un module">
+-                    </div>
+-                    <div>
+-                        <label class="block text-xs font-medium text-slate-600 mb-1">Description</label>
+-                        <textarea
+-                                class="w-full px-3 py-2 border border-slate-300 text-xs bg-white focus:outline-none focus:border-orange-400 focus:outline-none transition resize-none"
+-                                id="appDescription"
+-                                  rows="2"></textarea>
+-                    </div>
+-                    <div id="schemaContainer">
+-                        <p class="text-xs text-slate-400 text-center py-8">
+-                            Sélectionnez un module pour visualiser le schéma
+-                        </p>
+-                    </div>
+-                </div>
+-            </div>
+-        </div>
+-    </div>
+-
+-    <!-- ── TAB: SÉCURITÉ ─────────────────────────────────────────── -->
+-    <div class="settings-panel hidden" id="panel-security">
+-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+-
+-            <!-- Password Policy -->
+-            <div class="bg-white border border-slate-200 overflow-hidden">
+-                <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+-                    <i class="w-4 h-4 text-orange-500" data-lucide="key-round"></i>
+-                    <span class="text-sm font-semibold text-slate-800">Politique de mot de passe</span>
+-                </div>
+-                <div class="p-4 space-y-4">
+-                    <div>
+-                        <label class="block text-xs font-medium text-slate-600 mb-1">
+-                            Longueur minimale <span class="text-red-500">*</span>
+-                        </label>
+-                        <input class="w-full px-3 py-2 border border-slate-300 text-xs bg-white focus:outline-none focus:border-orange-400 focus:outline-none transition"
+-                               id="pol-minLength" max="32" min="6"
+-                               type="number">
+-                    </div>
+-                    <div class="space-y-2">
+-                        <label class="block text-xs font-medium text-slate-600">Règles de complexité</label>
+-                        <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+-                            <input class="w-3.5 h-3.5 accent-orange-500" id="pol-digit" type="checkbox">
+-                            Exiger au moins un chiffre
+-                        </label>
+-                        <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+-                            <input class="w-3.5 h-3.5 accent-orange-500" id="pol-upper" type="checkbox">
+-                            Exiger au moins une majuscule
+-                        </label>
+-                        <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+-                            <input class="w-3.5 h-3.5 accent-orange-500" id="pol-special" type="checkbox">
+-                            Exiger au moins un caractère spécial (!@#$%...)
+-                        </label>
+-                    </div>
+-                    <div class="bg-orange-50 border border-orange-200 p-3 text-xs text-orange-800">
+-                        <strong>Aperçu :</strong> <span id="pol-preview">Chargement...</span>
+-                    </div>
+-                    <button class="w-full py-2 px-4 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 transition flex items-center justify-center gap-1.5"
+-                            id="savePolicyBtn">
+-                        <i class="w-3.5 h-3.5" data-lucide="save"></i> Enregistrer la politique
+-                    </button>
+-                    <div class="hidden text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2 text-center"
+-                         id="pol-success">
+-                        ✓ Politique enregistrée avec succès
+-                    </div>
+-                </div>
+-            </div>
+-
+-            <!-- Lock / Unlock users -->
+-            <div class="bg-white border border-slate-200 overflow-hidden">
+-                <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+-                    <div class="flex items-center gap-2">
+-                        <i class="w-4 h-4 text-orange-500" data-lucide="lock"></i>
+-                        <span class="text-sm font-semibold text-slate-800">Gestion des accès</span>
+-                    </div>
+-                    <button class="p-1 text-slate-400 hover:text-orange-500 transition"
+-                            onclick="loadSecurityUserList()" title="Rafraîchir">
+-                        <i class="w-3.5 h-3.5" data-lucide="refresh-cw"></i>
+-                    </button>
+-                </div>
+-                <div class="p-3">
+-                    <input class="w-full px-3 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-orange-400 mb-3"
+-                           id="sec-search" oninput="filterSecurityList(this.value)"
+-                           placeholder="Rechercher un utilisateur…"
+-                           type="text">
+-                    <div class="space-y-1.5 max-h-80 overflow-y-auto" id="sec-user-list"></div>
+-                </div>
+-            </div>
+-        </div>
+-    </div>
+-
+-</div>
+-
+-
+-{/default}
+-
+-{#script}
+-<script src="/javascript/settings.js"></script>
+-{/script}
+-{/include}
+\ No newline at end of file
+Index: src/main/resources/templates/sidebar-admin.html
+===================================================================
+diff --git a/src/main/resources/templates/sidebar-admin.html b/src/main/resources/templates/sidebar-admin.html
+deleted file mode 100644
+--- a/src/main/resources/templates/sidebar-admin.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,66 +0,0 @@
+-<aside class="fixed left-0 top-0 z-50 w-64 h-full flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
+-       id="sidebar" style="background:#fff;border-right:1px solid #e2e8f0">
+-    <div class="flex-shrink-0" style="padding:14px 16px 12px;border-bottom:1px solid #f1f5f9">
+-        <a class="flex items-center gap-2.5 hover:opacity-80 transition-opacity" href="." title="Orange Bank">
+-            <img alt="Orange Bank" class="h-7 w-auto object-contain" loading="lazy"
+-                 onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg';this.onerror=null;"
+-                 src="/images/Logo_Orange_Bank.svg">
+-        </a>
+-        <p style="margin-top:6px;font-weight:900;color:#cbd5e1;text-transform:uppercase;font-size:.58rem;letter-spacing:.18em">
+-            FLUX &mdash; ADMIN</p>
+-    </div>
+-    <nav class="flex-1 px-2.5 py-3 space-y-0.5">
+-        <p style="font-size:9px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.1em;padding:10px 10px 4px;display:block">
+-            Administration</p>
+-        {#if activePage == 'dashboard'}
+-        <a class="nav-item"
+-           href="/dashboard"
+-           style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:600;color:#c2410c;background:#fff7ed;border-right:2px solid #f97316;text-decoration:none"
+-           style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none">
+-            {#else}
+-            <a class="nav-item"
+-               href="/dashboard"
+-               style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none">
+-                {/if}
+-                <i data-lucide="layout-dashboard" style="width:1rem;height:1rem;flex-shrink:0"></i> Tableau de bord
+-            </a>
+-            {#if activePage == 'reports'}
+-            <a class="nav-item"
+-               href="/reports"
+-               style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:600;color:#c2410c;background:#fff7ed;border-right:2px solid #f97316;text-decoration:none"
+-               style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none">
+-                {#else}
+-                <a class="nav-item"
+-                   href="/reports"
+-                   style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none">
+-                    {/if}
+-                    <i data-lucide="bar-chart-3" style="width:1rem;height:1rem;flex-shrink:0"></i> Rapports
+-                </a>
+-                {#if activePage == 'settings'}
+-                <a class="nav-item"
+-                   href="/settings"
+-                   style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:600;color:#c2410c;background:#fff7ed;border-right:2px solid #f97316;text-decoration:none"
+-                   style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none">
+-                    {#else}
+-                    <a class="nav-item"
+-                       href="/settings"
+-                       style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none">
+-                        {/if}
+-                        <i data-lucide="settings-2" style="width:1rem;height:1rem;flex-shrink:0"></i> Paramètres
+-                    </a>
+-                    <div style="margin:6px 0;border-top:1px solid #f1f5f9"></div>
+-                    <a class="nav-item"
+-                       href="#"
+-                       style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none"><i data-lucide="help-circle" style="width:1rem;height:1rem;flex-shrink:0"></i>
+-                        Support</a>
+-                </a>
+-            </a>
+-        </a>
+-    </nav>
+-    <div class="flex-shrink-0" style="padding:10px 14px;border-top:1px solid #f1f5f9">
+-        <div class="mt-2 flex items-center justify-between">
+-            <span style="font-size:.6rem;font-weight:700;color:#94a3b8;text-transform:uppercase">&copy; 2025 Orange Bank</span>
+-            <span aria-hidden="true" id="country-flag" style="font-size:.85rem" title=""></span>
+-        </div>
+-    </div>
+-</aside>
+\ No newline at end of file
+Index: src/main/resources/templates/sidebar-authoriser.html
+===================================================================
+diff --git a/src/main/resources/templates/sidebar-authoriser.html b/src/main/resources/templates/sidebar-authoriser.html
+deleted file mode 100644
+--- a/src/main/resources/templates/sidebar-authoriser.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,53 +0,0 @@
+-<aside class="fixed left-0 top-0 z-50 w-64 h-full flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
+-       id="sidebar" style="background:#fff;border-right:1px solid #e2e8f0">
+-    <div class="flex-shrink-0" style="padding:14px 16px 12px;border-bottom:1px solid #f1f5f9">
+-        <a class="flex items-center gap-2.5 hover:opacity-80 transition-opacity" href="." title="Orange Bank">
+-            <img alt="Orange Bank" class="h-7 w-auto object-contain" loading="lazy"
+-                 onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg';this.onerror=null;"
+-                 src="/images/Logo_Orange_Bank.svg">
+-        </a>
+-        <p style="margin-top:6px;font-weight:900;color:#cbd5e1;text-transform:uppercase;font-size:.58rem;letter-spacing:.18em">
+-            FLUX &mdash; VALIDATEUR</p>
+-    </div>
+-    <nav class="flex-1 px-2.5 py-3 space-y-0.5">
+-        <p style="font-size:9px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.1em;padding:10px 10px 4px;display:block">
+-            Validation</p>
+-        {#if activePage == 'validate'}
+-        <a class="nav-item"
+-           href="/validate"
+-           style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:600;color:#c2410c;background:#fff7ed;border-right:2px solid #f97316;text-decoration:none"
+-           style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none">
+-            {#else}
+-            <a class="nav-item"
+-               href="/validate"
+-               style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none">
+-                {/if}
+-                <i data-lucide="shield-check" style="width:1rem;height:1rem;flex-shrink:0"></i> À Valider
+-            </a>
+-            {#if activePage == 'validated'}
+-            <a class="nav-item"
+-               href="/validated"
+-               style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:600;color:#c2410c;background:#fff7ed;border-right:2px solid #f97316;text-decoration:none"
+-               style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none">
+-                {#else}
+-                <a class="nav-item"
+-                   href="/validated"
+-                   style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none">
+-                    {/if}
+-                    <i data-lucide="check-circle-2" style="width:1rem;height:1rem;flex-shrink:0"></i> Batches Validés
+-                </a>
+-                <div style="margin:6px 0;border-top:1px solid #f1f5f9"></div>
+-                <a class="nav-item"
+-                   href="#"
+-                   style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none"><i data-lucide="help-circle" style="width:1rem;height:1rem;flex-shrink:0"></i> Support</a>
+-            </a>
+-        </a>
+-    </nav>
+-
+-    <div class="flex-shrink-0" style="padding:10px 14px;border-top:1px solid #f1f5f9">
+-        <div class="mt-2 flex items-center justify-between">
+-            <span style="font-size:.6rem;font-weight:700;color:#94a3b8;text-transform:uppercase">&copy; 2025 Orange Bank</span>
+-            <span aria-hidden="true" id="country-flag" style="font-size:.85rem" title=""></span>
+-        </div>
+-    </div>
+-</aside>
+\ No newline at end of file
+Index: src/main/resources/templates/sidebar-inputter.html
+===================================================================
+diff --git a/src/main/resources/templates/sidebar-inputter.html b/src/main/resources/templates/sidebar-inputter.html
+deleted file mode 100644
+--- a/src/main/resources/templates/sidebar-inputter.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,54 +0,0 @@
+-<aside class="fixed left-0 top-0 z-50 w-64 h-full flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
+-       id="sidebar" style="background:#fff;border-right:1px solid #e2e8f0">
+-    <div class="flex-shrink-0" style="padding:14px 16px 12px;border-bottom:1px solid #f1f5f9">
+-        <a class="flex items-center gap-2.5 hover:opacity-80 transition-opacity" href="." title="Orange Bank">
+-            <img alt="Orange Bank" class="h-7 w-auto object-contain" loading="lazy"
+-                 onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/f/fb/Logo_Orange_Bank.svg';this.onerror=null;"
+-                 src="/images/Logo_Orange_Bank.svg">
+-        </a>
+-        <p style="margin-top:6px;font-weight:900;color:#cbd5e1;text-transform:uppercase;font-size:.58rem;letter-spacing:.18em">
+-            FLUX &mdash; INITIATEUR</p>
+-    </div>
+-    <nav class="flex-1 px-2.5 py-3 space-y-0.5">
+-        <p style="font-size:9px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.1em;padding:10px 10px 4px;display:block">
+-            Opérations</p>
+-        {#if activePage == 'upload'}
+-        <a class="nav-item"
+-           href="/upload"
+-           style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:600;color:#c2410c;background:#fff7ed;border-right:2px solid #f97316;text-decoration:none"
+-           style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none">
+-            {#else}
+-            <a class="nav-item"
+-               href="/upload"
+-               style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none">
+-                {/if}
+-                <i data-lucide="cloud-upload" style="width:1rem;height:1rem;flex-shrink:0"></i> Upload
+-            </a>
+-            {#if activePage == 'batches'}
+-            <a class="nav-item"
+-               href="/batches"
+-               style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:600;color:#c2410c;background:#fff7ed;border-right:2px solid #f97316;text-decoration:none"
+-               style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none">
+-                {#else}
+-                <a class="nav-item"
+-                   href="/batches"
+-                   style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none">
+-                    {/if}
+-                    <i data-lucide="list-checks" style="width:1rem;height:1rem;flex-shrink:0"></i> Mes Batches
+-                </a>
+-                <div style="margin:6px 0;border-top:1px solid #f1f5f9"></div>
+-                <a class="nav-item"
+-                   href="#"
+-                   style="display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;font-size:.8rem;font-weight:500;color:#64748b;text-decoration:none"><i data-lucide="help-circle" style="width:1rem;height:1rem;flex-shrink:0"></i> Support</a>
+-            </a>
+-        </a>
+-    </nav>
+-
+-
+-    <div class="flex-shrink-0" style="padding:10px 14px;border-top:1px solid #f1f5f9">
+-        <div class="mt-2 flex items-center justify-between">
+-            <span style="font-size:.6rem;font-weight:700;color:#94a3b8;text-transform:uppercase">&copy; 2025 Orange Bank</span>
+-            <span aria-hidden="true" id="country-flag" style="font-size:.85rem" title=""></span>
+-        </div>
+-    </div>
+-</aside>
+\ No newline at end of file
+Index: src/main/resources/templates/upload.html
+===================================================================
+diff --git a/src/main/resources/templates/upload.html b/src/main/resources/templates/upload.html
+deleted file mode 100644
+--- a/src/main/resources/templates/upload.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,201 +0,0 @@
+-{#include layout}
+-
+-{#title}Upload Batch - Orange Bank{/title}
+-
+-{#head}
+-
+-{/head}
+-
+-{#aside}
+-{#include sidebar-inputter/}
+-{/aside}
+-
+-{#default}
+-<div class="max-w-7xl mx-auto space-y-8">
+-
+-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+-
+-        <!-- Card 1 -->
+-        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
+-            <!-- Background pattern -->
+-            <div class="absolute inset-0 opacity-[0.75]"
+-                 style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
+-            </div>
+-            <!-- Content -->
+-            <div class="relative bg-white/10 p-4 flex items-center justify-between">
+-                <div>
+-                    <p class="text-sm text-gray-500">Total Chargés</p>
+-                    <p class="text-xl font-semibold text-orange-600" id="uploadedCount">0</p>
+-                </div>
+-                <svg class="w-6 h-6 text-orange-600" fill="none"
+-                     stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+-                    <path d="M12 13v8"/>
+-                    <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+-                    <path d="m8 17 4-4 4 4"/>
+-                </svg>
+-            </div>
+-        </div>
+-
+-        <!-- Card 2 -->
+-        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
+-            <!-- Background pattern -->
+-            <div class="absolute inset-0 opacity-[0.75]"
+-                 style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
+-            </div>
+-
+-            <!-- Content -->
+-            <div class="relative bg-white/10 p-4 flex items-center justify-between">
+-                <div>
+-                    <p class="text-sm text-gray-500">Total Validés</p>
+-                    <p class="text-xl font-semibold text-emerald-600" id="validatedCount">0</p>
+-                </div>
+-                <svg class="w-6 h-6 text-emerald-600" fill="none"
+-                     stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+-                    <path d="M21.801 10A10 10 0 1 1 17 3.335"/>
+-                    <path d="m9 11 3 3L22 4"/>
+-                </svg>
+-            </div>
+-        </div>
+-
+-    </div>
+-
+-    <div class="bg-white rounded-md shadow-xs border border-gray-200 p-8">
+-        <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-3">
+-            <i class="w-5 h-5 text-orange-600" data-lucide="settings"></i>
+-            Générateur Template
+-        </h3>
+-
+-        <select class="w-full px-3 py-3 border border-gray-300 rounded-md mb-4 focus:ring-2 focus:ring-orange-500 outline-none transition"
+-                id="appSelect">
+-            <option value="">Choisir application cible...</option>
+-        </select>
+-
+-        <div class="hidden bg-white border rounded-md shadow-sm mb-6 overflow-hidden transition-all" id="fieldsSection">
+-            <div class="flex items-center justify-between p-4 bg-gray-50/50 cursor-pointer hover:bg-gray-50 transition-colors border-b border-transparent"
+-                 id="fieldsToggleHeader"
+-                 onclick="toggleFieldsVisibility()">
+-                <div class="flex items-center gap-2">
+-                    <div class="bg-blue-100 p-2 rounded-full text-blue-600"><i class="w-5 h-5"
+-                                                                               data-lucide="database"></i></div>
+-                    <div>
+-                        <h3 class="text-sm font-semibold text-gray-700">Configuration des Champs</h3>
+-                        <p class="text-xs text-gray-500" id="fieldsSummaryText">Chargement des métadonnées...</p>
+-                    </div>
+-                </div>
+-                <i class="w-5 h-5 text-gray-400 transition-transform duration-300" data-lucide="chevron-down"
+-                   id="fieldsChevron"></i>
+-            </div>
+-
+-            <div class="hidden p-4 border-t border-gray-200 space-y-4" id="fieldsContent">
+-                <div class="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800 flex justify-between items-center">
+-                    <div class="truncate mr-4">
+-                        <span class="font-bold">En-tête CSV requis :</span>
+-                        <code class="ml-2 bg-white px-2 py-1 rounded border font-mono text-xs select-all"
+-                              id="csv-header">...</code>
+-                    </div>
+-                    <button class="text-blue-600 hover:text-blue-800 underline text-xs font-bold flex-shrink-0"
+-                            onclick="copyHeader()">Copier
+-                    </button>
+-                </div>
+-
+-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+-                    <div>
+-                        <h4 class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Champs
+-                            Obligatoires</h4>
+-                        <div class="min-h-[120px] border-2 border-dashed border-gray-200 rounded-md p-2 bg-gray-50/50"
+-                             id="mandatory-fields"></div>
+-                    </div>
+-                    <div>
+-                        <h4 class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Champs
+-                            Optionnels</h4>
+-                        <div class="min-h-[120px] border-2 border-dashed border-gray-200 rounded-md p-2 bg-gray-50/50"
+-                             id="optional-fields"></div>
+-                    </div>
+-                </div>
+-            </div>
+-        </div>
+-
+-        <p class="text-xs text-gray-500 mt-2 italic text-center">
+-            <i class="inline w-3 h-3 mr-1" data-lucide="info"></i> Glissez-déposez les blocs pour ajuster votre
+-            structure.
+-        </p>
+-    </div>
+-
+-    <div class="hidden bg-white p-8 rounded-md shadow-xs border border-gray-200 transition-all duration-300"
+-         id="uploadSection">
+-        <label class="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4 block">Importer Fichier CSV</label>
+-        <div class="mb-6 border-2 border-dashed border-gray-300 rounded-md p-10 text-center bg-gray-50 hover:border-orange-500/50 hover:bg-orange-50/30 transition cursor-pointer group"
+-             id="csvDropZone"
+-             onclick="document.getElementById('csvInput').click()">
+-            <i class="mx-auto h-12 w-12 mb-3 text-gray-400 group-hover:text-orange-600 transition-colors"
+-               data-lucide="upload-cloud"></i>
+-            <p class="text-sm font-medium text-gray-700">Glissez ou cliquez pour sélectionner</p>
+-            <input accept=".csv" class="hidden" id="csvInput" type="file">
+-        </div>
+-    </div>
+-
+-    <div class="hidden bg-white rounded-md shadow-xs border border-gray-200 overflow-hidden" id="csvPreviewSection">
+-        <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+-            <h4 class="text-sm font-semibold text-gray-700 flex items-center gap-3">
+-                <i class="w-5 h-5 text-orange-600" data-lucide="table"></i> Aperçu du Batch
+-            </h4>
+-
+-        </div>
+-        <div class="overflow-x-auto px-8 py-4">
+-            <table class="min-w-full text-xs">
+-                <thead class="bg-gray-100 border-b border-gray-200" id="previewHeader"></thead>
+-                <tbody class="bg-white divide-y divide-gray-100" id="previewBody"></tbody>
+-            </table>
+-        </div>
+-        <div class="p-6 border-t border-gray-200 flex justify-between items-center gap-3">
+-            <button class="inline-flex items-center text-gray-600 hover:text-orange-600 font-bold text-sm"
+-                    id="fullPreviewBtn">
+-                <i class="w-4 h-4 mr-2" data-lucide="maximize-2"></i> Mode Plein Écran
+-            </button>
+-            <div class="flex gap-3">
+-                <button class="inline-flex items-center justify-center
+-                   text-white bg-orange-600 hover:bg-orange-700 border border-transparent
+-                   focus:ring-4 focus:ring-brand-medium shadow-xs font-medium rounded-base
+-                   text-sm px-4 py-2.5
+-                   transition-colors duration-200"
+-                        id="sendCsvBtn"
+-                        type="button">
+-                    <i class="w-4 h-4 mr-2" data-lucide="send"></i> Soumettre
+-                </button>
+-                <button class="inline-flex items-center justify-center text-white bg-red-600 hover:bg-red-700 font-medium rounded-base text-sm px-4 py-2.5 transition-all"
+-                        id="deleteCsvBtn">
+-                    <i class="w-4 h-4 mr-2" data-lucide="trash-2"></i> Annuler
+-                </button>
+-            </div>
+-        </div>
+-    </div>
+-
+-    <div class="hidden text-center py-16 bg-white rounded-md shadow-xs border border-gray-200" id="success">
+-        <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 text-green-500 rounded-full mb-6">
+-            <i class="w-10 h-10" data-lucide="check"></i>
+-        </div>
+-        <h3 class="text-2xl font-bold text-gray-900 mb-2">Upload réussi !</h3>
+-        <p class="text-gray-500 mb-6">Identifiant du batch : <code
+-                class="bg-gray-100 px-3 py-1.5 rounded text-sm font-mono font-bold text-orange-600" id="batchId"></code>
+-        </p>
+-        <button class="inline-flex items-center text-white bg-orange-600 hover:bg-orange-700 border border-transparent
+-               focus:ring-4 focus:ring-brand-medium shadow-xs font-medium rounded-base text-sm px-4 py-2.5
+-               transition-colors duration-200" onclick="location.reload()">Charger un autre fichier
+-        </button>
+-    </div>
+-</div>
+-{/default}
+-
+-{#script}
+-<script src="/javascript/script.js"></script>
+-<script>
+-    // Initialisation des icônes au chargement
+-    document.addEventListener('DOMContentLoaded', () => {
+-        if (typeof lucide !== 'undefined') {
+-            lucide.createIcons();
+-        }
+-    });
+-</script>
+-{/script}
+-
+-{/include}
+\ No newline at end of file
+Index: src/main/resources/templates/validate.html
+===================================================================
+diff --git a/src/main/resources/templates/validate.html b/src/main/resources/templates/validate.html
+deleted file mode 100644
+--- a/src/main/resources/templates/validate.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,77 +0,0 @@
+-{#include layout}
+-{#title}Validation Batches - Orange Bank{/title}
+-{#head}
+-
+-{/head}
+-
+-{#aside}
+-{#insert aside}{#include sidebar-authoriser/}{/insert}
+-
+-{/aside}
+-
+-{#default}
+-<div class="max-w-7xl mx-auto space-y-8" id="validatedPage">
+-
+-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+-        <!-- Card 1 -->
+-        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
+-            <!-- Background pattern -->
+-            <div
+-                    class="absolute inset-0 opacity-[0.65]"
+-                    style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
+-            </div>
+-            <!-- Content -->
+-            <div class="relative bg-white/10 p-4 flex items-center justify-between">
+-                <div>
+-                    <p class="text-sm text-gray-600">Validés</p>
+-                    <p class="text-xl font-semibold text-emerald-600" id="validatedCount">0</p>
+-                </div>
+-                <svg class="w-6 h-6 text-green-600" fill="none" height="24" stroke="currentColor" stroke-linecap="round"
+-                     stroke-linejoin="round"
+-                     stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+-                    <path d="M21.801 10A10 10 0 1 1 17 3.335"></path>
+-                    <path d="m9 11 3 3L22 4"></path>
+-                </svg>
+-            </div>
+-        </div>
+-
+-        <!-- Card 2 -->
+-        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
+-            <!-- Background pattern -->
+-            <div class="absolute inset-0 opacity-[0.65]"
+-                 style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
+-            </div>
+-
+-            <!-- Content -->
+-            <div class="relative bg-white/10 p-4 flex items-center justify-between">
+-                <div>
+-                    <p class="text-sm text-gray-600">Traités</p>
+-                    <p class="text-xl font-semibold text-orange-600" id="processedCount">0</p>
+-                </div>
+-                <svg class="w-6 h-6 text-orange-600" fill="none" height="24" stroke="currentColor"
+-                     stroke-linecap="round"
+-                     stroke-linejoin="round"
+-                     stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+-                    <path d="m5 3 14 9-14 9V3"/>
+-                </svg>
+-            </div>
+-        </div>
+-    </div>
+-
+-    <div class="bg-white rounded-md shadow-xs border border-gray-200 overflow-hidden">
+-        <div class="p-4">
+-            <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-3">
+-                <i class="w-5 h-5 text-orange-600" data-lucide="list"></i>
+-                Batches à Valider
+-            </h3>
+-        </div>
+-        <div class="divide-y divide-gray-200 p-4" id="uploadedBatchesContainer"></div>
+-        <div class="text-center text-sm text-gray-500 mt-4 p-4" id="uploadedPaginationInfo"></div>
+-    </div>
+-</div>
+-{/default}
+-
+-{#script}
+-<script src="/javascript/validate-script.js"></script>
+-{/script}
+-{/include}
+\ No newline at end of file
+Index: src/main/resources/templates/validated.html
+===================================================================
+diff --git a/src/main/resources/templates/validated.html b/src/main/resources/templates/validated.html
+deleted file mode 100644
+--- a/src/main/resources/templates/validated.html	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
++++ /dev/null	(revision 2373e14a00b46b3de85297d5e40e506621b95c91)
+@@ -1,79 +0,0 @@
+-{#include layout}
+-
+-{#title}Batches Validés - Orange Bank{/title}
+-
+-{#head}
+-
+-{/head}
+-
+-{#aside}
+-{#insert aside}{#include sidebar-authoriser/}{/insert}
+-
+-{/aside}
+-
+-{#default}
+-<div class="max-w-7xl mx-auto space-y-8" id="validatedPage">
+-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+-
+-        <!-- Card 1 -->
+-        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
+-            <!-- Background pattern -->
+-            <div
+-                    class="absolute inset-0 opacity-[0.65]"
+-                    style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
+-            </div>
+-            <!-- Content -->
+-            <div class="relative bg-white/10 p-4 flex items-center justify-between">
+-                <div>
+-                    <p class="text-sm text-gray-600">Validés</p>
+-                    <p class="text-xl font-semibold text-emerald-600" id="validatedCount">0</p>
+-                </div>
+-                <svg class="w-6 h-6 text-green-600" fill="none" height="24" stroke="currentColor" stroke-linecap="round"
+-                     stroke-linejoin="round"
+-                     stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+-                    <path d="M21.801 10A10 10 0 1 1 17 3.335"></path>
+-                    <path d="m9 11 3 3L22 4"></path>
+-                </svg>
+-            </div>
+-        </div>
+-
+-        <!-- Card 2 -->
+-        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
+-            <!-- Background pattern -->
+-            <div class="absolute inset-0 opacity-[0.65]"
+-                 style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
+-            </div>
+-
+-            <!-- Content -->
+-            <div class="relative bg-white/10 p-4 flex items-center justify-between">
+-                <div>
+-                    <p class="text-sm text-gray-600">Traités</p>
+-                    <p class="text-xl font-semibold text-orange-600" id="processedCount">0</p>
+-                </div>
+-                <svg class="w-6 h-6 text-orange-600" fill="none" height="24" stroke="currentColor"
+-                     stroke-linecap="round"
+-                     stroke-linejoin="round"
+-                     stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+-                    <path d="m5 3 14 9-14 9V3"/>
+-                </svg>
+-            </div>
+-        </div>
+-
+-    </div>
+-
+-    <div class="bg-white rounded-md shadow-xs border border-gray-200 overflow-hidden">
+-        <div class="p-4">
+-            <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-3">
+-                <i class="w-5 h-5 text-orange-600" data-lucide="list"></i> Batches Validés
+-            </h3>
+-        </div>
+-        <div class="divide-y divide-gray-200 p-4" id="validatedBatchesContainer"></div>
+-        <div class="text-center text-sm text-gray-500 mt-4 p-4" id="validatedPaginationInfo"></div>
+-    </div>
+-</div>
+-{/default}
+-
+-{#script}
+-<script src="/javascript/validated-script.js"></script>
+-{/script}
+-{/include}
+\ No newline at end of file

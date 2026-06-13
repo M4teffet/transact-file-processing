@@ -1,0 +1,45 @@
+<aside class="fixed left-0 top-0 z-50 w-64 h-full flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out overflow-y-auto"
+       id="sidebar" style="background:var(--chrome);border-right:1px solid var(--chrome-line);">
+
+    <div class="flex-shrink-0 flex items-center gap-3 px-5"
+         style="padding-top:1.05rem;padding-bottom:1.05rem;border-bottom:1px solid var(--chrome-line);">
+        <a class="flex items-center gap-3 hover:opacity-80 transition-opacity" href="" title="Orange Bank">
+            <span class="flex items-center justify-center flex-shrink-0 text-white font-semibold"
+                  style="width:26px;height:26px;background:var(--orange);font-size:.75rem;">OB</span>
+            <span>
+                <b class="text-white block" style="font-weight:500;font-size:.92rem;letter-spacing:.06em;">FLUX</b>
+                <span class="block uppercase" style="color:var(--chrome-text);font-size:.62rem;letter-spacing:.14em;">Orange Bank</span>
+            </span>
+        </a>
+    </div>
+
+    <nav class="flex-1 px-3 py-4">
+        <div class="nav-section">Validation</div>
+        {#if activePage == 'validate'}
+        <a class="nav-item nav-item-active" href="/validate">
+            {#else}
+            <a class="nav-item" href="/validate">
+                {/if}
+                <i class="w-4 h-4 flex-shrink-0" data-lucide="shield-check"></i> À Valider
+            </a>
+
+            {#if activePage == 'validated'}
+            <a class="nav-item nav-item-active" href="/validated">
+                {#else}
+                <a class="nav-item" href="/validated">
+                    {/if}
+                    <i class="w-4 h-4 flex-shrink-0" data-lucide="check-circle-2"></i> Batches Validés
+                </a>
+
+                <div class="nav-section">Aide</div>
+                <a class="nav-item" href="#">
+                    <i class="w-4 h-4 flex-shrink-0" data-lucide="help-circle"></i> Support
+                </a>
+    </nav>
+
+    <div class="px-5 py-3 flex items-center justify-between" style="border-top:1px solid var(--chrome-line);">
+        <span class="uppercase"
+              style="color:#555e6d;font-size:.6rem;letter-spacing:.1em;">&copy; 2025 Orange Bank</span>
+        <span aria-hidden="true" class="leading-none" id="country-flag" style="font-size:.85rem;" title=""></span>
+    </div>
+</aside>

@@ -1,0 +1,327 @@
+{#include layout}
+{#title}Administration - Batch Manager{/title}
+
+{#head}
+
+{/head}
+
+{#aside}
+{#include sidebar-admin/}
+{/aside}
+
+{#default}
+<div class="max-w-7xl mx-auto space-y-8">
+
+    <!-- Page header -->
+    <div class="page-header">
+        <div>
+            <h2 class="page-title">Tableau de bord</h2>
+            <p class="page-subtitle">Suivi des batches et gestion des fonctionnalités en temps réel</p>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <!-- Auto-refresh toggle -->
+            <div class="flex items-center gap-3">
+                <span class="uppercase"
+                      style="font-size:.7rem;letter-spacing:.1em;color:var(--ink-3);">Auto-refresh</span>
+                <button aria-pressed="true"
+                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                        id="toggleAutoRefresh">
+                    <span class="absolute inset-0 rounded-full bg-orange-600 transition-colors"
+                          id="autoRefreshBg"></span>
+                    <span class="absolute left-0.5 top-0.5 h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform translate-x-5"
+                          id="autoRefreshKnob"></span>
+                </button>
+                <span class="font-semibold text-orange-600" id="autoRefreshIndicator"
+                      style="font-size:.7rem;letter-spacing:.1em;">ON</span>
+            </div>
+
+            <!-- Bouton Actualiser -->
+            <button class="btn-flux" id="refreshStats">
+                <i class="w-3.5 h-3.5" data-lucide="refresh-cw" id="refreshIcon"></i>
+                <span>Actualiser</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistiques globales -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="stats-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="stats-label">Total Batches</p>
+                    <p class="stats-value" id="stat-total-batches">0</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="w-5 h-5" data-lucide="database"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stats-card" style="border-top-color:#d97706;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="stats-label">En Attente</p>
+                    <p class="stats-value" id="stat-pending" style="color:#d97706;">0</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="w-5 h-5" data-lucide="clock"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stats-card" style="border-top-color:#0f9d58;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="stats-label">Traité</p>
+                    <p class="stats-value" id="stat-validated" style="color:#0f9d58;">0</p>
+                </div>
+                <div class="stats-icon">
+                    <i class="w-5 h-5" data-lucide="check-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Répartition des statuts — spine proportionnelle -->
+    <div class="panel">
+        <div class="panel-head">
+            <h3><i data-lucide="activity"></i> Répartition des statuts</h3>
+        </div>
+        <div class="panel-body">
+            <div class="flex overflow-hidden" id="statusSpine"
+                 style="height:34px;border:1.5px solid var(--ink);margin-bottom:1rem;">
+                <div id="spine-uploaded"
+                     style="background:var(--orange);flex:0;min-width:0;border-right:1.5px solid var(--ink);transition:flex .4s;"
+                     title="Uploadés"></div>
+                <div id="spine-validated"
+                     style="background:#d97706;flex:0;min-width:0;border-right:1.5px solid var(--ink);transition:flex .4s;"
+                     title="En validation"></div>
+                <div id="spine-processing"
+                     style="background:#2563eb;flex:0;min-width:0;border-right:1.5px solid var(--ink);transition:flex .4s;"
+                     title="En traitement"></div>
+                <div id="spine-processed"
+                     style="background:#0f9d58;flex:1;min-width:0;border-right:1.5px solid var(--ink);transition:flex .4s;"
+                     title="Traité OK"></div>
+                <div id="spine-errors" style="background:#dc2626;flex:0;min-width:0;transition:flex .4s;"
+                     title="Erreurs"></div>
+            </div>
+            <div class="flex flex-wrap" style="gap:1.5rem;">
+                <div class="flex items-center" style="gap:.5rem;">
+                    <span style="width:9px;height:9px;background:var(--orange);flex-shrink:0;"></span>
+                    <span class="tnum" id="detail-uploaded" style="font-size:1.05rem;font-weight:500;color:var(--ink);">0</span>
+                    <span style="font-size:.72rem;color:var(--ink-3);">Uploadés</span>
+                </div>
+                <div class="flex items-center" style="gap:.5rem;">
+                    <span style="width:9px;height:9px;background:#d97706;flex-shrink:0;"></span>
+                    <span class="tnum" id="detail-validated"
+                          style="font-size:1.05rem;font-weight:500;color:var(--ink);">0</span>
+                    <span style="font-size:.72rem;color:var(--ink-3);">En validation</span>
+                </div>
+                <div class="flex items-center" style="gap:.5rem;">
+                    <span style="width:9px;height:9px;background:#2563eb;flex-shrink:0;"></span>
+                    <span class="tnum" id="detail-processing"
+                          style="font-size:1.05rem;font-weight:500;color:var(--ink);">0</span>
+                    <span style="font-size:.72rem;color:var(--ink-3);">En traitement</span>
+                </div>
+                <div class="flex items-center" style="gap:.5rem;">
+                    <span style="width:9px;height:9px;background:#0f9d58;flex-shrink:0;"></span>
+                    <span class="tnum" id="detail-processed"
+                          style="font-size:1.05rem;font-weight:500;color:var(--ink);">0</span>
+                    <span style="font-size:.72rem;color:var(--ink-3);">Traité OK</span>
+                </div>
+                <div class="flex items-center" style="gap:.5rem;">
+                    <span style="width:9px;height:9px;background:#dc2626;flex-shrink:0;"></span>
+                    <span class="tnum" id="detail-errors"
+                          style="font-size:1.05rem;font-weight:500;color:var(--ink);">0</span>
+                    <span style="font-size:.72rem;color:var(--ink-3);">Erreurs</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gestion des fonctionnalités -->
+    <div class="panel">
+        <div class="panel-head">
+            <h3><i data-lucide="settings"></i> Gestion des fonctionnalités</h3>
+        </div>
+        <div class="panel-body">
+            <p class="mb-6" style="font-size:.8rem;color:var(--ink-3);">
+                Activez ou désactivez les fonctionnalités du système.
+            </p>
+
+            <div class="flex items-center gap-2 text-orange-600 mb-4" id="featuresLoader">
+                <i class="w-5 h-5 animate-spin" data-lucide="loader-2"></i>
+                <span>Chargement des fonctionnalités...</span>
+            </div>
+
+            <div class="space-y-4" id="featuresList"></div>
+
+            <div class="hidden mt-4 p-4 text-red-700 text-sm" id="featuresError"
+                 style="background:#fff0f0;border:1.5px solid #f5a0a0;">
+                Impossible de charger les fonctionnalités. Réessayez plus tard.
+            </div>
+        </div>
+    </div>
+
+    <!-- Fenêtre de service — statut (config dans Paramètres > Fenêtre de service) -->
+    <div class="panel">
+        <div class="panel-head">
+            <h3><i data-lucide="clock"></i> Fenêtre de service</h3>
+            <a class="text-[10px] uppercase tracking-widest text-gray-400 hover:text-orange-600 transition flex items-center gap-1"
+               href="/settings">
+                <i class="w-3 h-3" data-lucide="settings"></i> Configurer
+            </a>
+        </div>
+        <div class="panel-body">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3" id="windowDashStatus">
+                    <span class="text-xs text-gray-400">Chargement…</span>
+                </div>
+                <div class="text-xs text-gray-500" id="windowDashHours"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs de traitement -->
+    <div class="panel">
+        <div class="panel-head">
+            <h3><i data-lucide="terminal"></i> Logs de traitement</h3>
+            <div class="flex items-center gap-2">
+                <!-- Sélecteur de batch -->
+                <select class="form-select" id="batchSelector"
+                        style="width:auto;font-size:.78rem;padding:.4rem .65rem;">
+                    <option value="">Tous les batches récents</option>
+                </select>
+
+                <!-- Filtre par niveau -->
+                <select class="form-select" id="levelFilter" style="width:auto;font-size:.78rem;padding:.4rem .65rem;">
+                    <option value="">Tous les niveaux</option>
+                    <option value="ERROR">ERROR</option>
+                    <option value="WARN">WARN</option>
+                    <option value="INFO">INFO</option>
+                </select>
+
+                <!-- Bouton rafraîchir -->
+                <button class="p-2 transition" id="refreshLogsBtn"
+                        onmouseout="this.style.borderColor='var(--line)';this.style.color='var(--ink-3)';"
+                        onmouseover="this.style.borderColor='var(--ink)';this.style.color='var(--ink)';"
+                        style="border:1.5px solid var(--line);color:var(--ink-3);">
+                    <i class="w-4 h-4" data-lucide="refresh-cw"></i>
+                </button>
+            </div>
+        </div>
+        <div class="panel-body" style="padding-bottom:.85rem;">
+            <p class="mb-4" style="font-size:.8rem;color:var(--ink-3);">
+                Suivez les logs détaillés du traitement des fichiers CSV (erreurs, succès, lignes traitées).
+            </p>
+
+            <div class="flex items-center gap-2 text-orange-600 mb-4" id="processingLogsLoader">
+                <i class="w-5 h-5 animate-spin" data-lucide="loader-2"></i>
+                <span>Chargement des logs...</span>
+            </div>
+
+            <div class="terminal max-h-96 overflow-y-auto" id="processingLogsContainer">
+                <div class="p-4 space-y-1" id="processingLogsList"></div>
+            </div>
+
+            <div class="text-center text-gray-500 text-sm py-12 hidden" id="processingLogsEmpty">
+                <i class="w-12 h-12 mx-auto mb-3 text-gray-300" data-lucide="file-search"></i>
+                <p>Aucun log de traitement disponible</p>
+                <p class="text-xs mt-2">Sélectionnez un batch ou attendez qu'un traitement démarre.</p>
+            </div>
+
+            <div class="hidden mt-4 p-4 text-red-700 text-sm" id="processingLogsError"
+                 style="background:#fff0f0;border:1.5px solid #f5a0a0;">
+                Impossible de charger les logs de traitement.
+            </div>
+
+            <!-- Export CSV -->
+            <div class="mt-5 flex justify-end">
+                <button class="btn-flux btn-flux-primary" id="exportLogsBtn">
+                    <i class="w-3.5 h-3.5" data-lucide="download"></i>
+                    Exporter en CSV
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{/default}
+
+{#script}
+<script src="/javascript/admin.js"></script>
+<script>
+    // Status spine — segment widths follow the legend counts set by admin.js
+    (function () {
+        var map = {
+            'detail-uploaded':   'spine-uploaded',
+            'detail-validated':  'spine-validated',
+            'detail-processing': 'spine-processing',
+            'detail-processed':  'spine-processed',
+            'detail-errors':     'spine-errors'
+        };
+        function updateSpine() {
+            var total = 0, counts = {};
+            Object.keys(map).forEach(function (id) {
+                var el = document.getElementById(id);
+                var v = el ? parseInt((el.textContent || '0').replace(/\D/g, ''), 10) || 0 : 0;
+                counts[id] = v;
+                total += v;
+            });
+            Object.keys(map).forEach(function (id) {
+                var seg = document.getElementById(map[id]);
+                if (!seg) return;
+                seg.style.flex = total > 0 ? String(counts[id]) : (id === 'detail-processed' ? '1' : '0');
+                seg.title = seg.title.split(' — ')[0] + ' — ' + counts[id];
+            });
+        }
+        var observer = new MutationObserver(updateSpine);
+        Object.keys(map).forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) observer.observe(el, { childList: true, characterData: true, subtree: true });
+        });
+        updateSpine();
+    })();
+
+    if (window.lucide) lucide.createIcons();
+
+    // ── Fenêtre de service — statut seulement (config dans Paramètres) ─────
+    (function () {
+        async function loadWindowStatus() {
+            var statusEl = document.getElementById('windowDashStatus');
+            var hoursEl  = document.getElementById('windowDashHours');
+            if (!statusEl) return;
+            try {
+                var doFetch = (typeof secureFetch === 'function') ? secureFetch : fetch;
+                var res = await doFetch('/api/admin/operating-window');
+                if (!res || !res.ok) throw new Error();
+                var d = await res.json();
+
+                var label, color, bg, border;
+                if (!d.enabled) {
+                    label = 'Désactivée'; color = '#8a93a3'; bg = '#f8f9fa'; border = '#e2e8f0';
+                } else if (d.openNow) {
+                    label = d.adminKeepOpen ? 'Ouvert (maintenu)' : 'Ouvert';
+                    color = '#0f9d58'; bg = '#f0fdf4'; border = '#bbf7d0';
+                } else {
+                    label = 'Fermé'; color = '#dc2626'; bg = '#fef2f2'; border = '#fecaca';
+                }
+
+                statusEl.innerHTML =
+                    '<span style="display:inline-block;padding:2px 10px;font-size:.68rem;font-weight:600;' +
+                    'letter-spacing:.12em;text-transform:uppercase;border-radius:999px;' +
+                    'background:' + bg + ';border:1.5px solid ' + border + ';color:' + color + ';">' +
+                    label + '</span>' +
+                    (!d.enabled ? '' :
+                        '<span style="font-size:.75rem;color:var(--ink-3);margin-left:.5rem;">' +
+                        String(d.openHour).padStart(2,'0') + 'h00 – ' +
+                        String(d.closeHour).padStart(2,'0') + 'h00</span>');
+
+                if (hoursEl) hoursEl.textContent = d.zone || '';
+            } catch (e) {
+                statusEl.innerHTML = '<span style="font-size:.75rem;color:var(--ink-3);">Indisponible</span>';
+            }
+        }
+        loadWindowStatus();
+    })();
+</script>
+{/script}
+{/include}

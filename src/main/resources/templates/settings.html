@@ -1,0 +1,468 @@
+{#include layout}
+{#title}Paramètres - Administration{/title}
+
+{#aside}
+{#include sidebar-admin/}
+{/aside}
+
+{#default}
+<div class="max-w-6xl mx-auto pb-10">
+
+    <!-- Page header -->
+    <div class="flex justify-between items-end pb-4 mb-6" style="border-bottom:2px solid var(--ink);">
+        <div>
+            <h2 class="page-title">Paramètres</h2>
+            <p class="text-xs text-gray-500 mt-1">Référentiels, utilisateurs et configuration</p>
+        </div>
+    </div>
+
+    <!-- Tab navigation -->
+    <div class="flex border-b border-gray-200 mb-6 gap-0" id="settings-tabs" role="tablist">
+        <button class="settings-tab active" data-tab="users" role="tab">
+            <i class="w-3.5 h-3.5" data-lucide="users"></i> Utilisateurs
+        </button>
+        <button class="settings-tab" data-tab="refs" role="tab">
+            <i class="w-3.5 h-3.5" data-lucide="globe"></i> Pays &amp; Départements
+        </button>
+        <button class="settings-tab" data-tab="apps" role="tab">
+            <i class="w-3.5 h-3.5" data-lucide="layers"></i> Applications
+        </button>
+        <button class="settings-tab" data-tab="security" role="tab">
+            <i class="w-3.5 h-3.5" data-lucide="shield"></i> Sécurité
+        </button>
+        <button class="settings-tab" data-tab="window" role="tab">
+            <i class="w-3.5 h-3.5" data-lucide="clock"></i> Fenêtre de service
+        </button>
+    </div>
+
+    <!-- ── TAB: USERS ──────────────────────────────────────── -->
+    <div class="settings-panel" id="panel-users">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+            <!-- Create user -->
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                    <i class="w-4 h-4 text-orange-600" data-lucide="user-plus"></i>
+                    <span class="text-sm font-semibold text-gray-800">Nouvel utilisateur</span>
+                </div>
+                <div class="p-4">
+                    <form class="space-y-3" id="userForm">
+
+                        <!-- Email -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">
+                                E-mail
+                                <span class="text-red-500" id="emailRequiredMark">*</span>
+                                <span class="hidden text-gray-400 font-normal" id="emailOptionalNote">(optionnel pour ADMIN)</span>
+                            </label>
+                            <div class="relative">
+                                <i class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
+                                   data-lucide="mail"></i>
+                                <input class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+                                       id="userEmail"
+                                       placeholder="prenom.nom@orangebank.com"
+                                       type="email">
+                            </div>
+                            <p class="text-[11px] mt-0.5 text-gray-400" id="emailHint">Requis pour MFA et
+                                réinitialisation</p>
+                            <p class="text-[11px] mt-1 min-h-[14px] font-medium" id="usernamePreview"></p>
+                        </div>
+
+                        <!-- Role -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Rôle <span class="text-red-500">*</span></label>
+                            <select class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                    id="role"
+                                    required>
+                                <option value="">— Sélectionner un rôle —</option>
+                                <option value="INPUTTER">INPUTTER</option>
+                                <option value="AUTHORISER">AUTHORISER</option>
+                                <option value="ADMIN">ADMIN</option>
+                            </select>
+                        </div>
+
+                        <!-- Country + Department -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Pays <span
+                                        class="text-red-500">*</span></label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                        id="userCountry"
+                                        required>
+                                    <option value="">— Pays —</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Département <span
+                                        class="text-red-500">*</span></label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                        id="department"
+                                        required>
+                                    <option value="">— Département —</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button class="w-full py-2 px-4 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
+                                id="createUserBtn"
+                                type="submit">
+                            <i class="w-3.5 h-3.5" data-lucide="user-plus"></i>
+                            Créer l'utilisateur
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- User list -->
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between flex-shrink-0">
+                    <div class="flex items-center gap-2">
+                        <i class="w-4 h-4 text-orange-600" data-lucide="users"></i>
+                        <span class="text-sm font-semibold text-gray-800">Utilisateurs</span>
+                    </div>
+                    <span class="text-[10px] text-gray-400" id="users-count-badge"></span>
+                </div>
+                <div class="px-3 py-2 border-b border-gray-100 flex-shrink-0">
+                    <div class="relative">
+                        <i class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none"
+                           data-lucide="search"></i>
+                        <input class="w-full pl-7 pr-3 py-1.5 border border-gray-200 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-orange-500 transition"
+                               id="userSearchInput" oninput="filterUserList(this.value)"
+                               placeholder="Rechercher…"
+                               type="text">
+                    </div>
+                </div>
+                <div class="overflow-y-auto" style="max-height:440px;">
+                    <ul class="divide-y divide-gray-100 px-0" id="userList"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB: PAYS & DEPTS ───────────────────────────────── -->
+    <div class="settings-panel hidden" id="panel-refs">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+            <!-- Countries -->
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                    <i class="w-4 h-4 text-orange-600" data-lucide="globe"></i>
+                    <span class="text-sm font-semibold text-gray-800">Pays</span>
+                </div>
+                <div class="p-4">
+                    <form class="space-y-3" id="countryForm">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Code <span
+                                        class="text-red-500">*</span></label>
+                                <input autocapitalize="on"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition uppercase"
+                                       id="countryCode"
+                                       maxlength="2"
+                                       placeholder="CI" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Company ID <span
+                                        class="text-red-500">*</span></label>
+                                <input class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                       id="companyId"
+                                       placeholder="CI2250001" required>
+                            </div>
+                        </div>
+                        <button class="w-full py-2 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
+                                type="submit">
+                            <i class="w-3.5 h-3.5" data-lucide="plus"></i> Ajouter le pays
+                        </button>
+                    </form>
+                    <div class="mt-4 border-t pt-3">
+                        <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Pays actifs</p>
+                        <ul class="space-y-1" id="countryList"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Departments -->
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                    <i class="w-4 h-4 text-orange-600" data-lucide="building-2"></i>
+                    <span class="text-sm font-semibold text-gray-800">Départements</span>
+                </div>
+                <div class="p-4">
+                    <form class="space-y-3" id="departmentForm">
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Code <span
+                                        class="text-red-500">*</span></label>
+                                <input class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                       id="deptCode" min="1" placeholder="101"
+                                       required
+                                       step="1" type="number">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Description <span
+                                        class="text-red-500">*</span></label>
+                                <input class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                       id="deptDesc"
+                                       placeholder="Ex: Finance" required>
+                            </div>
+                        </div>
+                        <button class="w-full py-2 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
+                                type="submit">
+                            <i class="w-3.5 h-3.5" data-lucide="plus"></i> Créer le département
+                        </button>
+                    </form>
+                    <div class="mt-4 border-t pt-3">
+                        <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                            Départements</p>
+                        <ul class="space-y-1" id="departmentList"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB: APPLICATIONS ───────────────────────────────── -->
+    <div class="settings-panel hidden" id="panel-apps">
+        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                <i class="w-4 h-4 text-orange-600" data-lucide="layers"></i>
+                <span class="text-sm font-semibold text-gray-800">Applications Core Banking</span>
+            </div>
+            <div class="grid" style="grid-template-columns:200px 1fr;min-height:300px;">
+                <!-- App list -->
+                <div class="border-r border-gray-100 p-2">
+                    <ul class="divide-y divide-gray-100" id="appList"></ul>
+                </div>
+                <!-- App detail -->
+                <div class="p-4 space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Module</label>
+                        <input class="w-full px-3 py-2 border border-gray-200 rounded-md text-xs bg-gray-50 cursor-not-allowed text-gray-500"
+                               disabled
+                               id="appNameDisplay" placeholder="Sélectionnez un module">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                        <textarea
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition resize-none"
+                                id="appDescription"
+                                rows="2"></textarea>
+                    </div>
+                    <div id="schemaContainer">
+                        <p class="text-xs text-gray-400 text-center py-8">
+                            Sélectionnez un module pour visualiser le schéma
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB: SÉCURITÉ ─────────────────────────────────────────── -->
+    <div class="settings-panel hidden" id="panel-security">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+            <!-- Password Policy -->
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                    <i class="w-4 h-4 text-orange-600" data-lucide="key-round"></i>
+                    <span class="text-sm font-semibold text-gray-800">Politique de mot de passe</span>
+                </div>
+                <div class="p-4 space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">
+                            Longueur minimale <span class="text-red-500">*</span>
+                        </label>
+                        <input class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                               id="pol-minLength" max="32" min="6"
+                               type="number">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-xs font-medium text-gray-600">Règles de complexité</label>
+                        <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                            <input class="w-3.5 h-3.5 accent-orange-500" id="pol-digit" type="checkbox">
+                            Exiger au moins un chiffre
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                            <input class="w-3.5 h-3.5 accent-orange-500" id="pol-upper" type="checkbox">
+                            Exiger au moins une majuscule
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                            <input class="w-3.5 h-3.5 accent-orange-500" id="pol-special" type="checkbox">
+                            Exiger au moins un caractère spécial (!@#$%...)
+                        </label>
+                    </div>
+                    <div class="bg-orange-50 border border-orange-200 rounded-md p-3 text-xs text-orange-800">
+                        <strong>Aperçu :</strong> <span id="pol-preview">Chargement...</span>
+                    </div>
+                    <button class="w-full py-2 px-4 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
+                            id="savePolicyBtn">
+                        <i class="w-3.5 h-3.5" data-lucide="save"></i> Enregistrer la politique
+                    </button>
+                    <div class="hidden text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2 text-center"
+                         id="pol-success">
+                        ✓ Politique enregistrée avec succès
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lock / Unlock users -->
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="w-4 h-4 text-orange-600" data-lucide="lock"></i>
+                        <span class="text-sm font-semibold text-gray-800">Gestion des accès</span>
+                    </div>
+                    <button class="p-1 text-gray-400 hover:text-orange-600 transition"
+                            onclick="loadSecurityUserList()" title="Rafraîchir">
+                        <i class="w-3.5 h-3.5" data-lucide="refresh-cw"></i>
+                    </button>
+                </div>
+                <div class="p-3">
+                    <input class="w-full px-3 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-orange-500 mb-3"
+                           id="sec-search" oninput="filterSecurityList(this.value)"
+                           placeholder="Rechercher un utilisateur…"
+                           type="text">
+                    <div class="space-y-1.5 max-h-80 overflow-y-auto" id="sec-user-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ── TAB: FENÊTRE DE SERVICE ────────────────────────── -->\
+    <div class="settings-panel hidden" id="panel-window">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+            <!-- Configuration card -->
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="w-4 h-4 text-orange-600" data-lucide="clock"></i>
+                        <span class="text-sm font-semibold text-gray-800">Configuration</span>
+                    </div>
+                    <span class="text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full border"
+                          id="windowStatusBadge"></span>
+                </div>
+                <div class="p-4 space-y-5">
+
+                    <!-- Enable toggle -->
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-700">Activer la fenêtre de service</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">
+                                Bloque l'accès des inputters et autoriseurs en dehors des heures configurées.
+                            </p>
+                        </div>
+                        <button aria-checked="false" class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors bg-gray-300"
+                                id="windowEnabledToggle"
+                                role="switch" type="button">
+                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform translate-x-0.5"
+                                  id="windowEnabledKnob"></span>
+                        </button>
+                    </div>
+
+                    <!-- Hours -->
+                    <div class="grid grid-cols-2 gap-4" id="windowHoursRow">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1" for="windowOpenHour">
+                                Heure d'ouverture
+                            </label>
+                            <select class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                    id="windowOpenHour"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1" for="windowCloseHour">
+                                Heure de fermeture
+                            </label>
+                            <select class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                    id="windowCloseHour"></select>
+                        </div>
+                    </div>
+
+                    <!-- Timezone -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1" for="windowZone">
+                            Fuseau horaire
+                        </label>
+                        <input class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition" id="windowZone"
+                               placeholder="Africa/Abidjan"
+                               type="text">
+                        <p class="text-[11px] text-gray-400 mt-0.5">Format IANA — ex: Africa/Abidjan, Europe/Paris</p>
+                    </div>
+
+                    <!-- Keep-open override -->
+                    <div class="flex items-center justify-between pt-1 border-t border-gray-100">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-700">Maintenir ouvert (override)</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">
+                                Ouvre immédiatement l'accès hors horaire — utile pour les fins de mois.
+                            </p>
+                        </div>
+                        <button aria-checked="false" class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors bg-gray-300"
+                                id="windowKeepOpenToggle"
+                                role="switch" type="button">
+                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform translate-x-0.5"
+                                  id="windowKeepOpenKnob"></span>
+                        </button>
+                    </div>
+
+                    <button class="w-full py-2 px-4 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5" id="windowSaveBtn"
+                            type="button">
+                        <i class="w-3.5 h-3.5" data-lucide="save"></i> Enregistrer
+                    </button>
+
+                    <p class="text-[11px] text-gray-400 text-center min-h-[1rem]" id="windowMeta"></p>
+                </div>
+            </div>
+
+            <!-- Info / help card -->
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden self-start">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                    <i class="w-4 h-4 text-orange-600" data-lucide="info"></i>
+                    <span class="text-sm font-semibold text-gray-800">Comment ça fonctionne</span>
+                </div>
+                <div class="p-4 space-y-3 text-xs text-gray-600">
+                    <p>
+                        Lorsque la fenêtre de service est <strong>activée</strong>, les utilisateurs avec le rôle
+                        <strong>INPUTTER</strong> ou <strong>AUTHORISER</strong> ne peuvent accéder au système
+                        qu'entre l'heure d'ouverture et l'heure de fermeture.
+                    </p>
+                    <p>
+                        Les <strong>ADMINs</strong> ne sont jamais bloqués — ils conservent l'accès en
+                        permanence pour les opérations de maintenance.
+                    </p>
+                    <p>
+                        Le flag <strong>Maintenir ouvert</strong> est un override immédiat : il ouvre le
+                        service en dehors des heures configurées sans modifier la planification. Désactivez-le
+                        dès que la session exceptionnelle est terminée.
+                    </p>
+                    <div class="bg-amber-50 border border-amber-200 rounded p-3 text-amber-800 text-[11px]">
+                        <strong>Fenêtres overnight :</strong> si l'heure d'ouverture est supérieure à l'heure
+                        de fermeture (ex: 20h00 → 06h00), le système gère correctement le passage à minuit.
+                    </div>
+                    <p class="text-[11px] text-gray-400">
+                        Les heures sont évaluées dans le fuseau horaire configuré ci-contre.
+                        Par défaut : <code>Africa/Abidjan</code> (UTC+0, pas de changement d'heure).
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .settings-tab {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 8px 16px; font-size: .85rem; font-weight: 400;
+        color: #6b7280; border: none; background: none; cursor: pointer;
+        border-bottom: 2px solid transparent; transition: all .15s; white-space: nowrap;
+    }
+    .settings-tab:hover { color: #111827; }
+    .settings-tab.active { color: #e86e00; border-bottom-color: #e86e00; font-weight: 500; }
+</style>
+{/default}
+
+{#script}
+<script src="/javascript/settings.js"></script>
+{/script}
+{/include}
