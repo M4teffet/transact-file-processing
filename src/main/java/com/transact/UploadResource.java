@@ -8,6 +8,7 @@ import com.transact.processor.model.FileBatch;
 import com.transact.service.ApplicationService;
 import com.transact.service.FileParser;
 import com.transact.service.FileValidator;
+import com.transact.service.GridFsService;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import jakarta.annotation.security.RolesAllowed;
@@ -41,6 +42,9 @@ public class UploadResource {
     int maxLines;
 
     @Inject
+    GridFsService gridFsService;
+
+    @Inject
     FileParser fileParser;
 
     @Inject
@@ -72,20 +76,34 @@ public class UploadResource {
         Application appConfig = Application.findByName(applicationName.trim());
         if (appConfig == null) return badRequest("Application not found: " + applicationName);
 
-        // 2. Pre-flight Check: prevents unnecessary file processing if duplicate exists
+        // 2. Pre-flight duplicate check (before touching GridFS)
         if (FileBatch.findActiveDuplicate(appConfig.id, originalFilename) != null) {
             return badRequest("A version of '" + originalFilename + "' is already active or processed.");
         }
 
-        // 3. Process the Stream
-        try (InputStream inputStream = Files.newInputStream(fileUpload.filePath())) {
-            List<Map<String, String>> rawData = fileParser.parseCsv(inputStream);
+        String userId = securityContext.getUserPrincipal().getName();
+
+        // 3. Store raw file in GridFS BEFORE any parsing.
+        //    This guarantees the original bytes are always available regardless of
+        //    what happens during validation or processing.
+        ObjectId gridFsFileId;
+        try (InputStream rawStream = Files.newInputStream(fileUpload.filePath())) {
+            gridFsFileId = gridFsService.store(originalFilename, rawStream, userId);
+        } catch (Exception e) {
+            return serverError("Échec du stockage du fichier : " + e.getMessage());
+        }
+
+        // 4. Parse and validate from the now-safely-stored file
+        try (InputStream parseStream = Files.newInputStream(fileUpload.filePath())) {
+            List<Map<String, String>> rawData = fileParser.parseCsv(parseStream);
 
             if (rawData == null || rawData.isEmpty()) {
                 throw new ValidationException(List.of(new ValidationError(1, null, "CSV file is empty")));
             }
 
             if (rawData.size() > maxLines) {
+                // File is already stored — clean up to avoid orphaned GridFS entries
+                gridFsService.delete(gridFsFileId);
                 return Response.status(413)
                         .entity(new JsonObject()
                                 .put("error", "Fichier trop volumineux")
@@ -96,16 +114,17 @@ public class UploadResource {
 
             List<Map<String, Object>> validatedData = fileValidator.validateAndConvert(rawData, appConfig);
 
-            // 4. Create Batch
-            FileBatch batch = createSuccessBatch(appConfig, validatedData);
+            // 5. Create Batch record — gridFsFileId is always set
+            FileBatch batch = createSuccessBatch(appConfig, validatedData, gridFsFileId);
             batch.originalFilename = originalFilename;
-            batch.status = FileBatch.STATUS_UPLOADED; // Entering a 'Blocking' status
+            batch.status = FileBatch.STATUS_UPLOADED;
 
-            // 5. Final Guard: DB Unique Constraint
+            // 6. Final Guard: DB Unique Constraint
             try {
                 batch.persistOrUpdate();
             } catch (com.mongodb.MongoWriteException e) {
                 if (e.getError().getCode() == 11000) {
+                    gridFsService.delete(gridFsFileId);
                     return badRequest("Duplicate file: '" + originalFilename + "' has already being uploaded.");
                 }
                 throw e;
@@ -114,10 +133,12 @@ public class UploadResource {
             return successResponse(batch, validatedData.size());
 
         } catch (ValidationException e) {
-            saveFailedBatch(appConfig, originalFilename, FileBatch.STATUS_VALIDATED_FAILED, e);
+            // Keep the GridFS file even on validation failure — it lets admins
+            // inspect exactly what was submitted and why it was rejected.
+            saveFailedBatch(appConfig, originalFilename, FileBatch.STATUS_VALIDATED_FAILED, e, gridFsFileId);
             return validationErrorResponse(e);
         } catch (Exception e) {
-            saveFailedBatch(appConfig, originalFilename, FileBatch.STATUS_UPLOADED_FAILED, e);
+            saveFailedBatch(appConfig, originalFilename, FileBatch.STATUS_UPLOADED_FAILED, e, gridFsFileId);
             return serverError(e.getMessage());
         }
     }
@@ -148,15 +169,15 @@ public class UploadResource {
     // ========================================
     // HELPERS
     // ========================================
-    private FileBatch createSuccessBatch(Application app, List<Map<String, Object>> validatedData) {
-        // Retrieve the authenticated user's ID (UPN/username from the JWT)
+    private FileBatch createSuccessBatch(Application app, List<Map<String, Object>> validatedData, ObjectId gridFsFileId) {
         String userId = securityContext.getUserPrincipal().getName();
 
         FileBatch batch = new FileBatch();
         batch.applicationId = app.id;
-        batch.uploadedById = userId; // 🔑 FIX: Populate the user ID
+        batch.uploadedById = userId;
         batch.uploadTimestamp = Instant.now();
         batch.status = FileBatch.STATUS_UPLOADED;
+        batch.gridFsFileId = gridFsFileId;
 
         var report = new FileBatch.ValidationReport();
         report.errors = 0;
@@ -183,15 +204,15 @@ public class UploadResource {
         BatchData.persist(records);
     }
 
-    private FileBatch createFailedBatch(Application app, Exception e) {
-        // Retrieve the authenticated user's ID (UPN/username from the JWT)
+    private FileBatch createFailedBatch(Application app, Exception e, ObjectId gridFsFileId) {
         String userId = securityContext.getUserPrincipal().getName();
 
         FileBatch batch = new FileBatch();
         batch.applicationId = app.id;
-        batch.uploadedById = userId; // 🔑 FIX: Populate the user ID
+        batch.uploadedById = userId;
         batch.uploadTimestamp = Instant.now();
         batch.status = FileBatch.STATUS_UPLOADED_FAILED;
+        batch.gridFsFileId = gridFsFileId;
 
         var report = new FileBatch.ValidationReport();
         if (e instanceof ValidationException ve) {
@@ -241,8 +262,8 @@ public class UploadResource {
         return Response.status(500).entity("Server error: " + msg).build();
     }
 
-    private void saveFailedBatch(Application app, String filename, String status, Exception e) {
-        FileBatch batch = createFailedBatch(app, e);
+    private void saveFailedBatch(Application app, String filename, String status, Exception e, ObjectId gridFsFileId) {
+        FileBatch batch = createFailedBatch(app, e, gridFsFileId);
         batch.originalFilename = filename;
         batch.status = status;
         batch.persistOrUpdate();

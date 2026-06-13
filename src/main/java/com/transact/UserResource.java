@@ -1,5 +1,6 @@
 package com.transact;
 
+import com.transact.processor.model.AdminAuditLog;
 import com.transact.processor.model.AppUser;
 import com.transact.processor.model.Country;
 import com.transact.processor.model.Departments;
@@ -11,6 +12,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.time.Instant;
@@ -33,6 +35,9 @@ public class UserResource {
     PasswordService passwordService;
     @Inject
     EmailService emailService;
+
+    @ConfigProperty(name = "app.allowed-email-domains", defaultValue = "orangebank.ci")
+    String allowedEmailDomains;
 
     // ── GET /api/users/list ───────────────────────────────────────────────────
 
@@ -96,16 +101,30 @@ public class UserResource {
         }
         // Validate email format if provided
         if (!isBlank(email) && !email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
-            return badRequest("Format d\'adresse e-mail invalide.");
+            return badRequest("Format d'adresse e-mail invalide.");
         }
+        // Email domain whitelist — prevents external addresses being registered
+        if (!isBlank(email)) {
+            String domain = email.substring(email.indexOf('@') + 1);
+            boolean domainAllowed = java.util.Arrays.stream(allowedEmailDomains.split(","))
+                    .map(String::trim).anyMatch(d -> d.equalsIgnoreCase(domain));
+            if (!domainAllowed) {
+                return badRequest("L'adresse e-mail doit appartenir à un domaine autorisé : " + allowedEmailDomains);
+            }
+        }
+        // Validate password policy
+        // (password is now generated server-side — no client input to validate)
 
-        // Generate a policy-compliant password on the backend
-        String generatedPassword = passwordService.generate();
-
-        // Check username uniqueness (single authoritative check — removed from AppUser.add())
+        // Check username uniqueness
         if (AppUser.findByUsername(username).isPresent()) {
             return Response.status(409).entity(new ErrorResponse("USERNAME_TAKEN",
                     "Username '" + username + "' is already taken", Instant.now())).build();
+        }
+
+        // Check email uniqueness
+        if (!isBlank(email) && AppUser.findByEmail(email).isPresent()) {
+            return Response.status(409).entity(new ErrorResponse("EMAIL_TAKEN",
+                    "L'adresse e-mail '" + email + "' est déjà utilisée par un autre compte.", Instant.now())).build();
         }
 
         // Validate country and department exist
@@ -116,25 +135,29 @@ public class UserResource {
         if (deptEntity == null) return badRequest("Department code not found: " + req.department());
 
         try {
+            String tempPassword = passwordService.generateTemporary();
             AppUser user = new AppUser();
             user.setUsername(username);
-            user.setPasswordHash(passwordService.hash(generatedPassword));
+            user.setPasswordHash(passwordService.hashRaw(tempPassword));
             user.setRole(AppUser.UserRole.valueOf(role));
             user.setCountryCode(countryEntity.code);
             user.setDepartment(deptEntity.code);
             user.email = email;
-            user.mustChangePassword = true;      // Always force change on first login
+            user.mustChangePassword = true;
             user.status = AppUser.UserStatus.ACTIVE;
             user.createdAt = Instant.now();
             user.createdBy = admin;
             user.persist();
 
-            // Send welcome email if address provided
+            // Send welcome email with the temporary password so the user can log in
             if (!isBlank(email)) {
-                emailService.sendWelcome(email, username, generatedPassword);
+                emailService.sendWelcome(email, username, tempPassword);
             }
 
             LOG.infof("[Users] Created user %s (role: %s, country: %s) by admin %s", username, role, country, admin);
+            AdminAuditLog.record(admin, AdminAuditLog.USER_CREATED, username,
+                    "Utilisateur créé avec rôle " + role + " / pays " + country,
+                    java.util.Map.of("role", role, "country", country, "department", req.department()));
 
             return Response.status(201).entity(UserViewDTO.from(user)).build();
 

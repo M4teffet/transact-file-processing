@@ -17,7 +17,6 @@ const getCountryData = (code) => {
     }
 };
 
-
 async function parseErrorResponse(res) {
     const ct = res.headers.get('content-type') || '';
     let msg = `Erreur ${res.status}`;
@@ -312,26 +311,20 @@ function renderApplicationSchema(data) {
 
 // ── Form submissions ──────────────────────────────────────────────────────────
 
-
-
 // Username availability check
-let _usernameTimer = null;
-document.getElementById('username')?.addEventListener('input', e => {
-    const val = e.target.value.trim().toUpperCase();
-    const hint = document.getElementById('usernameHint');
-    if (!hint) return;
-    if (val.length < 3) { hint.textContent = ''; return; }
-    clearTimeout(_usernameTimer);
-    hint.textContent = '…'; hint.style.color = '#9ca3af';
-    _usernameTimer = setTimeout(async () => {
-        try {
-            const res = await secureFetch(`/api/users/exists?username=${encodeURIComponent(val)}`);
-            if (!res || !res.ok) return;
-            const data = await res.json();
-            hint.textContent = data.taken ? '✗ Identifiant déjà pris' : '✓ Disponible';
-            hint.style.color  = data.taken ? '#dc2626' : '#16a34a';
-        } catch { hint.textContent = ''; }
-    }, 450);
+// Derive username from email (part before @ in uppercase) and show preview
+document.getElementById('userEmail')?.addEventListener('input', e => {
+    const email   = e.target.value.trim();
+    const preview = document.getElementById('usernamePreview');
+    if (!preview) return;
+    const atIdx = email.indexOf('@');
+    if (atIdx > 0) {
+        const derived = email.slice(0, atIdx).toUpperCase();
+        preview.textContent = `Identifiant : ${derived}`;
+        preview.style.color = '#e86e00';
+    } else {
+        preview.textContent = '';
+    }
 });
 
 
@@ -353,13 +346,16 @@ function updateEmailRequirement() {
 // User form
 document.getElementById('userForm')?.addEventListener('submit', async e => {
     e.preventDefault();
-    const username   = document.getElementById('username')?.value.trim().toUpperCase();
+    const email      = document.getElementById('userEmail')?.value.trim();
     const role       = document.getElementById('role')?.value;
     const country    = document.getElementById('userCountry')?.value;
     const department = parseInt(document.getElementById('department')?.value);
-    const email      = document.getElementById('userEmail')?.value.trim();
 
-    if (!username || !role || !country || !department) {
+    // Derive username from email (part before @ uppercased)
+    const atIdx  = email ? email.indexOf('@') : -1;
+    const username = atIdx > 0 ? email.slice(0, atIdx).toUpperCase() : '';
+
+    if (!username || !email || !role || !country || !department) {
         showSnackbar('Tous les champs obligatoires sont requis', 'error');
         return;
     }
@@ -378,7 +374,8 @@ document.getElementById('userForm')?.addEventListener('submit', async e => {
         if (res && res.ok) {
             showSnackbar('Utilisateur créé avec succès !', 'success');
             e.target.reset();
-            document.getElementById('usernameHint').textContent = '';
+            const preview = document.getElementById('usernamePreview');
+            if (preview) preview.textContent = '';
             updateEmailRequirement();
             await loadUsersList();
         } else {
@@ -627,3 +624,141 @@ async function secToggleLock(username, lock) {
         }
     } catch(e) { showSnackbar('Erreur réseau', 'error'); }
 }
+
+// ── Fenêtre de service ───────────────────────────────────────────────────────
+(function () {
+    const state = { enabled: false, openHour: 8, closeHour: 18, zone: 'Africa/Abidjan', adminKeepOpen: false };
+
+    function elems() {
+        return {
+            enabledT  : document.getElementById('windowEnabledToggle'),
+            keepT     : document.getElementById('windowKeepOpenToggle'),
+            openSel   : document.getElementById('windowOpenHour'),
+            closeSel  : document.getElementById('windowCloseHour'),
+            zoneInput : document.getElementById('windowZone'),
+            saveBtn   : document.getElementById('windowSaveBtn'),
+            badge     : document.getElementById('windowStatusBadge'),
+            meta      : document.getElementById('windowMeta'),
+        };
+    }
+
+    function populateHourSelect(sel, value) {
+        if (!sel || sel.options.length > 0) return;
+        for (let h = 0; h < 24; h++) {
+            sel.add(new Option(String(h).padStart(2, '0') + 'h00', h));
+        }
+        sel.value = value;
+    }
+
+    function paintToggle(btn, knob, on) {
+        if (!btn || !knob) return;
+        btn.classList.toggle('bg-orange-600', on);
+        btn.classList.toggle('bg-gray-300', !on);
+        knob.classList.toggle('translate-x-5', on);
+        knob.classList.toggle('translate-x-0.5', !on);
+        btn.setAttribute('aria-checked', String(on));
+    }
+
+    function paint(s) {
+        const { enabledT, keepT, openSel, closeSel, zoneInput, badge, meta } = elems();
+        if (!enabledT) return;
+        paintToggle(enabledT, document.getElementById('windowEnabledKnob'), s.enabled);
+        paintToggle(keepT,    document.getElementById('windowKeepOpenKnob'), s.adminKeepOpen);
+        if (openSel)  openSel.value  = s.openHour;
+        if (closeSel) closeSel.value = s.closeHour;
+        if (zoneInput) zoneInput.value = s.zone || 'Africa/Abidjan';
+
+        // Status badge
+        if (badge) {
+            if (!s.enabled) {
+                badge.textContent = 'Désactivée';
+                badge.className = 'text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full border border-gray-200 text-gray-400 bg-gray-50';
+            } else if (s.openNow) {
+                badge.textContent = s.adminKeepOpen ? 'Ouvert (maintenu)' : 'Ouvert';
+                badge.className = 'text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full border border-green-200 text-green-700 bg-green-50';
+            } else {
+                badge.textContent = 'Fermé';
+                badge.className = 'text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full border border-red-200 text-red-700 bg-red-50';
+            }
+        }
+
+        if (meta) {
+            meta.textContent = s.updatedBy
+                ? `Dernière modification par ${s.updatedBy}` +
+                  (s.lastUpdated ? ` · ${new Date(s.lastUpdated).toLocaleString('fr-FR')}` : '')
+                : '';
+        }
+    }
+
+    async function loadWindow() {
+        try {
+            const res = await secureFetch('/api/admin/operating-window');
+            if (res && res.ok) {
+                const data = await res.json();
+                Object.assign(state, data);
+            }
+        } catch (e) { /* keep defaults */ }
+
+        const { openSel, closeSel } = elems();
+        populateHourSelect(openSel,  state.openHour);
+        populateHourSelect(closeSel, state.closeHour);
+        paint(state);
+    }
+
+    // Tab activation — load on first reveal
+    let loaded = false;
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('[data-tab]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.tab === 'window' && !loaded) {
+                    loaded = true;
+                    loadWindow();
+                }
+            });
+        });
+
+        // Toggle listeners (attached once DOM is ready)
+        const enabledT = document.getElementById('windowEnabledToggle');
+        const keepT    = document.getElementById('windowKeepOpenToggle');
+        const saveBtn  = document.getElementById('windowSaveBtn');
+
+        if (enabledT) enabledT.addEventListener('click', () => {
+            state.enabled = !state.enabled; paint(state);
+        });
+        if (keepT) keepT.addEventListener('click', () => {
+            state.adminKeepOpen = !state.adminKeepOpen; paint(state);
+        });
+
+        if (saveBtn) saveBtn.addEventListener('click', async () => {
+            const { openSel, closeSel, zoneInput } = elems();
+            saveBtn.disabled = true;
+            try {
+                const payload = {
+                    enabled      : state.enabled,
+                    openHour     : parseInt(openSel.value, 10),
+                    closeHour    : parseInt(closeSel.value, 10),
+                    zone         : (zoneInput && zoneInput.value.trim()) || 'Africa/Abidjan',
+                    adminKeepOpen: state.adminKeepOpen,
+                };
+                const res = await secureFetch('/api/admin/operating-window', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                if (!res) return;
+                const data = await res.json();
+                if (res.ok) {
+                    Object.assign(state, data);
+                    paint(state);
+                    showSnackbar('Fenêtre de service enregistrée', 'success');
+                } else {
+                    showSnackbar(data.message || 'Erreur lors de l\'enregistrement', 'error');
+                }
+            } catch (e) {
+                showSnackbar('Erreur réseau', 'error');
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
+    });
+})();

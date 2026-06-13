@@ -202,6 +202,9 @@ public class FundsTransferProcessor {
         }
     }
 
+    @ConfigProperty(name = "app.processing.stuck-timeout-minutes", defaultValue = "30")
+    int stuckTimeoutMinutes;
+
     private void processRow(BatchData row, String workerId, ObjectId batchId, String companyId) {
         if (!BatchData.claimRow(row.id, workerId)) {
             return;
@@ -223,7 +226,7 @@ public class FundsTransferProcessor {
             }
 
             if (response == null) {
-                failRow(batchId, row, "No response from T24");
+                noResponseRow(batchId, row, "No response from T24 (null)");
                 return;
             }
 
@@ -232,7 +235,7 @@ public class FundsTransferProcessor {
                 String body = resp.readEntity(String.class);
 
                 if (body == null || body.isBlank()) {
-                    handleFailure(batchId, row, "Empty response body", payloadJson);
+                    noResponseRow(batchId, row, "Empty response body from T24");
                     return;
                 }
 
@@ -292,45 +295,18 @@ public class FundsTransferProcessor {
                 .where("_id = ?1 and processingStatus != 'FAILED'", row.id);
     }
 
-    private void finalizeBatch(ObjectId batchId) {
-        BatchStatistics stats = BatchStatistics.calculate(batchId);
-        if (stats == null) return;
-
-        long pendingCount = BatchData.count("batchId = ?1 and processingStatus in ?2",
-                batchId, List.of("PENDING", "CLAIMED"));
-
-        if (pendingCount > 0) {
-            return;
+    private void noResponseRow(ObjectId batchId, BatchData row, String err) {
+        try {
+            long existing = RowResult.count("batchId = ?1 and lineNumber = ?2", batchId, row.lineNumber);
+            if (existing == 0) {
+                new RowResult(batchId, row.lineNumber, "NO_RESPONSE", null, err).persist();
+            }
+        } catch (Exception ignored) {
         }
 
-        String status;
-        if (stats.failureCount == 0 && stats.successCount > 0) {
-            status = FileBatch.STATUS_PROCESSED;
-        } else if (stats.successCount > 0 && stats.failureCount > 0) {
-            status = FileBatch.STATUS_PROCESSED_PARTIAL;
-        } else {
-            status = FileBatch.STATUS_PROCESSED_FAILED;
-        }
-
-        // ✅ FIXED: Atomic with WHERE clause
-        long updated = FileBatch.update(
-                        "status = ?1, processingTimestamp = ?2",
-                        status,
-                        Instant.now()
-                )
-                .where("_id = ?1 and status = ?2",
-                        batchId,
-                        FileBatch.STATUS_PROCESSING);
-
-        if (updated == 0) {
-            return;
-        }
-
-        stats.batchStatus = status;
-        stats.lastUpdatedAt = Instant.now();
-        stats.persistOrUpdate();
-
-        Log.infof("[%s] FINALIZED: %s | S:%d F:%d", batchId, status, stats.successCount, stats.failureCount);
+        BatchData.update("processingStatus = 'NO_RESPONSE'")
+                .where("_id = ?1 and processingStatus not in ?2",
+                        row.id, List.of("COMPLETED", "NO_RESPONSE"));
     }
 
     private void handleFailure(ObjectId batchId, BatchData row, String msg, String payload) {
@@ -418,9 +394,86 @@ public class FundsTransferProcessor {
         }
     }
 
+    private void finalizeBatch(ObjectId batchId) {
+        BatchStatistics stats = BatchStatistics.calculate(batchId);
+        if (stats == null) return;
+
+        long pendingCount = BatchData.count("batchId = ?1 and processingStatus in ?2",
+                batchId, List.of("PENDING", "CLAIMED", "NO_RESPONSE"));
+
+        if (pendingCount > 0) {
+            return;
+        }
+
+        String status;
+        if (stats.failureCount == 0 && stats.successCount > 0) {
+            status = FileBatch.STATUS_PROCESSED;
+        } else if (stats.successCount > 0 && stats.failureCount > 0) {
+            status = FileBatch.STATUS_PROCESSED_PARTIAL;
+        } else {
+            status = FileBatch.STATUS_PROCESSED_FAILED;
+        }
+
+        // ✅ FIXED: Atomic with WHERE clause
+        long updated = FileBatch.update(
+                        "status = ?1, processingTimestamp = ?2",
+                        status,
+                        Instant.now()
+                )
+                .where("_id = ?1 and status = ?2",
+                        batchId,
+                        FileBatch.STATUS_PROCESSING);
+
+        if (updated == 0) {
+            return;
+        }
+
+        stats.batchStatus = status;
+        stats.lastUpdatedAt = Instant.now();
+        stats.persistOrUpdate();
+
+        Log.infof("[%s] FINALIZED: %s | S:%d F:%d", batchId, status, stats.successCount, stats.failureCount);
+    }
+
     /**
-     * Purge expired OTP tokens daily to prevent unbounded collection growth
+     * Watchdog: any batch stuck in PROCESSING for longer than the configured
+     * timeout with no active BatchData rows (PENDING/CLAIMED) is force-reset
+     * to VALIDATED so the next scheduler tick can pick it up again.
+     * Runs every 5 minutes, skips if already executing.
      */
+    @Scheduled(every = "5m", identity = "stuck-batch-watchdog", concurrentExecution = SKIP)
+    @ActivateRequestContext
+    public void resetStuckBatches() {
+        Instant cutoff = Instant.now().minusSeconds((long) stuckTimeoutMinutes * 60);
+
+        List<FileBatch> stuckBatches = FileBatch.list(
+                "status = ?1 and processingTimestamp < ?2",
+                FileBatch.STATUS_PROCESSING, cutoff);
+
+        for (FileBatch batch : stuckBatches) {
+            long activePending = BatchData.count(
+                    "batchId = ?1 and processingStatus in ?2",
+                    batch.id, List.of("PENDING", "CLAIMED"));
+
+            if (activePending > 0) continue; // still genuinely running
+
+            Log.warnf("[Watchdog] Batch %s stuck in PROCESSING since %s — resetting to VALIDATED",
+                    batch.id.toHexString(), batch.processingTimestamp);
+
+            long reset = FileBatch.update("status = ?1", FileBatch.STATUS_VALIDATED)
+                    .where("_id = ?1 and status = ?2", batch.id, FileBatch.STATUS_PROCESSING);
+
+            if (reset > 0) {
+                // Reset any CLAIMED rows so they can be re-processed
+                BatchData.update("processingStatus = 'PENDING', workerId = null")
+                        .where("batchId = ?1 and processingStatus = 'CLAIMED'", batch.id);
+
+                ProcessingLogEntry.log(batch.id, "WARN",
+                        String.format("Watchdog: lot bloqué en PROCESSING depuis %d min — réinitialisé en VALIDATED",
+                                stuckTimeoutMinutes));
+            }
+        }
+    }
     @Scheduled(cron = "0 0 3 * * ?", identity = "otp-token-purge", concurrentExecution = SKIP)
     @ActivateRequestContext
     public void purgeExpiredOtpTokens() {

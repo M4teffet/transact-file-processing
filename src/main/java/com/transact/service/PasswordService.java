@@ -4,6 +4,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.mindrot.jbcrypt.BCrypt;
 
+import java.security.SecureRandom;
+
 /**
  * Centralised password hashing and policy enforcement.
  * Single source of truth for all password operations in the app.
@@ -79,44 +81,44 @@ public class PasswordService {
     }
 
     /**
-     * Generate a random password that satisfies the current policy.
-     */
-    public String generate() {
-        String lower = "abcdefghijkmnpqrstuvwxyz";
-        String upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-        String digits = "23456789";
-        String special = "!@#$%^&*_+-=?";
-        String pool = lower + upper + digits + special;
-
-        java.util.List<Character> chars = new java.util.ArrayList<>();
-        java.util.Random rng = new java.security.SecureRandom();
-
-        // Guarantee at least one of each required type
-        chars.add(lower.charAt(rng.nextInt(lower.length())));
-        chars.add(lower.charAt(rng.nextInt(lower.length())));
-        if (requireUppercase) chars.add(upper.charAt(rng.nextInt(upper.length())));
-        if (requireDigit) chars.add(digits.charAt(rng.nextInt(digits.length())));
-        if (requireSpecial) chars.add(special.charAt(rng.nextInt(special.length())));
-
-        int target = Math.max(minLength, 12);
-        while (chars.size() < target) chars.add(pool.charAt(rng.nextInt(pool.length())));
-
-        // Fisher-Yates shuffle
-        for (int i = chars.size() - 1; i > 0; i--) {
-            int j = rng.nextInt(i + 1);
-            char tmp = chars.get(i);
-            chars.set(i, chars.get(j));
-            chars.set(j, tmp);
-        }
-        StringBuilder sb = new StringBuilder();
-        chars.forEach(sb::append);
-        return sb.toString();
-    }
-
-    /**
+     * Returns a JSON-serialisable policy descriptor for the frontend strength meter.
      */
     public PasswordPolicy getPolicy() {
         return new PasswordPolicy(minLength, requireDigit, requireUppercase, requireSpecial);
+    }
+
+    /**
+     * Generate a cryptographically random temporary password that satisfies the
+     * policy (length, digit, uppercase, special). Sent to the user by email on
+     * account creation; they are forced to change it on first login.
+     */
+    public String generateTemporary() {
+        SecureRandom rng = new SecureRandom();
+        String upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String lower = "abcdefghijklmnopqrstuvwxyz";
+        String digits = "0123456789";
+        String special = "!@#$%^&*()_+-=";
+        String all = upper + lower + digits + special;
+
+        // Guarantee at least one of each required character type
+        StringBuilder sb = new StringBuilder();
+        sb.append(upper.charAt(rng.nextInt(upper.length())));
+        sb.append(digits.charAt(rng.nextInt(digits.length())));
+        sb.append(special.charAt(rng.nextInt(special.length())));
+        // Fill to minLength (default 10), at least 12 for safety
+        int target = Math.max(minLength, 12);
+        while (sb.length() < target) {
+            sb.append(all.charAt(rng.nextInt(all.length())));
+        }
+        // Shuffle to avoid predictable prefix pattern
+        char[] chars = sb.toString().toCharArray();
+        for (int i = chars.length - 1; i > 0; i--) {
+            int j = rng.nextInt(i + 1);
+            char tmp = chars[i];
+            chars[i] = chars[j];
+            chars[j] = tmp;
+        }
+        return new String(chars);
     }
 
     public record PasswordPolicy(int minLength, boolean requireDigit,

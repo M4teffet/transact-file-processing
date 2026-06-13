@@ -3,6 +3,7 @@ package com.transact;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.transact.processor.model.*;
+import com.transact.service.GridFsService;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheName;
 import io.quarkus.mongodb.panache.PanacheMongoEntityBase;
@@ -44,6 +45,9 @@ public class BatchResource {
 
     @Inject
     SecurityIdentity identity;
+
+    @Inject
+    GridFsService gridFsService;
 
     private static final Set<String> VALID_STATUSES = Set.of(
             FileBatch.STATUS_UPLOADED,
@@ -189,7 +193,9 @@ public class BatchResource {
                         batch.uploadedById,
                         getCachedUserCountry(batch.uploadedById),
                         batch.validatedById,
-                        batch.validationTimestamp
+                        batch.validationTimestamp,
+                        stats != null ? stats.successCount : 0L,
+                        stats != null ? stats.failureCount : 0L
 
                 );
             }).toList();
@@ -306,6 +312,65 @@ public class BatchResource {
         )).build();
     }
 
+    /**
+     * Télécharge le fichier original d'un lot, reconstruit au format CSV à
+     * partir des lignes stockées (batch_data). Le fichier brut n'étant pas
+     * conservé après l'import, la reconstruction respecte l'ordre des lignes
+     * Télécharge le fichier original d'un lot directement depuis GridFS.
+     * La réponse est le contenu exact du fichier tel qu'il a été soumis.
+     */
+    @GET
+    @Authenticated
+    @Path("/{id}/download")
+    @Produces("text/csv")
+    public Response downloadOriginalFile(@PathParam("id") String id) {
+        ObjectId bId = parseObjectId(id);
+        FileBatch batch = FileBatch.findById(bId);
+        if (batch == null) return Response.status(404).entity(Map.of("message", "Lot non trouvé")).build();
+
+        // Même contrôle géographique que getBatchById
+        String currentUsername = identity.getPrincipal().getName();
+        AppUser currentUser = AppUser.findByUsername(currentUsername).orElse(null);
+        if (currentUser == null)
+            return Response.status(403).entity(Map.of("message", "Utilisateur non trouvé")).build();
+
+        if (!identity.hasRole("ADMIN")) {
+            AppUser uploader = AppUser.findByUsername(batch.uploadedById).orElse(null);
+            if (uploader == null || !currentUser.countryCode.equals(uploader.countryCode) || !currentUser.getDepartment().equals(uploader.getDepartment())) {
+                return Response.status(403).entity(Map.of("message", "Accès refusé : Pays ou département différent")).build();
+            }
+        }
+
+        if (batch.gridFsFileId == null) {
+            return Response.status(404)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(Map.of("message", "Fichier original non disponible (lot importé avant la mise en place du stockage)"))
+                    .build();
+        }
+
+        try {
+            java.io.InputStream stream = gridFsService.open(batch.gridFsFileId);
+
+            String filename = (batch.originalFilename != null && !batch.originalFilename.isBlank())
+                    ? batch.originalFilename.replaceAll("[\\r\\n\"]", "_")
+                    : "batch_" + batch.id.toHexString() + ".csv";
+
+            LOG.infof("Téléchargement GridFS du lot %s par %s (fileId=%s)",
+                    batch.id.toHexString(), currentUsername, batch.gridFsFileId.toHexString());
+
+            return Response.ok(stream)
+                    .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                    .build();
+
+        } catch (com.mongodb.MongoGridFSException e) {
+            LOG.warnf("Fichier GridFS introuvable pour le lot %s : %s", batch.id.toHexString(), e.getMessage());
+            return Response.status(404)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(Map.of("message", "Fichier original introuvable dans le stockage"))
+                    .build();
+        }
+    }
+
     @PUT
     @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -339,6 +404,11 @@ public class BatchResource {
         BatchStatistics stats = BatchStatistics.calculate(batchId);
         if (stats != null) stats.persistOrUpdate();
         batch.update();
+
+        AdminAuditLog.record(validatorName, AdminAuditLog.BATCH_VALIDATED, id,
+                "Lot " + batch.originalFilename + " validé et envoyé en traitement",
+                java.util.Map.of("application", getAppName(batch.applicationId),
+                        "filename", String.valueOf(batch.originalFilename)));
 
         LOG.infof("Lot %s validé par %s", id, validatorName);
         return Response.ok(Map.of("message", "Lot validé avec succès")).build();
@@ -374,6 +444,11 @@ public class BatchResource {
         BatchStatistics.deleteById(batchId);
         ProcessingLogEntry.delete("batchId", batchId);
         batch.delete();
+
+        AdminAuditLog.record(currentUsername, AdminAuditLog.BATCH_DELETED, id,
+                "Lot supprimé : " + batch.originalFilename,
+                java.util.Map.of("status", batch.status,
+                        "filename", String.valueOf(batch.originalFilename)));
 
         LOG.infof("Lot %s supprimé par %s", id, currentUsername);
         return Response.noContent().build();
@@ -489,7 +564,9 @@ public class BatchResource {
             String uploadedBy,
             String country,
             String validatedBy,
-            Instant validatedAt
+            Instant validatedAt,
+            long successCount,
+            long failureCount
     ) {
     }
 

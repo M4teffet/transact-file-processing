@@ -80,8 +80,9 @@ async function loadBatchData() {
 
         const data = await res.json();
 
-        // Default: show all processed statuses. Status filter in UI can narrow further.
-        allBatches = data.content || [];
+        // Exclude rejected-validation batches (VALIDATED_FAILED): they are not
+        // reportable activity and should never appear on reports or exports.
+        allBatches = (data.content || []).filter(b => b.status !== 'VALIDATED_FAILED');
 
         // Populate filter dropdowns with unique values
         populateFilterDropdowns();
@@ -220,7 +221,7 @@ function renderBatchTable() {
     if (pageBatches.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="11" class="px-4 py-12 text-center text-gray-500">
+                <td colspan="14" class="px-4 py-12 text-center text-gray-500">
                     <div class="flex flex-col items-center gap-3">
                         <i data-lucide="inbox" class="w-12 h-12 text-gray-300"></i>
                         <span>Aucun batch trouvé avec les filtres actifs</span>
@@ -279,6 +280,18 @@ function renderBatchTable() {
                 ${(batch.totalRecords || 0).toLocaleString()}
             </td>
             <td class="px-4 py-3 text-center">
+                ${batch.successCount > 0
+                    ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">${batch.successCount.toLocaleString()}</span>`
+                    : `<span class="text-gray-400">0</span>`
+                }
+            </td>
+            <td class="px-4 py-3 text-center">
+                ${batch.failureCount > 0
+                    ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">${batch.failureCount.toLocaleString()}</span>`
+                    : `<span class="text-gray-400">0</span>`
+                }
+            </td>
+            <td class="px-4 py-3 text-center">
                 ${batch.errorCount > 0
                     ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">${batch.errorCount}</span>`
                     : `<span class="text-gray-400">0</span>`
@@ -289,6 +302,15 @@ function renderBatchTable() {
             </td>
             <td class="px-4 py-3 text-center text-xs text-gray-600">
                 ${batch.validatedAt ? new Date(batch.validatedAt).toLocaleString('fr-FR') : '-'}
+            </td>
+            <td class="px-4 py-3 text-center">
+                <button type="button"
+                        class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold text-gray-700 border border-gray-300 hover:border-orange-500 hover:text-orange-600 transition-colors"
+                        title="Télécharger le fichier original"
+                        onclick="downloadOriginalFile('${batch.batchId}', '${(batch.originalFilename || '').replace(/'/g, "\\'")}')">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    CSV
+                </button>
             </td>
         </tr>
     `).join('');
@@ -518,3 +540,31 @@ window.searchInTable = searchInTable;
 window.exportTableToCSV = exportTableToCSV;
 window.exportToPDF = exportToPDF;
 // closeModal is already defined in layout.html
+async function downloadOriginalFile(batchId, originalFilename) {
+    try {
+        showSnackbar('Téléchargement en cours...', 'info');
+
+        const res = await secureFetch(`${API_BASE}/batches/${batchId}/download`);
+
+        if (!res || !res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showSnackbar(err.message || 'Fichier non disponible', 'error');
+            return;
+        }
+
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = originalFilename || `batch_${batchId}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        showSnackbar('Fichier téléchargé', 'success');
+    } catch (e) {
+        console.error('Erreur téléchargement fichier:', e);
+        showSnackbar('Erreur lors du téléchargement', 'error');
+    }
+}
+
+window.downloadOriginalFile = downloadOriginalFile;

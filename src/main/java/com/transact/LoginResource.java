@@ -124,6 +124,7 @@ public class LoginResource {
         String token = io.smallrye.jwt.build.Jwt.issuer("orange-bank-app")
                 .upn(user.getUsername())
                 .groups(user.getRole().name())
+                .claim("pwv", user.passwordVersion)
                 .expiresAt(java.time.Instant.now().plusSeconds(tokenExpirySeconds))
                 .sign();
 

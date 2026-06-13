@@ -37,7 +37,7 @@ public class ProcessingLogEntry extends PanacheMongoEntity {
                 Indexes.ascending("timestamp"),
                 new IndexOptions()
                         .background(true)
-                        .expireAfter(24L * 60 * 60, TimeUnit.SECONDS) // 72 hours in seconds
+                        .expireAfter(168L * 60 * 60, TimeUnit.SECONDS)
         );
     }
 

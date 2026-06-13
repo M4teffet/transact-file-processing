@@ -266,14 +266,14 @@ class AdminDashboard {
             const level = log.level || 'INFO';
 
             const styles = {
-                ERROR: { time: 'color:#f87171', level: 'color:#fca5a5;font-weight:700', msg: 'color:#fee2e2', bg: 'background:#2d1a1a;border-left:3px solid #ef4444;' },
-                WARN:  { time: 'color:#fbbf24', level: 'color:#fde68a;font-weight:700', msg: 'color:#fef3c7', bg: 'background:#2a2110;border-left:3px solid #f59e0b;' },
-                INFO:  { time: 'color:#6b7280', level: 'color:#9ca3af;font-weight:600', msg: 'color:#d1d5db', bg: 'background:#111827;border-left:3px solid #374151;' },
+                ERROR: { time: 'color:#555e6d', level: 'color:#f85149;font-weight:400', msg: 'color:#ffd7d5' },
+                WARN:  { time: 'color:#555e6d', level: 'color:#d29922;font-weight:400', msg: 'color:#f0e2c0' },
+                INFO:  { time: 'color:#555e6d', level: 'color:#58a6ff;font-weight:400', msg: 'color:#c9d1d9' },
             };
             const s = styles[level] || styles.INFO;
 
             const line = document.createElement('div');
-            line.style.cssText = `display:flex;align-items:flex-start;gap:.6rem;padding:.4rem .5rem;border-radius:4px;margin-bottom:2px;font-size:.72rem;${s.bg}`;
+            line.style.cssText = `display:flex;align-items:flex-start;gap:.85rem;padding:.1rem 0;font-size:.74rem;line-height:1.85;`;
             line.innerHTML = `
                 <span style="${s.time};font-variant-numeric:tabular-nums;flex-shrink:0;">${time}</span>
                 <span style="${s.level};flex-shrink:0;min-width:3.5rem;">[${level}]</span>
@@ -462,3 +462,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     window.addEventListener('beforeunload', () => dashboard.stopAutoRefresh());
 });
+

@@ -33,6 +33,10 @@ public class FileBatch extends PanacheMongoEntity {
     public String uploadedById;
     public String validatedById;
     public String originalFilename;
+    /**
+     * GridFS ObjectId of the raw uploaded file (uploads.files collection).
+     */
+    public ObjectId gridFsFileId;
     public ValidationReport validationReport;
     public Instant validationTimestamp;
 

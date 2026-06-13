@@ -1,7 +1,11 @@
 package com.transact.processor.model;
 
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.Indexes;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
+import io.quarkus.runtime.StartupEvent;
+import jakarta.enterprise.event.Observes;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.bson.types.ObjectId;
@@ -43,6 +47,11 @@ public class AppUser extends PanacheMongoEntity {
 
     // ── Security state ────────────────────────────────────────────────────────
     /**
+     * Incremented every time the password changes. Embedded in the JWT as a claim.
+     * Any token carrying an older version is rejected by SecurityRedirectFilter.
+     */
+    public long passwordVersion = 0;
+    /**
      * Incremented on every failed login attempt; reset on success
      */
     public int failedLoginCount = 0;
@@ -63,6 +72,19 @@ public class AppUser extends PanacheMongoEntity {
     public static Optional<AppUser> findByEmail(String email) {
         if (email == null) return Optional.empty();
         return Optional.ofNullable(find("email", email).firstResult());
+    }
+
+    public static void ensureIndexes(@Observes StartupEvent ev) {
+        // Unique index on username (case-insensitive via uppercase convention)
+        mongoCollection().createIndex(
+                Indexes.ascending("username"),
+                new IndexOptions().unique(true).background(true)
+        );
+        // Unique sparse index on email — sparse so null email (ADMIN) doesn't conflict
+        mongoCollection().createIndex(
+                Indexes.ascending("email"),
+                new IndexOptions().unique(true).sparse(true).background(true)
+        );
     }
 
     public AppUser() {

@@ -1,5 +1,6 @@
 package com.transact;
 
+import com.transact.processor.model.AdminAuditLog;
 import com.transact.processor.model.AppUser;
 import com.transact.processor.model.OtpToken;
 import com.transact.service.EmailService;
@@ -93,12 +94,13 @@ public class AuthResource {
         try {
             String newHash = passwordService.hash(req.newPassword());
             user.passwordHash = newHash;
+            user.passwordVersion = user.passwordVersion + 1;   // invalidates all existing sessions
             user.mustChangePassword = false;
             user.status = AppUser.UserStatus.ACTIVE;
             user.updatedAt = Instant.now();
             user.updatedBy = username;
             user.update();
-            LOG.infof("[Auth] Password changed for %s", username);
+            LOG.infof("[Auth] Password changed for %s — session version now %d", username, user.passwordVersion);
             return Response.ok(Map.of("message", "Password changed successfully")).build();
         } catch (IllegalArgumentException e) {
             return badRequest(e.getMessage());
@@ -148,6 +150,7 @@ public class AuthResource {
         try {
             String newHash = passwordService.hash(req.newPassword());
             user.passwordHash = newHash;
+            user.passwordVersion = user.passwordVersion + 1;
             user.mustChangePassword = false;
             user.failedLoginCount = 0;
             user.status = AppUser.UserStatus.ACTIVE;
@@ -203,6 +206,7 @@ public class AuthResource {
         String token = Jwt.issuer("orange-bank-app")
                 .upn(user.getUsername())
                 .groups(user.getRole().name())
+                .claim("pwv", user.passwordVersion)
                 .expiresAt(Instant.now().plusSeconds(tokenExpirySeconds))
                 .sign();
 
@@ -257,6 +261,9 @@ public class AuthResource {
         user.failedLoginCount = 0;
         user.update();
 
+        AdminAuditLog.record(identity.getPrincipal().getName(),
+                AdminAuditLog.USER_UNLOCKED, username,
+                "Compte déverrouillé par l'administrateur");
         LOG.infof("[Auth] Account unlocked: %s by %s", username, identity.getPrincipal().getName());
         return Response.ok(Map.of("message", "Compte déverrouillé avec succès", "username", username)).build();
     }
@@ -281,6 +288,8 @@ public class AuthResource {
         user.status = AppUser.UserStatus.LOCKED;
         user.update();
 
+        AdminAuditLog.record(admin, AdminAuditLog.USER_LOCKED, username,
+                "Compte verrouillé manuellement par l'administrateur");
         LOG.infof("[Auth] Account locked: %s by %s", username, admin);
         return Response.ok(Map.of("message", "Compte verrouillé avec succès", "username", username)).build();
     }

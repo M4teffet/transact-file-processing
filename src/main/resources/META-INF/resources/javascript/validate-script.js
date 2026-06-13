@@ -124,8 +124,37 @@ const renderUploadedBatches = () => {
 /**
  * ACTION : VALIDATION
  */
-const validateBatchNow = async (id) => {
-if (!confirm("Voulez-vous valider ce batch et lancer son exécution dans T24 ?")) return;
+let _pendingValidationId = null;
+
+const validateBatchNow = (id) => {
+    const batch = uploadedBatches.find(b => b.batchId === id);
+    if (!batch) return;
+
+    _pendingValidationId = id;
+
+    // Populate modal content
+    document.getElementById('confirmBatchId').textContent    = id;
+    document.getElementById('confirmFilename').textContent   = batch.originalFilename || 'N/A';
+    document.getElementById('confirmApp').textContent        = batch.application || 'N/A';
+    document.getElementById('confirmRecords').textContent    = (batch.totalRecords || '—') + ' enregistrement(s)';
+    document.getElementById('confirmUploadedAt').textContent = batch.uploadedAt
+        ? new Date(batch.uploadedAt).toLocaleString('fr-FR') : '—';
+
+    if (typeof openModal === 'function') openModal('validateConfirmModal');
+};
+
+const cancelValidation = () => {
+    _pendingValidationId = null;
+    if (typeof closeModal === 'function') closeModal('validateConfirmModal');
+};
+
+const confirmValidation = async () => {
+    const id = _pendingValidationId;
+    if (!id) return;
+
+    const confirmBtn = document.getElementById('confirmValidateBtn');
+    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Validation…'; }
+
     try {
         const response = await secureFetch(`${API_BASE}/batches/${id}`, {
             method: 'PUT',
@@ -133,17 +162,21 @@ if (!confirm("Voulez-vous valider ce batch et lancer son exécution dans T24 ?")
             body: JSON.stringify({ status: "VALIDATED" })
         });
 
-        if (!response) return;
+        cancelValidation();
 
+        if (!response) return;
         if (response.ok) {
             showSnackbar('Batch validé et envoyé pour traitement !', 'success');
-            refreshDashboard(); // Met à jour la liste et les compteurs immédiatement
+            refreshDashboard();
         } else {
             const errorData = await response.json();
             showSnackbar(`Erreur: ${errorData.message || 'Validation échouée'}`, 'error');
         }
     } catch (e) {
+        cancelValidation();
         showSnackbar('Erreur technique lors de la validation', 'error');
+    } finally {
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirmer la validation'; }
     }
 };
 
@@ -176,6 +209,8 @@ const confirmDelete = async () => {
 
 // EXPOSITION DES FONCTIONS AU WINDOW (pour les onclick HTML)
 window.validateBatchNow = validateBatchNow;
+window.cancelValidation = cancelValidation;
+window.confirmValidation = confirmValidation;
 window.openDeleteModal = openDeleteModal;
 window.cancelDelete = cancelDelete;
 window.confirmDelete = confirmDelete;
