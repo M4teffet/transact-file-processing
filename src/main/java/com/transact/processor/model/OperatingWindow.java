@@ -27,32 +27,22 @@ public class OperatingWindow extends PanacheMongoEntity {
      */
     public boolean enabled = false;
 
-    /**
-     * Service opens at this hour (0-23), inclusive.
-     */
+    /** Service opens at this hour (0-23), inclusive. */
     public int openHour = 8;
 
-    /**
-     * Service closes at this hour (0-23), exclusive.
-     */
+    /** Service closes at this hour (0-23), exclusive. */
     public int closeHour = 18;
 
-    /**
-     * IANA zone for evaluating the hours.
-     */
+    /** IANA zone for evaluating the hours. */
     public String zone = "Africa/Abidjan";
 
-    /**
-     * Admin override: keep the app open past closing until switched off.
-     */
+    /** Admin override: keep the app open past closing until switched off. */
     public boolean adminKeepOpen = false;
 
     public String updatedBy;
     public Instant lastUpdated;
 
-    /**
-     * Load the singleton settings document, creating defaults on first use.
-     */
+    /** Load the singleton settings document, creating defaults on first use. */
     public static OperatingWindow get() {
         OperatingWindow w = find("settingKey", SETTING_KEY).firstResult();
         if (w == null) {
@@ -63,9 +53,7 @@ public class OperatingWindow extends PanacheMongoEntity {
         return w;
     }
 
-    /**
-     * Is the service open right now for non-admin users?
-     */
+    /** Is the service open right now for non-admin users? */
     public boolean isOpenNow() {
         if (!enabled) return true;
         if (adminKeepOpen) return true;

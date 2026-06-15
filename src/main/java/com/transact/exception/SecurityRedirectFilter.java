@@ -4,9 +4,9 @@ import com.transact.processor.model.AppUser;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -18,9 +18,9 @@ import java.util.Set;
 
 /**
  * Two-phase security filter:
- * <p>
+ *
  * REQUEST phase  — enforce mustChangePassword and passwordVersion on every
- * authenticated API/page request.
+ *                  authenticated API/page request.
  * RESPONSE phase — on 401, clear stale auth cookies and redirect to login.
  */
 @Provider

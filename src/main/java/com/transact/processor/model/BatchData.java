@@ -24,6 +24,15 @@ public class BatchData extends PanacheMongoEntity {
         return list("batchId", batchId);
     }
 
+    /**
+     * Returns only rows that still need processing — excludes already completed or
+     * permanently failed rows so the processor doesn't waste iterations on them.
+     */
+    public static List<BatchData> findPendingByBatchId(ObjectId batchId) {
+        return list("batchId = ?1 and processingStatus in ?2",
+                batchId, java.util.List.of("PENDING", "CLAIMED", "NO_RESPONSE"));
+    }
+
     public static boolean claimRow(ObjectId rowId, String workerId) {
         // USE Parameters: This makes the code readable and ensures types are handled correctly
         long updated = update("processingStatus = 'CLAIMED', workerId = :workerId")

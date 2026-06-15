@@ -3,6 +3,7 @@ package com.transact;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.transact.processor.model.*;
+import com.transact.processor.model.AdminAuditLog;
 import com.transact.service.GridFsService;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheName;

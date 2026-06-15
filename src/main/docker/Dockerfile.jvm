@@ -1,30 +1,27 @@
-# STAGE 1: Build (The "Builder")
-FROM maven:3.9.6-eclipse-temurin-17-alpine AS build
-WORKDIR /home/app
+# ---- Build stage ----
+FROM maven:3.9-eclipse-temurin-17-alpine AS build
+WORKDIR /build
 
-# 1. Copy pom.xml and download dependencies
+# Copy only pom.xml and download dependencies first (for cache efficiency)
 COPY pom.xml .
-RUN mvn dependency:go-offline
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn dependency:resolve dependency:resolve-plugins -DskipTests
 
-# 2. Copy source and build (This creates the /target folder INSIDE Docker)
+# Copy source code
 COPY src ./src
-RUN mvn package.json -DskipTests
 
-# STAGE 2: Runtime (The final lean image)
+# Build the application
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn clean package -DskipTests -q
+
+# ---- Runtime stage ----
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /deployments
 
-RUN addgroup -S quarkus && adduser -S quarkus -G quarkus
-USER quarkus
-
-# FIX: We copy from the "build" stage, NOT your local machine
-COPY --from=build --chown=quarkus:quarkus /home/app/target/quarkus-app/lib/ /deployments/lib/
-COPY --from=build --chown=quarkus:quarkus /home/app/target/quarkus-app/*.jar /deployments/
-COPY --from=build --chown=quarkus:quarkus /home/app/target/quarkus-app/app/ /deployments/app/
-COPY --from=build --chown=quarkus:quarkus /home/app/target/quarkus-app/quarkus/ /deployments/quarkus/
+# Copy only the built Quarkus app from build stage
+COPY --from=build /build/target/quarkus-app/ .
 
 EXPOSE 8080
 
-ENV JAVA_OPTS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
-
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /deployments/quarkus-run.jar"]
+# Use exec form for proper signal handling
+CMD ["java", "-jar", "quarkus-run.jar"]

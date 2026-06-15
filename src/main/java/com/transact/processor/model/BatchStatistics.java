@@ -31,12 +31,16 @@ public class BatchStatistics extends PanacheMongoEntity {
     }
 
     /**
-     * Computes batch statistics by counting rows in BatchData and RowResult.
+     * Computes batch statistics by counting BatchData row statuses directly.
+     * This is the authoritative source — RowResult may be sparse (only written
+     * on first completion/failure) but BatchData always reflects current state.
      */
     public static BatchStatistics calculate(ObjectId batchId) {
         long total = BatchData.count("batchId", batchId);
-        long success = RowResult.count("batchId = ?1 and status = ?2", batchId, "SUCCESS");
-        long failure = RowResult.count("batchId = ?1 and status = ?2", batchId, "FAILED");
+        long success = BatchData.count("batchId = ?1 and processingStatus = ?2",
+                batchId, "COMPLETED");
+        long failure = BatchData.count("batchId = ?1 and processingStatus in ?2",
+                batchId, java.util.List.of("FAILED", "FAILED_PERMANENT", "NO_RESPONSE"));
 
         if (total == 0) return null;
 
