@@ -57,49 +57,11 @@ public class FundsTransferProcessor {
 
     @Inject
     ManagedExecutor managedExecutor;
-    @ConfigProperty(name = "ft.processor.max-threads", defaultValue = "2")
+    @ConfigProperty(name = "ft.processor.max-threads", defaultValue = "3")
     int maxThreads;
-
-    @Scheduled(every = "1m", identity = "ft-processor", concurrentExecution = SKIP)
-    @ActivateRequestContext
-    public void run() {
-        Application app = Application.findByName(FEATURE_KEY);
-
-        if (app == null) {
-            Log.errorf("[FT] Application config missing for key: %s", FEATURE_KEY);
-            ProcessingLogEntry.log("ERROR", String.format("[FT] Application config missing: %s", FEATURE_KEY));
-            return;
-        }
-
-        if (!AppFeatureConfig.isFeatureEnabled(FEATURE_KEY)) {
-            Log.debugf("%s processing disabled", FEATURE_KEY);
-            return;
-        }
-
-        List<FileBatch> batches = FileBatch.list(
-                "status in :statuses and applicationId = :appId",
-                Parameters.with("statuses", List.of(FileBatch.STATUS_VALIDATED, FileBatch.STATUS_PROCESSING))
-                        .and("appId", app.id)
-        );
-
-        if (batches.isEmpty()) return;
-
-        Log.infof("[FT] %d batch(es) detected for processing", batches.size());
-
-        for (FileBatch batch : batches) {
-            try {
-                processBatch(batch.id);
-            } catch (Exception e) {
-                String msg = String.format("CRITICAL_BATCH_FAILURE: %s", e.getMessage());
-                Log.errorf(e, "[%s] %s", batch.id, msg);
-                ProcessingLogEntry.log(batch.id, "ERROR", msg);
-            }
-        }
-    }
-
-
     @ConfigProperty(name = "app.processing.stuck-timeout-minutes", defaultValue = "30")
     int stuckTimeoutMinutes;
+
 
     private void processBatch(ObjectId batchId) {
         activeProcessors.incrementAndGet();
@@ -187,6 +149,43 @@ public class FundsTransferProcessor {
         }
     }
 
+    @Scheduled(every = "1m", identity = "ft-processor", concurrentExecution = SKIP)
+    @ActivateRequestContext
+    public void run() {
+        Application app = Application.findByName(FEATURE_KEY);
+
+        if (app == null) {
+            Log.errorf("[FT] Application config missing for key: %s", FEATURE_KEY);
+            ProcessingLogEntry.log("ERROR", String.format("[FT] Application config missing: %s", FEATURE_KEY));
+            return;
+        }
+
+        if (!AppFeatureConfig.isFeatureEnabled(FEATURE_KEY)) {
+            Log.debugf("%s processing disabled", FEATURE_KEY);
+            return;
+        }
+
+        List<FileBatch> batches = FileBatch.list(
+                "status = :status and applicationId = :appId",
+                Parameters.with("status", FileBatch.STATUS_VALIDATED)
+                        .and("appId", app.id)
+        );
+
+        if (batches.isEmpty()) return;
+
+        Log.infof("[FT] %d batch(es) detected for processing", batches.size());
+
+        for (FileBatch batch : batches) {
+            try {
+                processBatch(batch.id);
+            } catch (Exception e) {
+                String msg = String.format("CRITICAL_BATCH_FAILURE: %s", e.getMessage());
+                Log.errorf(e, "[%s] %s", batch.id, msg);
+                ProcessingLogEntry.log(batch.id, "ERROR", msg);
+            }
+        }
+    }
+
     private void processRow(BatchData row, String workerId, ObjectId batchId, String companyId) {
         if (!BatchData.claimRow(row.id, workerId)) {
             return;
@@ -250,29 +249,28 @@ public class FundsTransferProcessor {
     }
 
     private void recoverRows(ObjectId batchId) {
-        // Reset CLAIMED rows back to PENDING — crash is not a failed attempt
+        // On restart: only reset rows that were MID-FLIGHT (CLAIMED) when the JVM died.
+        // These were grabbed by a worker but never completed — we don't know if they
+        // reached T24 or not, so reset without incrementing retryCount.
         long claimedReset = BatchData.update("processingStatus = 'PENDING', workerId = null")
                 .where("batchId = :batchId and processingStatus = 'CLAIMED'",
                         Parameters.with("batchId", batchId));
         if (claimedReset > 0) {
-            Log.warnf("[%s] Recovery: %d CLAIMED row(s) reset → PENDING", batchId, claimedReset);
+            Log.warnf("[%s] Recovery: %d CLAIMED row(s) reset → PENDING after restart", batchId, claimedReset);
             ProcessingLogEntry.log(batchId, "WARN",
-                    String.format("Récupération après redémarrage : %d ligne(s) réinitialisée(s)", claimedReset));
+                    String.format("Récupération après redémarrage : %d ligne(s) CLAIMED réinitialisée(s)", claimedReset));
         }
 
-        // Reset FAILED rows that still have retries left back to PENDING
-        long failedReset = BatchData.update("processingStatus = 'PENDING'")
-                .where("batchId = :batchId and processingStatus = 'FAILED' and retryCount < :max",
-                        Parameters.with("batchId", batchId).and("max", maxRetry));
-        if (failedReset > 0) {
-            Log.infof("[%s] Recovery: %d FAILED row(s) re-queued for retry", batchId, failedReset);
-        }
+        // FAILED and NO_RESPONSE rows are NOT reset here.
+        // They failed during an actual processing attempt and their retryCount was already
+        // incremented by failRow(). finalizeBatch() decides whether they get another
+        // chance based on retryCount vs maxRetry — not recoverRows().
 
-        // Mark rows that have exhausted all retries as permanently failed
+        // Escalate rows that have exhausted all retries to FAILED_PERMANENT
         long poisoned = BatchData.update("processingStatus = 'FAILED_PERMANENT'")
                 .where("batchId = :batchId and processingStatus in :statuses and retryCount >= :max",
                         Parameters.with("batchId", batchId)
-                                .and("statuses", List.of("PENDING", "FAILED"))
+                                .and("statuses", List.of("FAILED", "NO_RESPONSE"))
                                 .and("max", maxRetry));
         if (poisoned > 0) {
             Log.errorf("[%s] %d row(s) permanently failed after %d attempts", batchId, poisoned, maxRetry);
@@ -295,20 +293,6 @@ public class FundsTransferProcessor {
                 .where("_id = ?1 and processingStatus != 'COMPLETED'", row.id);
     }
 
-    private void noResponseRow(ObjectId batchId, BatchData row, String err) {
-        try {
-            long existing = RowResult.count("batchId = ?1 and lineNumber = ?2", batchId, row.lineNumber);
-            if (existing == 0) {
-                new RowResult(batchId, row.lineNumber, "NO_RESPONSE", null, err).persist();
-            }
-        } catch (Exception ignored) {
-        }
-
-        BatchData.update("processingStatus = 'NO_RESPONSE'")
-                .where("_id = ?1 and processingStatus not in ?2",
-                        row.id, List.of("COMPLETED", "NO_RESPONSE"));
-    }
-
     private void failRow(ObjectId batchId, BatchData row, String err) {
         try {
             long existing = RowResult.count("batchId = ?1 and lineNumber = ?2", batchId, row.lineNumber);
@@ -323,6 +307,20 @@ public class FundsTransferProcessor {
         BatchData.update("processingStatus = 'FAILED', retryCount = retryCount + 1")
                 .where("_id = ?1 and processingStatus not in ?2",
                         row.id, List.of("FAILED", "COMPLETED"));
+    }
+
+    private void noResponseRow(ObjectId batchId, BatchData row, String err) {
+        try {
+            long existing = RowResult.count("batchId = ?1 and lineNumber = ?2", batchId, row.lineNumber);
+            if (existing == 0) {
+                new RowResult(batchId, row.lineNumber, "NO_RESPONSE", null, err).persist();
+            }
+        } catch (Exception ignored) {
+        }
+
+        BatchData.update("processingStatus = 'NO_RESPONSE'")
+                .where("_id = ?1 and processingStatus not in ?2",
+                        row.id, List.of("COMPLETED", "NO_RESPONSE"));
     }
 
     private void handleFailure(ObjectId batchId, BatchData row, String msg, String payload) {
@@ -411,17 +409,23 @@ public class FundsTransferProcessor {
     }
 
     private void finalizeBatch(ObjectId batchId) {
-        // Count rows still in non-terminal states
+        // Rows still actively in flight
         long pendingCount = BatchData.count("batchId = ?1 and processingStatus in ?2",
                 batchId, List.of("PENDING", "CLAIMED"));
+        if (pendingCount > 0) return;
 
-        if (pendingCount > 0) return; // still rows in flight — come back next tick
+        // No more PENDING/CLAIMED rows — escalate ALL remaining FAILED and NO_RESPONSE
+        // to FAILED_PERMANENT. recoverRows() no longer resets FAILED rows across restarts,
+        // so any FAILED row at this point either exhausted retries in this run or survived
+        // a restart — either way it should be treated as permanently failed.
+        BatchData.update("processingStatus = 'FAILED_PERMANENT'")
+                .where("batchId = ?1 and processingStatus in ?2",
+                        batchId, List.of("FAILED", "NO_RESPONSE"));
 
-        // All rows are now in a terminal state (COMPLETED, FAILED, FAILED_PERMANENT, NO_RESPONSE)
+        // Recompute stats after escalation
         BatchStatistics stats = BatchStatistics.calculate(batchId);
         if (stats == null) return;
 
-        // Sanity check: success + failure must account for every row
         long unaccounted = stats.totalRecords - stats.successCount - stats.failureCount;
         if (unaccounted > 0) {
             Log.warnf("[%s] Finalize deferred: %d row(s) still unaccounted (total=%d S=%d F=%d)",
@@ -441,7 +445,7 @@ public class FundsTransferProcessor {
         long updated = FileBatch.update("status = ?1, processingTimestamp = ?2", status, Instant.now())
                 .where("_id = ?1 and status = ?2", batchId, FileBatch.STATUS_PROCESSING);
 
-        if (updated == 0) return; // another thread already finalized
+        if (updated == 0) return;
 
         stats.batchStatus = status;
         stats.lastUpdatedAt = Instant.now();
@@ -457,7 +461,7 @@ public class FundsTransferProcessor {
      * would sit in PROCESSING until the watchdog fires (up to 5 minutes later),
      * or worse — if the watchdog's cutoff hasn't been reached yet, it would
      * never recover until the timeout elapsed.
-     * <p>
+     *
      * CLAIMED rows are reset to PENDING without incrementing retryCount
      * (a crash is not a failed attempt).
      */
@@ -534,7 +538,7 @@ public class FundsTransferProcessor {
     @ActivateRequestContext
     public void purgeExpiredOtpTokens() {
         try {
-            long removed = com.transact.processor.model.OtpToken.purgeExpired();
+            long removed = OtpToken.purgeExpired();
             if (removed > 0) {
                 Log.infof("[OTP] Purged %d expired token(s)", removed);
             }

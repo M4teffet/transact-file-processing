@@ -66,7 +66,19 @@ public class OperatingWindowFilter implements ContainerRequestFilter {
                     ))
                     .build());
         } else {
-            ctx.abortWith(Response.status(302).location(URI.create("/closed")).build());
+            ctx.abortWith(Response.status(302)
+                    .location(buildRedirect(ctx, "closed"))
+                    .build());
         }
+    }
+
+    private URI buildRedirect(ContainerRequestContext ctx, String relativePath) {
+        String proto = ctx.getHeaderString("X-Forwarded-Proto");
+        if (proto == null || proto.isBlank()) proto = ctx.getUriInfo().getBaseUri().getScheme();
+        // Host header already contains host:port (e.g. 10.213.61.117:8443)
+        String host = ctx.getHeaderString("X-Forwarded-Host");
+        if (host == null || host.isBlank()) host = ctx.getHeaderString("Host");
+        if (host == null || host.isBlank()) host = ctx.getUriInfo().getBaseUri().getHost();
+        return URI.create(proto + "://" + host + "/" + relativePath);
     }
 }

@@ -43,25 +43,33 @@ public class OtpToken extends PanacheMongoEntity {
     }
 
     public static Optional<OtpToken> findValid(String username, String plain, Purpose purpose) {
-        Instant now = Instant.now();
+        // Expiry enforced in query — avoids fetching all tokens then filtering in memory
         return OtpToken.<OtpToken>find(
-                        "username = ?1 and token = ?2 and purpose = ?3 and used = ?4",
-                        username, plain, purpose.name(), false
-                ).stream()
-                .filter(t -> t.expiresAt != null && t.expiresAt.isAfter(now))
-                .findFirst();
+                "username = ?1 and token = ?2 and purpose = ?3 and used = ?4 and expiresAt > ?5",
+                username, plain, purpose.name(), false, Instant.now()
+        ).firstResultOptional();
     }
 
-    // ── Lookup — boolean literals passed as parameters, not inline ────────────
-
     public static Optional<OtpToken> findValidByToken(String plain, Purpose purpose) {
-        Instant now = Instant.now();
         return OtpToken.<OtpToken>find(
-                        "token = ?1 and purpose = ?2 and used = ?3",
-                        plain, purpose.name(), false
-                ).stream()
-                .filter(t -> t.expiresAt != null && t.expiresAt.isAfter(now))
-                .findFirst();
+                "token = ?1 and purpose = ?2 and used = ?3 and expiresAt > ?4",
+                plain, purpose.name(), false, Instant.now()
+        ).firstResultOptional();
+    }
+
+    public static void ensureIndexes(@jakarta.enterprise.event.Observes io.quarkus.runtime.StartupEvent ev) {
+        // TTL index — MongoDB auto-deletes expired tokens (backup to scheduled purge)
+        mongoCollection().createIndex(
+                com.mongodb.client.model.Indexes.ascending("expiresAt"),
+                new com.mongodb.client.model.IndexOptions()
+                        .expireAfter(0L, java.util.concurrent.TimeUnit.SECONDS)
+                        .background(true)
+        );
+        // Compound index for fast OTP lookups
+        mongoCollection().createIndex(
+                com.mongodb.client.model.Indexes.ascending("username", "purpose", "used"),
+                new com.mongodb.client.model.IndexOptions().background(true)
+        );
     }
 
     private static void invalidateExisting(String username, Purpose purpose) {

@@ -91,6 +91,8 @@ public class LoginResource {
         }
 
         // No email → issue JWT directly
+        user.failedLoginCount = 0;
+        user.update();
         return issueJwt(user);
     }
 
@@ -125,6 +127,7 @@ public class LoginResource {
                 .upn(user.getUsername())
                 .groups(user.getRole().name())
                 .claim("pwv", user.passwordVersion)
+                .claim("mcp", user.mustChangePassword)
                 .expiresAt(java.time.Instant.now().plusSeconds(tokenExpirySeconds))
                 .sign();
 

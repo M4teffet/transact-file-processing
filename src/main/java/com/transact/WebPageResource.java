@@ -4,6 +4,7 @@ import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -14,6 +15,9 @@ import jakarta.ws.rs.core.MediaType;
 
 @Path("/")
 public class WebPageResource {
+
+    @Inject
+    SecurityIdentity identity;
 
     @Inject
     @Location("dashboard")
@@ -63,6 +67,24 @@ public class WebPageResource {
     @Inject
     @Location("sidebar-authoriser")
     Template sidebarAuthoriserTemplate;
+
+    // ── Root redirect — sends each role to their home page ────────────────────
+
+    @GET
+    @Path("/")
+    @Authenticated
+    @Produces(MediaType.TEXT_HTML)
+    public jakarta.ws.rs.core.Response getRootPage(@jakarta.ws.rs.core.Context jakarta.ws.rs.core.UriInfo uriInfo) {
+        String proto = "https"; // default to https behind nginx
+        String target;
+        if (identity.hasRole("ADMIN")) target = "dashboard";
+        else if (identity.hasRole("INPUTTER")) target = "upload";
+        else if (identity.hasRole("AUTHORISER")) target = "validate";
+        else target = "login";
+        return jakarta.ws.rs.core.Response.temporaryRedirect(
+                java.net.URI.create(proto + "://" + uriInfo.getBaseUri().getHost() + "/" + target)
+        ).build();
+    }
 
     // ── Admin ─────────────────────────────────────────────────────────────────
 

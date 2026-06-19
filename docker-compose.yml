@@ -14,8 +14,8 @@ services:
       retries: 5
       start_period: 15s
 
-  transact-file-processing:
-    image: transact-file-processing:latest
+  transact-file-processor:
+    image: transact-file-processor:latest
     container_name: transact-app
     build:
       context: .
@@ -53,7 +53,7 @@ services:
     container_name: transact-nginx
     restart: unless-stopped
     depends_on:
-      - transact-file-processing
+      - transact-file-processor
     ports:
       - "8090:80"
       - "8443:443"

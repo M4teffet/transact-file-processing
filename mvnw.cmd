@@ -28,7 +28,7 @@
 @REM ----------------------------------------------------------------------------
 
 @REM === SET JAVA_HOME ===
-@SET "JAVA_HOME=C:\Users\mehui\.jdks\ms-17.0.17"
+@SET "JAVA_HOME=C:\Users\mehui\.jdks\ms-17.0.19"
 @SET "PATH=%JAVA_HOME%\bin;%PATH%"
 
 @IF "%__MVNW_ARG0_NAME__%"=="" (SET __MVNW_ARG0_NAME__=%~nx0)

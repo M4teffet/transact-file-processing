@@ -207,6 +207,7 @@ public class AuthResource {
                 .upn(user.getUsername())
                 .groups(user.getRole().name())
                 .claim("pwv", user.passwordVersion)
+                .claim("mcp", user.mustChangePassword)
                 .expiresAt(Instant.now().plusSeconds(tokenExpirySeconds))
                 .sign();
 

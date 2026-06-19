@@ -3,7 +3,6 @@ package com.transact;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.transact.processor.model.*;
-import com.transact.processor.model.AdminAuditLog;
 import com.transact.service.GridFsService;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheName;
@@ -122,15 +121,23 @@ public class BatchResource {
         }
 
         if (fromStr != null && !fromStr.isBlank()) {
-            if (!filter.isEmpty()) filter.append(" and ");
-            filter.append("uploadTimestamp >= :from");
-            params.put("from", Instant.parse(fromStr + "T00:00:00Z"));
+            try {
+                if (!filter.isEmpty()) filter.append(" and ");
+                filter.append("uploadTimestamp >= :from");
+                params.put("from", Instant.parse(fromStr + "T00:00:00Z"));
+            } catch (Exception e) {
+                return Response.status(400).entity(Map.of("message", "Format de date invalide pour 'from' : " + fromStr)).build();
+            }
         }
 
         if (toStr != null && !toStr.isBlank()) {
-            if (!filter.isEmpty()) filter.append(" and ");
-            filter.append("uploadTimestamp <= :to");
-            params.put("to", Instant.parse(toStr + "T23:59:59Z"));
+            try {
+                if (!filter.isEmpty()) filter.append(" and ");
+                filter.append("uploadTimestamp <= :to");
+                params.put("to", Instant.parse(toStr + "T23:59:59Z"));
+            } catch (Exception e) {
+                return Response.status(400).entity(Map.of("message", "Format de date invalide pour 'to' : " + toStr)).build();
+            }
         }
 
         // Filtre uploadeur (S'il est saisi manuellement dans la recherche)

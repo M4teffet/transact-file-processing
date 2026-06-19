@@ -30,9 +30,20 @@ public class GridFsService {
     @ConfigProperty(name = "quarkus.mongodb.database", defaultValue = "transactdb")
     String databaseName;
 
+    // Cached bucket — GridFSBuckets.create() is lightweight but called on every
+    // store/open/delete; caching avoids the repeated MongoDatabase lookup.
+    private volatile GridFSBucket cachedBucket;
+
     private GridFSBucket bucket() {
-        MongoDatabase db = mongoClient.getDatabase(databaseName);
-        return GridFSBuckets.create(db, "uploads");
+        if (cachedBucket == null) {
+            synchronized (this) {
+                if (cachedBucket == null) {
+                    MongoDatabase db = mongoClient.getDatabase(databaseName);
+                    cachedBucket = GridFSBuckets.create(db, "uploads");
+                }
+            }
+        }
+        return cachedBucket;
     }
 
     /**

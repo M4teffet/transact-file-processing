@@ -114,14 +114,14 @@ public class UploadResource {
 
             List<Map<String, Object>> validatedData = fileValidator.validateAndConvert(rawData, appConfig);
 
-            // 5. Create Batch record — gridFsFileId is always set
+            // 5. Create Batch record and persist ONCE — then save rows
             FileBatch batch = createSuccessBatch(appConfig, validatedData, gridFsFileId);
             batch.originalFilename = originalFilename;
             batch.status = FileBatch.STATUS_UPLOADED;
 
-            // 6. Final Guard: DB Unique Constraint
+            // 6. Persist with duplicate guard
             try {
-                batch.persistOrUpdate();
+                batch.persist();
             } catch (com.mongodb.MongoWriteException e) {
                 if (e.getError().getCode() == 11000) {
                     gridFsService.delete(gridFsFileId);
@@ -129,6 +129,9 @@ public class UploadResource {
                 }
                 throw e;
             }
+
+            // 7. Save row data now that batch has an id
+            saveBatchData(batch, validatedData);
 
             return successResponse(batch, validatedData.size());
 
@@ -186,12 +189,14 @@ public class UploadResource {
         report.details = List.of();
         batch.validationReport = report;
 
-        batch.persist();
-        saveBatchData(batch.id, validatedData);
+        // NOTE: do NOT call persist() here — caller handles persistence
+        // so they can catch the duplicate key error before writing BatchData
+        saveBatchData(batch, validatedData);
         return batch;
     }
 
-    private void saveBatchData(ObjectId batchId, List<Map<String, Object>> validatedData) {
+    private void saveBatchData(FileBatch batch, List<Map<String, Object>> validatedData) {
+        ObjectId batchId = batch.id;
         List<BatchData> records = new ArrayList<>();
         for (int i = 0; i < validatedData.size(); i++) {
             BatchData bd = new BatchData();

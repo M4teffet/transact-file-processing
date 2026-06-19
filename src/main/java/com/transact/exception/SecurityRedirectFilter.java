@@ -32,6 +32,9 @@ public class SecurityRedirectFilter implements ContainerRequestFilter, Container
     @Inject
     SecurityIdentity identity;
 
+    @Inject
+    org.eclipse.microprofile.jwt.JsonWebToken jwt;
+
     // ── REQUEST filter ────────────────────────────────────────────────────────
 
     @Override
@@ -47,11 +50,25 @@ public class SecurityRedirectFilter implements ContainerRequestFilter, Container
         String username = identity.getPrincipal().getName();
         if (username == null || username.isBlank()) return;
 
-        AppUser user = AppUser.findByUsername(username).orElse(null);
-        if (user == null) return;
+        // Fast path: check mustChangePassword from JWT claim if available (avoids DB hit per request)
+        // Falls back to DB lookup if claim not present (e.g. old tokens)
+        Boolean jwtMustChange = null;
+        try {
+            Object claim = jwt.claim("mcp").orElse(null);
+            if (claim instanceof Boolean) jwtMustChange = (Boolean) claim;
+        } catch (Exception ignored) {
+        }
 
-        // Enforce password change on first login
-        if (user.mustChangePassword) {
+        boolean mustChange;
+        if (jwtMustChange != null) {
+            mustChange = jwtMustChange;
+        } else {
+            AppUser user = AppUser.findByUsername(username).orElse(null);
+            if (user == null) return;
+            mustChange = user.mustChangePassword;
+        }
+
+        if (mustChange) {
             if (path.startsWith("api/")) {
                 req.abortWith(Response.status(403)
                         .type(MediaType.APPLICATION_JSON)
@@ -74,33 +91,49 @@ public class SecurityRedirectFilter implements ContainerRequestFilter, Container
 
         int status = responseContext.getStatus();
         String path = requestContext.getUriInfo().getPath();
-        if (status != 401 || "/login".equals(path)) return;
+        if (path.equals("/login")) return;
 
-        // Clear auth cookies
-        Map<String, Cookie> cookies = requestContext.getCookies();
         String proto = requestContext.getHeaderString("X-Forwarded-Proto");
         if (proto == null || proto.isBlank()) {
             proto = requestContext.getUriInfo().getRequestUri().getScheme();
         }
-        String secureFlag = "https".equals(proto) ? "; Secure" : "";
+        String host = requestContext.getHeaderString("X-Forwarded-Host");
+        if (host == null || host.isBlank()) host = requestContext.getHeaderString("Host");
+        if (host == null || host.isBlank()) host = requestContext.getUriInfo().getBaseUri().getHost();
 
-        for (String cookieName : AUTH_COOKIES) {
-            if (cookies.containsKey(cookieName)) {
-                Cookie cookie = cookies.get(cookieName);
-                String cookiePath = cookie.getPath() != null ? cookie.getPath() : "/";
-                String cookieDomain = cookie.getDomain() != null ? "; Domain=" + cookie.getDomain() : "";
-                responseContext.getHeaders().add("Set-Cookie",
-                        cookieName + "=; Path=" + cookiePath + cookieDomain
-                                + "; Expires=" + EXPIRED_DATE + secureFlag + "; HttpOnly");
+        if (status == 401) {
+            // Clear auth cookies
+            Map<String, Cookie> cookies = requestContext.getCookies();
+            String secureFlag = "https".equals(proto) ? "; Secure" : "";
+            for (String cookieName : AUTH_COOKIES) {
+                if (cookies.containsKey(cookieName)) {
+                    Cookie cookie = cookies.get(cookieName);
+                    String cookiePath = cookie.getPath() != null ? cookie.getPath() : "/";
+                    String cookieDomain = cookie.getDomain() != null ? "; Domain=" + cookie.getDomain() : "";
+                    responseContext.getHeaders().add("Set-Cookie",
+                            cookieName + "=; Path=" + cookiePath + cookieDomain
+                                    + "; Expires=" + EXPIRED_DATE + secureFlag + "; HttpOnly");
+                }
+            }
+            responseContext.setStatus(302);
+            responseContext.getHeaders().putSingle("Location",
+                    proto + "://" + host + "/login?error=session_expired");
+
+        } else if (status == 403) {
+            // Wrong role trying to access a page — redirect to their home page
+            boolean isApi = path.startsWith("/api/");
+            if (!isApi) {
+                // Let MUST_CHANGE_PASSWORD 403 pass through (handled by request filter)
+                Object body = responseContext.getEntity();
+                if (body instanceof Map && ((Map<?, ?>) body).containsKey("code")
+                        && "MUST_CHANGE_PASSWORD".equals(((Map<?, ?>) body).get("code"))) {
+                    return;
+                }
+                responseContext.setStatus(302);
+                responseContext.getHeaders().putSingle("Location",
+                        proto + "://" + host + "/");
             }
         }
-
-        // Redirect to login using correct scheme
-        String host = requestContext.getHeaderString("Host");
-        if (host == null) host = requestContext.getUriInfo().getBaseUri().getHost();
-        responseContext.setStatus(302);
-        responseContext.getHeaders().putSingle("Location",
-                proto + "://" + host + "/login?error=session_expired");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -108,8 +141,9 @@ public class SecurityRedirectFilter implements ContainerRequestFilter, Container
     private URI buildRedirect(ContainerRequestContext req, String relativePath) {
         String proto = req.getHeaderString("X-Forwarded-Proto");
         if (proto == null || proto.isBlank()) proto = req.getUriInfo().getBaseUri().getScheme();
-        String host = req.getHeaderString("Host");
-        if (host == null) host = req.getUriInfo().getBaseUri().getHost();
+        String host = req.getHeaderString("X-Forwarded-Host");
+        if (host == null || host.isBlank()) host = req.getHeaderString("Host");
+        if (host == null || host.isBlank()) host = req.getUriInfo().getBaseUri().getHost();
         return URI.create(proto + "://" + host + "/" + relativePath);
     }
 }
