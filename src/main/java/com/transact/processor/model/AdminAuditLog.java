@@ -27,6 +27,7 @@ public class AdminAuditLog extends PanacheMongoEntity {
 
     // ── Action constants ──────────────────────────────────────────────────────
     public static final String USER_CREATED = "USER_CREATED";
+    public static final String USER_DELETED = "USER_DELETED";
     public static final String USER_LOCKED = "USER_LOCKED";
     public static final String USER_UNLOCKED = "USER_UNLOCKED";
     public static final String USER_ROLE_CHANGED = "USER_ROLE_CHANGED";

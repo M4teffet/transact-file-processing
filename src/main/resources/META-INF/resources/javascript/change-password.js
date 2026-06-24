@@ -1,4 +1,4 @@
-const API = '/api/auth';
+const API = '/api/v1/auth';
 const SPECIAL = '!@#$%^&*()_+-=[]{}|;\':",.<>?';
 let policy = { minLength: 10, requireDigit: true, requireUppercase: true, requireSpecial: true };
 

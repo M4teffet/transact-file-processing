@@ -213,6 +213,15 @@
                 </span>
             </div>
 
+            <!-- Operating window status badge — visible to all roles -->
+            <div id="op-window-badge" style="display:none;align-items:center;gap:6px;
+                 padding:3px 10px 3px 7px;border:1px solid transparent;font-size:.72rem;
+                 font-weight:400;letter-spacing:.04em;transition:all .3s;">
+                <span id="op-window-dot" style="width:6px;height:6px;border-radius:50%;
+                      flex-shrink:0;display:inline-block;"></span>
+                <span id="op-window-label"></span>
+            </div>
+
             <!-- User dropdown -->
             <div class="relative" id="user-menu-wrapper">
                 <button class="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/10 transition"
@@ -315,6 +324,9 @@
 <script src="/javascript/shared.js"></script>
 {#insert script}{/insert}
 <script>
+    // Start the operating window badge on every page
+    if (typeof pollWindowStatus === 'function') pollWindowStatus();
+
     document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
         document.getElementById('sidebar').classList.toggle('-translate-x-full');
         document.getElementById('mobile-overlay').classList.remove('hidden');

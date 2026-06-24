@@ -7,7 +7,7 @@ document.getElementById('forgotForm').addEventListener('submit', async (e) => {
     btn.disabled = true;
     btn.querySelector('span').textContent = 'Envoi en cours...';
     try {
-        await fetch('/api/auth/forgot-password', {
+        await fetch('/api/v1/auth/forgot-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })

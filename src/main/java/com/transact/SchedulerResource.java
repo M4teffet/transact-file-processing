@@ -10,10 +10,10 @@ import java.time.Instant;
 import java.util.List;
 
 
-@Path("/api")
+@Path("/api/v1")
 public class SchedulerResource {
 
-    @Path("/api/admin/features")
+    @Path("/api/v1/admin/features")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
 

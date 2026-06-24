@@ -32,12 +32,12 @@ public class ProcessingLogEntry extends PanacheMongoEntity {
 
     // ── Add TTL index creation at startup ───────────────────────────────
     public static void ensureIndexes(@Observes StartupEvent ev) {
-        // TTL index: documents expire 72 hours (259200 seconds) after timestamp
+        // TTL index: documents expire 7 days (604 800 seconds) after timestamp
         mongoCollection().createIndex(
                 Indexes.ascending("timestamp"),
                 new IndexOptions()
                         .background(true)
-                        .expireAfter(168L * 60 * 60, TimeUnit.SECONDS)
+                        .expireAfter(168L * 60 * 60, TimeUnit.SECONDS) // 168 h = 7 days
         );
     }
 

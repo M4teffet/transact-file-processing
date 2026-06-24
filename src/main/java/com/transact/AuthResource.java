@@ -32,7 +32,7 @@ import java.util.Optional;
  *  POST /api/auth/resend-otp        — resend OTP code to email
  *  GET  /api/auth/password-policy   — return policy rules for frontend strength meter
  */
-@Path("/api/auth")
+@Path("/api/v1/auth")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class AuthResource {
@@ -189,7 +189,7 @@ public class AuthResource {
         // Diagnostic: log all OTP tokens for this user in DB
         OtpToken.<OtpToken>find("username = ?1 and purpose = ?2", user.username, "OTP_LOGIN")
                 .stream().forEach(t -> LOG.infof("[Auth] DB token — token: '%s', used: %s, expires: %s, now: %s",
-                        t.token, t.used, t.expiresAt, java.time.Instant.now()));
+                        t.token, t.used, t.expiresAt, Instant.now()));
 
         Optional<OtpToken> tokenOpt = OtpToken.findValid(user.username, submittedOtp, OtpToken.Purpose.OTP_LOGIN);
 

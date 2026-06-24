@@ -7,7 +7,10 @@ if (!token) {
     document.getElementById('resetForm').style.display = 'none';
 }
 
-fetch('/api/auth/password-policy').then(r => r.json()).then(p => { policy = p; }).catch(() => {});
+fetch('/api/v1/auth/password-policy').then(r => r.json()).then(p => {
+    policy = p;
+}).catch(() => {
+});
 
 function checkStrength(val) {
     const ok = {
@@ -59,7 +62,7 @@ document.getElementById('resetForm').addEventListener('submit', async (e) => {
     btn.querySelector('span').textContent = 'Enregistrement...';
 
     try {
-        const res = await fetch('/api/auth/reset-password', {
+        const res = await fetch('/api/v1/auth/reset-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token, newPassword: newPwd })

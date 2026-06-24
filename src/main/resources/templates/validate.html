@@ -75,48 +75,50 @@
 <script src="/javascript/validate-script.js"></script>
 
 <!-- Validation confirmation modal -->
-<div class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-     id="validateConfirmModal">
-    <div class="bg-white w-full max-w-md shadow-xl border border-gray-200">
-        <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-            <i class="w-4 h-4 text-orange-600" data-lucide="shield-check"></i>
-            <h3 class="text-sm font-semibold text-gray-800">Confirmer la validation</h3>
-        </div>
-        <div class="p-5 space-y-3 text-xs text-gray-700">
-            <p class="text-gray-500">Vous êtes sur le point d'autoriser l'exécution du lot suivant dans T24. Cette
-                action est irréversible.</p>
-            <div class="bg-amber-50 border border-amber-200 rounded p-3 space-y-1.5">
-                <div class="flex justify-between">
-                    <span class="text-gray-500 uppercase tracking-widest text-[10px] font-semibold">Batch ID</span>
-                    <span class="font-mono font-semibold text-gray-800" id="confirmBatchId"></span>
+    <div class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+         id="validateConfirmModal"
+         onclick="if(event.target===this)cancelValidation()">
+        <div class="bg-white max-w-sm mx-4 shadow-xl" style="border-top:3px solid var(--orange);">
+
+            <!-- Header -->
+            <div class="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-orange-600"></i>
+                    <h3 class="text-sm font-semibold text-gray-900">Valider le lot</h3>
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-500 uppercase tracking-widest text-[10px] font-semibold">Fichier</span>
-                    <span class="italic text-gray-700" id="confirmFilename"></span>
+                <button class="p-1 hover:bg-gray-100 text-gray-400 transition"
+                        onclick="cancelValidation()" aria-label="Fermer">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="px-5 py-4 space-y-3">
+                <p class="text-xs text-gray-500 leading-relaxed">
+                    Ce lot sera envoyé pour traitement dans T24. Cette action est irréversible.
+                </p>
+
+                <!-- Key info — minimal, scannable -->
+                <div style="border-left:3px solid var(--orange);padding-left:12px;" class="space-y-1.5">
+                    <p class="text-xs font-semibold text-gray-800 italic" id="confirmFilename">—</p>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-wide" id="confirmApp">—</p>
+                    <div class="flex items-center justify-between pt-0.5">
+                        <span class="text-[10px] text-gray-400 font-mono" id="confirmBatchId">—</span>
+                        <span class="text-xs font-semibold text-orange-700" id="confirmRecords">—</span>
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-500 uppercase tracking-widest text-[10px] font-semibold">Application</span>
-                    <span class="text-gray-700" id="confirmApp"></span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-500 uppercase tracking-widest text-[10px] font-semibold">Volume</span>
-                    <span class="font-semibold text-orange-700" id="confirmRecords"></span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-500 uppercase tracking-widest text-[10px] font-semibold">Importé le</span>
-                    <span class="text-gray-600" id="confirmUploadedAt"></span>
+                    <p class="text-[10px] text-gray-400" id="confirmUploadedAt">—</p>
                 </div>
             </div>
-        </div>
+
+            <!-- Footer -->
         <div class="px-5 py-3 border-t border-gray-100 flex gap-2 justify-end">
-            <button class="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-300 hover:bg-gray-50 transition"
-                    onclick="cancelValidation()">
-                Annuler
+            <button class="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition"
+                    onclick="cancelValidation()">Annuler
             </button>
-            <button class="px-4 py-2 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 transition flex items-center gap-1.5" id="confirmValidateBtn"
-                    onclick="confirmValidation()">
-                <i class="w-3.5 h-3.5" data-lucide="check-circle"></i>
-                Confirmer la validation
+            <button class="px-4 py-2 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 transition flex items-center gap-1.5"
+                    id="confirmValidateBtn" onclick="confirmValidation()">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                <span id="confirmValidateBtnText">Valider</span>
             </button>
         </div>
     </div>

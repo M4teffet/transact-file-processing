@@ -21,7 +21,7 @@ import java.util.Map;
  * <p>
  * ✅ Tous les messages et logs en français
  */
-@Path("/api/country")
+@Path("/api/v1/country")
 @RolesAllowed("ADMIN")
 public class CountryResource {
 

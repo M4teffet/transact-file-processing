@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.transact.processor.model.AdminAuditLog;
 import com.transact.processor.model.OperatingWindow;
 import com.transact.processor.model.ProcessingLogEntry;
+import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -20,10 +21,19 @@ import java.util.Map;
 
 /**
  * OperatingWindowResource — admin configuration of the service window.
+ *
+ * Security strategy:
+ *   - Class is @Authenticated (any logged-in user can reach it)
+ *   - GET /status is accessible to all roles (INPUTTER, AUTHORISER, ADMIN)
+ *   - GET / and POST / are restricted to ADMIN at the method level
+ *
+ * NOTE: class-level @RolesAllowed("ADMIN") was removed because in Quarkus,
+ * the container evaluates the class-level restriction before method-level
+ * overrides, which prevented INPUTTER/AUTHORISER from reaching /status.
  */
-@Path("/api/admin/operating-window")
+@Path("/api/v1/admin/operating-window")
 @Tag(name = "Fenêtre de service", description = "Configuration des heures d'ouverture de l'application")
-@RolesAllowed("ADMIN")
+@Authenticated
 @Produces(MediaType.APPLICATION_JSON)
 public class OperatingWindowResource {
 
@@ -32,7 +42,30 @@ public class OperatingWindowResource {
     @Inject
     SecurityIdentity identity;
 
+    /**
+     * GET /api/v1/admin/operating-window/status
+     * Accessible to every authenticated role — used by the sidebar badge.
+     */
     @GET
+    @Path("/status")
+    @RolesAllowed({"ADMIN", "INPUTTER", "AUTHORISER"})
+    @Operation(summary = "Statut d'ouverture de la fenêtre de service")
+    public Response getStatus() {
+        OperatingWindow w = OperatingWindow.get();
+        if (w == null) return Response.ok(Map.of(
+                "openNow", true, "openHour", 0, "closeHour", 23,
+                "enabled", false, "adminKeepOpen", false)).build();
+        return Response.ok(Map.of(
+                "openNow", w.isOpenNow(),
+                "openHour", w.openHour,
+                "closeHour", w.closeHour,
+                "enabled", w.enabled,
+                "adminKeepOpen", w.adminKeepOpen
+        )).build();
+    }
+
+    @GET
+    @RolesAllowed("ADMIN")
     @Operation(summary = "Lire la configuration de la fenêtre de service")
     public Response getWindow() {
         OperatingWindow w = OperatingWindow.get();
@@ -40,6 +73,7 @@ public class OperatingWindowResource {
     }
 
     @POST
+    @RolesAllowed("ADMIN")
     @Consumes(MediaType.APPLICATION_JSON)
     @Operation(summary = "Mettre à jour la fenêtre de service")
     public Response updateWindow(WindowUpdateRequest req) {
@@ -73,7 +107,7 @@ public class OperatingWindowResource {
                 "Fenêtre de service mise à jour : " +
                         (w.enabled ? "activée" : "désactivée") +
                         " (" + w.openHour + "h–" + w.closeHour + "h)",
-                java.util.Map.of("enabled", w.enabled,
+                Map.of("enabled", w.enabled,
                         "openHour", w.openHour, "closeHour", w.closeHour,
                         "zone", String.valueOf(w.zone),
                         "adminKeepOpen", w.adminKeepOpen));

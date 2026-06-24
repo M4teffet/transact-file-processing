@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-@Path("/api/applications")
+@Path("/api/v1/applications")
 
 @Tag(name = "Applications", description = "Manage application configurations")
 public class ApplicationResource {

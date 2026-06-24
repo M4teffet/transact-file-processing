@@ -48,7 +48,7 @@ const loadUploadedBatches = async () => {
 
         const result = await response.json();
         // Support pour le format Spring Data (content) ou Array simple
-        uploadedBatches = result.content || result;
+        uploadedBatches = result.items || result.content || result;
 
         renderUploadedBatches();
     } catch (e) {
@@ -66,59 +66,81 @@ const renderUploadedBatches = () => {
 
     if (!uploadedBatches.length) {
         container.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-12 text-gray-500 bg-white rounded-md border border-dashed">
-                <i data-lucide="file-check" class="w-12 h-12 mb-3 opacity-20"></i>
-                <p>Aucun batch en attente de validation.</p>
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                        padding:3rem 1rem;color:var(--ink-3);text-align:center">
+                <i data-lucide="file-check" style="width:40px;height:40px;opacity:.2;margin-bottom:.75rem"></i>
+                <p style="font-size:13px">Aucun lot en attente de validation</p>
             </div>`;
-        lucide.createIcons();
+        createIcons(container);
         return;
     }
 
-    const html = `
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-100 bg-white rounded-xs">
-               <thead class="bg-zinc-100/80">
-                    <tr>
-                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">ID Batch</th>
-                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Application</th>
-                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Fichier</th>
-                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Date Import</th>
-                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Statut</th>
-                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Actions</th>
+    const TH = `padding:10px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em`;
+    const TD = `padding:11px 16px;border-bottom:0.5px solid var(--line-soft,#f0f1f3)`;
+    const BTN = `padding:5px;background:none;border:none;cursor:pointer;color:var(--ink-3);display:inline-flex;align-items:center`;
+
+    container.innerHTML = `
+        <div style="overflow-x:auto">
+            <table style="min-width:100%;border-collapse:collapse">
+                <thead>
+                    <tr style="border-bottom:0.5px solid var(--line)">
+                        <th style="${TH}">Lot</th>
+                        <th style="${TH}">Date d'import</th>
+                        <th style="${TH}">Statut</th>
+                        <th style="${TH}"></th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
-                    ${uploadedBatches.map(b => `
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-4 py-2.5 text-xs font-medium text-gray-800">${b.batchId}</td>
-                        <td class="px-4 py-2.5 text-xs text-gray-600 font-mono">${b.application}</td>
-                        <td class="px-4 py-2.5 text-xs text-gray-700 font-medium italic">
-                            ${b.originalFilename || 'N/A'}
-                        </td>
-                        <td class="px-4 py-2.5 text-xs text-gray-500">
-                            ${b.uploadedAt ? new Date(b.uploadedAt).toLocaleString('fr-FR') : '---'}
-                        </td>
-                        <td class="px-4 py-2.5">${getStatusBadge(b.status)}</td>
-                        <td class="px-4 py-2.5 flex justify-start items-center gap-2">
-                            <button onclick="viewBatchDetails('${b.batchId}')" class="p-1.5 hover:bg-blue-50 rounded-full transition" title="Détails">
-                                <i data-lucide="eye" class="w-4 h-4 text-blue-500"></i>
-                            </button>
-                            <button onclick="openDeleteModal('${b.batchId}')" class="p-1.5 hover:bg-red-50 rounded-full transition" title="Supprimer">
-                                <i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i>
-                            </button>
-                            <button onclick="validateBatchNow('${b.batchId}')"
-                                    class="px-3 py-1.5 rounded text-xs font-semibold text-white bg-green-600 hover:bg-green-700 transition flex items-center gap-1.5">
-                                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
-                                VALIDER
-                            </button>
-                        </td>
-                    </tr>`).join("")}
+                <tbody>
+                    ${uploadedBatches.map(b => {
+        const filename = b.originalFilename || '—';
+        const short = filename.length > 36 ? filename.slice(0, 34) + '…' : filename;
+        const {date, time} = formatDateParts(b.uploadedAt);
+        const records = b.totalRecords
+            ? `<span style="font-size:10px;color:var(--ink-3)">${b.totalRecords.toLocaleString('fr-FR')} lignes</span>`
+            : '';
+        return `<tr style="border-bottom:0.5px solid var(--line-soft,#f0f1f3)">
+                            <td style="${TD};max-width:300px">
+                                <div style="font-size:12px;font-weight:500;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${filename}">${short}</div>
+                                <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
+                                    ${appBadgeHTML(b.application)}
+                                    <span style="font-size:10px;color:var(--ink-3);font-family:monospace">${b.batchId}</span>
+                                    ${records}
+                                </div>
+                                ${b.uploadedBy ? `<div style="margin-top:4px">
+                                    <span style="font-size:10px;font-weight:500;background:#e8f0fe;color:#1967d2;
+                                                 padding:2px 7px;border-radius:99px;display:inline-flex;align-items:center;gap:3px">
+                                        <i data-lucide="user" style="width:10px;height:10px"></i>${b.uploadedBy}
+                                    </span>
+                                </div>` : ''}
+                            </td>
+                            <td style="${TD};white-space:nowrap">
+                                <div style="font-size:12px;color:var(--ink-2)">${date}</div>
+                                <div style="font-size:11px;color:var(--ink-3)">${time}</div>
+                            </td>
+                            <td style="${TD}">${getStatusBadge(b.status)}</td>
+                            <td style="${TD};white-space:nowrap">
+                                <button onclick="viewBatchDetails('${b.batchId}')" title="Voir les données"
+                                        style="${BTN}" onmouseover="this.style.color='#1967d2'" onmouseout="this.style.color='var(--ink-3)'">
+                                    <i data-lucide="eye" style="width:15px;height:15px"></i>
+                                </button>
+                                <button onclick="openDeleteModal('${b.batchId}')" title="Supprimer"
+                                        style="${BTN}" onmouseover="this.style.color='#c5221f'" onmouseout="this.style.color='var(--ink-3)'">
+                                    <i data-lucide="trash-2" style="width:15px;height:15px"></i>
+                                </button>
+                                <button onclick="validateBatchNow('${b.batchId}')"
+                                        style="margin-left:6px;padding:4px 11px;font-size:11px;font-weight:500;
+                                               color:#fff;background:#16a34a;border:none;cursor:pointer;
+                                               display:inline-flex;align-items:center;gap:5px"
+                                        onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='#16a34a'">
+                                    <i data-lucide="check-circle" style="width:12px;height:12px"></i>Valider
+                                </button>
+                            </td>
+                        </tr>`;
+    }).join('')}
                 </tbody>
             </table>
         </div>`;
-
-    container.innerHTML = html;
-    lucide.createIcons();
+    createIcons(container);
 };
 
 /**
@@ -136,7 +158,7 @@ const validateBatchNow = (id) => {
     document.getElementById('confirmBatchId').textContent    = id;
     document.getElementById('confirmFilename').textContent   = batch.originalFilename || 'N/A';
     document.getElementById('confirmApp').textContent        = batch.application || 'N/A';
-    document.getElementById('confirmRecords').textContent    = (batch.totalRecords || '—') + ' enregistrement(s)';
+    document.getElementById('confirmRecords').textContent = (batch.totalRecords.toLocaleString('fr-FR') || '—') + ' enregistrement(s)';
     document.getElementById('confirmUploadedAt').textContent = batch.uploadedAt
         ? new Date(batch.uploadedAt).toLocaleString('fr-FR') : '—';
 
@@ -153,7 +175,9 @@ const confirmValidation = async () => {
     if (!id) return;
 
     const confirmBtn = document.getElementById('confirmValidateBtn');
-    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Validation…'; }
+    const confirmText = document.getElementById('confirmValidateBtnText');
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (confirmText) confirmText.textContent = 'En cours…';
 
     try {
         const response = await secureFetch(`${API_BASE}/batches/${id}`, {
@@ -166,17 +190,18 @@ const confirmValidation = async () => {
 
         if (!response) return;
         if (response.ok) {
-            showSnackbar('Batch validé et envoyé pour traitement !', 'success');
+            showSnackbar('Lot validé — traitement en cours', 'success');
             refreshDashboard();
         } else {
             const errorData = await response.json();
-            showSnackbar(`Erreur: ${errorData.message || 'Validation échouée'}`, 'error');
+            showSnackbar(`Erreur : ${errorData.message || 'Validation échouée'}`, 'error');
         }
     } catch (e) {
         cancelValidation();
         showSnackbar('Erreur technique lors de la validation', 'error');
     } finally {
-        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirmer la validation'; }
+        if (confirmBtn) confirmBtn.disabled = false;
+        if (confirmText) confirmText.textContent = 'Valider';
     }
 };
 

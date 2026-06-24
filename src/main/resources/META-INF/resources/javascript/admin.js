@@ -71,7 +71,7 @@ class AdminDashboard {
 
     async loadStats() {
         try {
-            const response = await secureFetch('/api/batches/counts');
+            const response = await secureFetch(`${API_BASE}/batches/counts`);
             if (!response || !response.ok) return;
             const counts = await response.json();
 
@@ -121,7 +121,7 @@ class AdminDashboard {
         this.elements.featuresError?.classList.add('hidden');
 
         try {
-            const response = await secureFetch('/api/admin/features');
+            const response = await secureFetch(`${API_BASE}/admin/features`);
             if (!response || !response.ok) throw new Error('Erreur réseau');
             const features = await response.json();
 
@@ -166,7 +166,7 @@ class AdminDashboard {
                     btn.style.opacity = '0.6';
 
                     try {
-                        const res = await secureFetch(`/api/admin/features/toggle/${key}?enabled=${newState}`, { method: 'POST' });
+                        const res = await secureFetch(`/api/v1/admin/features/toggle/${key}?enabled=${newState}`, {method: 'POST'});
                         if (!res || !res.ok) throw new Error('Échec');
 
                         btn.dataset.enabled = String(newState);
@@ -206,7 +206,7 @@ class AdminDashboard {
 
     async loadRecentBatchesForSelector() {
         try {
-            const response = await secureFetch('/api/batches/recent-batches');
+            const response = await secureFetch(`${API_BASE}/batches/recent-batches`);
             if (!response || !response.ok) return;
             const batches = await response.json();
 
@@ -234,7 +234,7 @@ class AdminDashboard {
         processingLogsError?.classList.add('hidden');
 
         try {
-            const url  = batchId ? `/api/batches/processing-logs?batchId=${batchId}` : '/api/batches/processing-logs';
+            const url = batchId ? `/api/v1/batches/processing-logs?batchId=${batchId}` : '/api/v1/batches/processing-logs';
             const response = await secureFetch(url);
             if (!response || !response.ok) throw new Error('Erreur réseau');
             const logs = await response.json();
@@ -329,7 +329,7 @@ class AdminDashboard {
         usersError?.classList.add('hidden');
 
         try {
-            const res = await secureFetch('/api/users/list');
+            const res = await secureFetch(`${API_BASE}/users/list`);
             if (!res || !res.ok) throw new Error('HTTP ' + (res?.status || '?'));
             this._allUsers = await res.json();
             this.renderUsersTable(this._allUsers);
@@ -381,6 +381,7 @@ class AdminDashboard {
                 const action  = locked
                     ? `<button onclick="dashboard.unlockUser('${u.username}')" class="inline-flex items-center gap-1 px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-[10px] font-medium rounded transition">🔓 Déverrouiller</button>`
                     : `<span class="text-gray-300 text-[10px]">—</span>`;
+                const deleteBtn = `<button onclick="dashboard.deleteUser('${u.username}')" title="Supprimer l'utilisateur" class="inline-flex items-center gap-1 px-2 py-1 bg-white border border-red-300 hover:bg-red-50 text-red-600 text-[10px] font-medium rounded transition">🗑 Supprimer</button>`;
                 return `<tr class="hover:bg-gray-50 transition-colors ${locked ? 'bg-red-50/40' : ''}">
                     <td class="px-3 py-2.5">
                         <div class="font-semibold text-gray-900 text-xs">${this.escapeHtml(u.username)}${pwdWarn}</div>
@@ -392,6 +393,7 @@ class AdminDashboard {
                     <td class="px-3 py-2.5 text-center"><span class="${u.failedLoginCount > 0 ? 'text-red-600 font-bold' : 'text-gray-400'} text-xs">${u.failedLoginCount ?? 0}</span></td>
                     <td class="px-3 py-2.5 text-xs text-gray-500">${this.escapeHtml(u.createdBy||'—')}</td>
                     <td class="px-3 py-2.5 text-center">${action}</td>
+                    <td class="px-3 py-2.5 text-center">${deleteBtn}</td>
                 </tr>`;
             }).join('');
         }
@@ -400,7 +402,7 @@ class AdminDashboard {
     async unlockUser(username) {
         if (!confirm(`Déverrouiller le compte de ${username} ?`)) return;
         try {
-            const res = await secureFetch(`/api/auth/unlock/${encodeURIComponent(username)}`, { method: 'POST' });
+            const res = await secureFetch(`/api/v1/auth/unlock/${encodeURIComponent(username)}`, {method: 'POST'});
             if (!res) return;
             const data = await res.json().catch(() => ({}));
             if (res.ok) {
@@ -410,6 +412,23 @@ class AdminDashboard {
                 showSnackbar(data.message || 'Échec du déverrouillage.', 'error');
             }
         } catch { showSnackbar('Erreur réseau.', 'error'); }
+    }
+
+    async deleteUser(username) {
+        if (!confirm(`Supprimer définitivement l'utilisateur ${username} ?\nCette action est irréversible.`)) return;
+        try {
+            const res = await secureFetch(`/api/v1/users/${encodeURIComponent(username)}`, {method: 'DELETE'});
+            if (!res) return;
+            if (res.ok) {
+                showSnackbar(`✓ Utilisateur ${username} supprimé.`, 'success');
+                await this.loadUsers();
+            } else {
+                const data = await res.json().catch(() => ({}));
+                showSnackbar(data.message || 'Échec de la suppression.', 'error');
+            }
+        } catch {
+            showSnackbar('Erreur réseau.', 'error');
+        }
     }
 
     // ── Auto refresh ──────────────────────────────────────────────────────────

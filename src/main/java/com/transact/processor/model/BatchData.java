@@ -25,12 +25,13 @@ public class BatchData extends PanacheMongoEntity {
     }
 
     /**
-     * Returns only rows that still need processing — excludes already completed or
-     * permanently failed rows so the processor doesn't waste iterations on them.
+     * Returns only rows that still need processing.
+     * COMPLETED and FAILED are terminal — they are excluded so re-runs
+     * (after a system restart) don't re-process rows that already finished.
      */
     public static List<BatchData> findPendingByBatchId(ObjectId batchId) {
         return list("batchId = ?1 and processingStatus in ?2",
-                batchId, java.util.List.of("PENDING", "CLAIMED", "NO_RESPONSE"));
+                batchId, List.of("PENDING", "CLAIMED"));
     }
 
     public static boolean claimRow(ObjectId rowId, String workerId) {

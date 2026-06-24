@@ -21,7 +21,7 @@ import java.util.Map;
  * <p>
  * ✅ Tous les messages et logs en français
  */
-@Path("/api/departments")
+@Path("/api/v1/departments")
 @RolesAllowed("ADMIN")
 public class DepartmentResource {
 

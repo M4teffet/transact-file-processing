@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    var API = '/api';
+    var API = '/api/v1';
     var pendingUsername = null;
     var otpTimer = null;
 

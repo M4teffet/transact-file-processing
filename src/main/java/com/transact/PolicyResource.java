@@ -17,7 +17,7 @@ import java.util.Map;
  * ADMIN endpoint for reading and updating the password policy at runtime.
  * Writes changes back to application.properties so they survive restarts.
  */
-@Path("/api/admin/policy")
+@Path("/api/v1/admin/policy")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class PolicyResource {

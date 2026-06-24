@@ -75,14 +75,23 @@ public class WebPageResource {
     @Authenticated
     @Produces(MediaType.TEXT_HTML)
     public jakarta.ws.rs.core.Response getRootPage(@jakarta.ws.rs.core.Context jakarta.ws.rs.core.UriInfo uriInfo) {
-        String proto = "https"; // default to https behind nginx
         String target;
         if (identity.hasRole("ADMIN")) target = "dashboard";
         else if (identity.hasRole("INPUTTER")) target = "upload";
         else if (identity.hasRole("AUTHORISER")) target = "validate";
         else target = "login";
+
+        // ✅ FIXED: the old code used uriInfo.getBaseUri().getHost() which returns ONLY the
+        // hostname — stripping the port entirely.  That produced https://localhost/validate
+        // (port 443) instead of https://localhost:8443/validate.
+        //
+        // getBaseUriBuilder() already incorporates X-Forwarded-Proto / X-Forwarded-Host
+        // because quarkus.http.proxy.proxy-address-forwarding=true is set in
+        // application.properties, so the builder knows the correct external scheme,
+        // host AND port.  path(target) appends the page and build() assembles the
+        // correct absolute URI.
         return jakarta.ws.rs.core.Response.temporaryRedirect(
-                java.net.URI.create(proto + "://" + uriInfo.getBaseUri().getHost() + "/" + target)
+                uriInfo.getBaseUriBuilder().path(target).build()
         ).build();
     }
 

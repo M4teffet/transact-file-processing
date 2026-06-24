@@ -96,7 +96,7 @@ function renderUserList(users) {
         return;
     }
     container.innerHTML = users.map(renderUserItem).join('');
-    if (window.lucide) lucide.createIcons();
+    if (window.lucide) createIcons(container);
 }
 
 function filterUserList(query) {
@@ -115,7 +115,7 @@ async function loadUsersList() {
         <svg class="animate-spin w-3.5 h-3.5 text-orange-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
         Chargement…</li>`;
     try {
-        const res = await secureFetch('/api/users/list');
+        const res = await secureFetch('/api/v1/users/list');
         if (!res || !res.ok) throw new Error('HTTP ' + (res?.status || '?'));
         _allUsers = await res.json();
         renderUserList(_allUsers);
@@ -128,7 +128,7 @@ async function loadUsersList() {
 async function unlockUser(username) {
     if (!confirm(`Déverrouiller le compte de ${username} ?`)) return;
     try {
-        const res = await secureFetch(`/api/auth/unlock/${encodeURIComponent(username)}`, { method: 'POST' });
+        const res = await secureFetch(`/api/v1/auth/unlock/${encodeURIComponent(username)}`, {method: 'POST'});
         if (!res) return;
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
@@ -164,9 +164,8 @@ async function loadCountries() {
     const select = document.getElementById('userCountry');
     const listEl = document.getElementById('countryList');
     try {
-        const res = await secureFetch('/api/country/list');
-        if (!res || !res.ok) return;
-        const countries = await res.json();
+        const countries = await fetchCached('/api/v1/country/list');
+        if (!countries) return;
 
         if (select) {
             select.innerHTML = '<option value="">— Pays —</option>' +
@@ -179,7 +178,7 @@ async function loadCountries() {
             listEl.innerHTML = countries.length
                 ? countries.map(renderCountryItem).join('')
                 : '<li class="text-xs text-gray-400 py-3 text-center">Aucun pays configuré</li>';
-            if (window.lucide) lucide.createIcons();
+            if (window.lucide) createIcons(listEl);
         }
     } catch (err) { console.error('Failed to load countries:', err); }
 }
@@ -201,12 +200,11 @@ function renderDeptItem(d) {
 }
 
 async function loadDepartments() {
-    const listEl  = document.getElementById('departmentList');
+    const listEl = document.getElementById('departmentList');
     const selectEl = document.getElementById('department');
     try {
-        const res = await secureFetch('/api/departments/list');
-        if (!res || !res.ok) return;
-        const departments = await res.json();
+        const departments = await fetchCached('/api/v1/departments/list');
+        if (!departments) return;
 
         if (selectEl) {
             selectEl.innerHTML = '<option value="">— Département —</option>' +
@@ -216,7 +214,7 @@ async function loadDepartments() {
             listEl.innerHTML = departments.length
                 ? departments.map(renderDeptItem).join('')
                 : '<li class="text-xs text-gray-400 py-3 text-center">Aucun département configuré</li>';
-            if (window.lucide) lucide.createIcons();
+            if (window.lucide) createIcons(listEl);
         }
     } catch (err) { console.error('Failed to load departments:', err); }
 }
@@ -225,9 +223,9 @@ async function loadDepartments() {
 
 async function loadApplications() {
     try {
-        const res = await secureFetch('/api/applications');
-        if (!res || !res.ok) return;
-        const apps = await res.json();
+        // 30-min cache — application config is very stable
+        const apps = await fetchCached('/api/v1/applications', 30 * 60 * 1000);
+        if (!apps) return;
         const container = document.getElementById('appList');
         if (!container) return;
 
@@ -265,7 +263,7 @@ async function selectApplication(appName, description) {
     if (!container) return;
     container.innerHTML = `<div class="flex items-center gap-2 text-xs text-gray-400 py-4"><svg class="animate-spin w-3.5 h-3.5 text-orange-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>Chargement du schéma…</div>`;
     try {
-        const res = await secureFetch(`/api/applications/${appName}/fields`);
+        const res = await secureFetch(`/api/v1/applications/${appName}/fields`);
         if (!res || !res.ok) throw new Error('HTTP ' + res?.status);
         const data = await res.json();
         renderApplicationSchema(data);
@@ -366,7 +364,7 @@ document.getElementById('userForm')?.addEventListener('submit', async e => {
     btn.innerHTML = '<svg class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg> Création…';
 
     try {
-        const res = await secureFetch('/api/users', {
+        const res = await secureFetch('/api/v1/users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, role, country, department, email: email || null }),
@@ -385,7 +383,7 @@ document.getElementById('userForm')?.addEventListener('submit', async e => {
     finally {
         btn.disabled = false;
         btn.innerHTML = orig;
-        if (window.lucide) lucide.createIcons();
+        if (window.lucide) createIcons(btn);
     }
 });
 
@@ -400,14 +398,22 @@ document.getElementById('countryForm')?.addEventListener('submit', async e => {
     const btn = e.target.querySelector('button[type="submit"]');
     const orig = btn.innerHTML; btn.disabled = true; btn.textContent = 'Ajout…';
     try {
-        const res = await secureFetch('/api/country', {
+        const res = await secureFetch('/api/v1/country', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code, companyId }),
         });
-        if (res && res.ok) { showSnackbar('Pays ajouté !', 'success'); e.target.reset(); await loadCountries(); }
+        if (res && res.ok) {
+            showSnackbar('Pays ajouté !', 'success');
+            e.target.reset();
+            bustCache('/api/v1/country/list');
+            await loadCountries();
+        }
         else showSnackbar(await parseErrorResponse(res), 'error');
-    } catch { showSnackbar('Erreur réseau', 'error'); }
-    finally { btn.disabled = false; btn.innerHTML = orig; if (window.lucide) lucide.createIcons(); }
+    } catch { showSnackbar('Erreur réseau', 'error'); } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+        if (window.lucide) createIcons(btn);
+    }
 });
 
 // Department form
@@ -421,14 +427,22 @@ document.getElementById('departmentForm')?.addEventListener('submit', async e =>
     const btn = e.target.querySelector('button[type="submit"]');
     const orig = btn.innerHTML; btn.disabled = true; btn.textContent = 'Création…';
     try {
-        const res = await secureFetch('/api/departments', {
+        const res = await secureFetch('/api/v1/departments', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code, description }),
         });
-        if (res && res.ok) { showSnackbar('Département créé !', 'success'); e.target.reset(); await loadDepartments(); }
+        if (res && res.ok) {
+            showSnackbar('Département créé !', 'success');
+            e.target.reset();
+            bustCache('/api/v1/departments/list');
+            await loadDepartments();
+        }
         else showSnackbar(await parseErrorResponse(res), 'error');
-    } catch { showSnackbar('Erreur réseau', 'error'); }
-    finally { btn.disabled = false; btn.innerHTML = orig; if (window.lucide) lucide.createIcons(); }
+    } catch { showSnackbar('Erreur réseau', 'error'); } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+        if (window.lucide) createIcons(btn);
+    }
 });
 
 // ── Delete delegation ─────────────────────────────────────────────────────────
@@ -442,8 +456,12 @@ document.addEventListener('click', async e => {
         const code = countryBtn.dataset.deleteCountry;
         if (!confirm(`Supprimer le pays ${code} ?`)) return;
         try {
-            const res = await secureFetch(`/api/country/${code}`, { method: 'DELETE' });
-            if (res && res.ok) { showSnackbar(`Pays ${code} supprimé`, 'success'); await loadCountries(); }
+            const res = await secureFetch(`/api/v1/country/${code}`, {method: 'DELETE'});
+            if (res && res.ok) {
+                showSnackbar(`Pays ${code} supprimé`, 'success');
+                bustCache('/api/v1/country/list');
+                await loadCountries();
+            }
             else showSnackbar(await parseErrorResponse(res), 'error');
         } catch { showSnackbar('Erreur réseau', 'error'); }
         return;
@@ -453,8 +471,12 @@ document.addEventListener('click', async e => {
         const code = deptBtn.dataset.deleteDept;
         if (!confirm(`Supprimer le département ${code} ?`)) return;
         try {
-            const res = await secureFetch(`/api/departments/${code}`, { method: 'DELETE' });
-            if (res && res.ok) { showSnackbar(`Département ${code} supprimé`, 'success'); await loadDepartments(); }
+            const res = await secureFetch(`/api/v1/departments/${code}`, {method: 'DELETE'});
+            if (res && res.ok) {
+                showSnackbar(`Département ${code} supprimé`, 'success');
+                bustCache('/api/v1/departments/list');
+                await loadDepartments();
+            }
             else showSnackbar(await parseErrorResponse(res), 'error');
         } catch { showSnackbar('Erreur réseau', 'error'); }
     }
@@ -477,7 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadPasswordPolicy() {
     try {
-        const res = await secureFetch('/api/admin/policy');
+        const res = await secureFetch('/api/v1/admin/policy');
         if (!res || !res.ok) return;
         const p = await res.json();
         const ml = document.getElementById('pol-minLength');
@@ -515,7 +537,7 @@ document.getElementById('savePolicyBtn')?.addEventListener('click', async () => 
     const orig = btn.innerHTML;
     btn.disabled = true; btn.textContent = 'Enregistrement…';
     try {
-        const res = await secureFetch('/api/admin/policy', {
+        const res = await secureFetch('/api/v1/admin/policy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -533,8 +555,11 @@ document.getElementById('savePolicyBtn')?.addEventListener('click', async () => 
             const d = await res?.json().catch(()=>({}));
             showSnackbar(d.message || 'Erreur lors de la sauvegarde', 'error');
         }
-    } catch(e) { showSnackbar('Erreur réseau', 'error'); }
-    finally { btn.disabled = false; btn.innerHTML = orig; if(window.lucide) lucide.createIcons(); }
+    } catch(e) { showSnackbar('Erreur réseau', 'error'); } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+        if (window.lucide) createIcons(btn);
+    }
 });
 
 // ── Security tab — Lock/Unlock users ─────────────────────────────────────────
@@ -546,7 +571,7 @@ async function loadSecurityUserList() {
     if (!list) return;
     list.innerHTML = '<p class="text-xs text-gray-400 py-2 text-center">Chargement…</p>';
     try {
-        const res = await secureFetch('/api/users/list');
+        const res = await secureFetch('/api/v1/users/list');
         if (!res || !res.ok) throw new Error();
         _secUsers = await res.json();
         renderSecurityList(_secUsers);
@@ -612,7 +637,7 @@ async function secToggleLock(username, lock) {
     if (!confirm(`${lock ? 'Verrouiller' : 'Déverrouiller'} le compte de ${username} ?`)) return;
     try {
         const endpoint = lock ? 'lock' : 'unlock';
-        const res = await secureFetch(`/api/auth/${endpoint}/${encodeURIComponent(username)}`, { method: 'POST' });
+        const res = await secureFetch(`/api/v1/auth/${endpoint}/${encodeURIComponent(username)}`, {method: 'POST'});
         if (!res) return;
         const data = await res.json().catch(()=>({}));
         if (res.ok) {
@@ -692,7 +717,7 @@ async function secToggleLock(username, lock) {
 
     async function loadWindow() {
         try {
-            const res = await secureFetch('/api/admin/operating-window');
+            const res = await secureFetch('/api/v1/admin/operating-window');
             if (res && res.ok) {
                 const data = await res.json();
                 Object.assign(state, data);
@@ -740,7 +765,7 @@ async function secToggleLock(username, lock) {
                     zone         : (zoneInput && zoneInput.value.trim()) || 'Africa/Abidjan',
                     adminKeepOpen: state.adminKeepOpen,
                 };
-                const res = await secureFetch('/api/admin/operating-window', {
+                const res = await secureFetch('/api/v1/admin/operating-window', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),

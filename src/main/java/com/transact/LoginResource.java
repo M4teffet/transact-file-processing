@@ -18,7 +18,7 @@ import org.jboss.resteasy.reactive.NoCache;
 import java.util.Map;
 import java.util.Optional;
 
-@Path("/api")
+@Path("/api/v1")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class LoginResource {

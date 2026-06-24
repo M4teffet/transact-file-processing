@@ -38,21 +38,30 @@ const refreshValidatedView = () => {
 // -----------------------------
 const loadValidatedBatches = async () => {
     try {
-        // Fetch statuses representing the execution lifecycle
         const statuses = ['VALIDATED', 'PROCESSING', 'PROCESSED', 'PROCESSED_WITH_ERROR', 'PROCESSED_FAILED'];
         const queryParams = statuses.map(s => `status=${s}`).join('&');
 
         const res = await secureFetch(`${API_BASE}/batches?${queryParams}`);
         if (!res) return;
-        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const result = await res.json();
-        // Support Spring Pageable (content) or standard Array
-        validatedBatches = result.content || result;
+        // Normalise: handle raw array, paginated wrapper {items:[...]}, or {content:[...]}
+        if (Array.isArray(result)) {
+            validatedBatches = result;
+        } else if (Array.isArray(result.items)) {
+            validatedBatches = result.items;
+        } else if (Array.isArray(result.content)) {
+            validatedBatches = result.content;
+        } else {
+            validatedBatches = [];
+            console.warn('[validated] Unexpected response shape:', result);
+        }
 
         renderValidatedBatches();
     } catch (e) {
-        showSnackbar(`Erreur de chargement: ${e.message}`, "error");
+        console.error('[validated] Load error:', e);
+        showSnackbar(`Erreur de chargement: ${e.message}`, 'error');
     }
 };
 
@@ -65,299 +74,80 @@ const renderValidatedBatches = () => {
 
     if (!validatedBatches.length) {
         container.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-12 text-gray-500 bg-white rounded-md border border-dashed">
-                <i data-lucide="info" class="w-12 h-12 mb-3 opacity-20"></i>
-                <p>Aucun batch validé ou en cours de traitement.</p>
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                        padding:3rem 1rem;color:var(--ink-3);text-align:center">
+                <i data-lucide="layers" style="width:40px;height:40px;opacity:.2;margin-bottom:.75rem"></i>
+                <p style="font-size:13px">Aucun lot validé ou en cours de traitement</p>
             </div>`;
-        lucide.createIcons();
+        createIcons(container);
         return;
     }
 
-    const html = `
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-100 bg-white rounded-xs">
-                <thead class="bg-zinc-100/80">
-                    <tr>
-                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">ID</th>
-                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Application</th>
-                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Fichier</th>
-                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Date</th>
-                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Statut</th>
-                        <th class="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Actions</th>
+    const TH = `padding:10px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em`;
+    const TD = `padding:11px 16px;border-bottom:0.5px solid var(--line-soft,#f0f1f3)`;
+    const ICON_BTN = `padding:5px;background:none;border:none;cursor:pointer;color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center`;
+
+    container.innerHTML = `
+        <div style="overflow-x:auto">
+            <table style="min-width:100%;border-collapse:collapse">
+                <thead>
+                    <tr style="border-bottom:0.5px solid var(--line)">
+                        <th style="${TH}">Lot</th>
+                        <th style="${TH}">Date</th>
+                        <th style="${TH}">Statut</th>
+                        <th style="${TH}"></th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
-                    ${validatedBatches.map(b => `
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-4 py-2.5 text-xs font-medium text-gray-800">${b.batchId}</td>
-                            <td class="px-4 py-2.5 text-xs text-gray-600 font-mono">${b.application}</td>
-                            <td class="px-4 py-2.5 text-xs text-gray-700 font-medium italic">
-                                ${b.originalFilename || 'N/A'}
+                <tbody>
+                    ${validatedBatches.map(b => {
+        const filename = b.originalFilename || '—';
+        const short = filename.length > 36 ? filename.slice(0, 34) + '…' : filename;
+        const {date, time} = formatDateParts(b.uploadedAt);
+        const records = b.totalRecords
+            ? `<span style="font-size:10px;color:var(--ink-3)">${b.totalRecords.toLocaleString('fr-FR')} lignes</span>`
+            : '';
+        return `<tr style="border-bottom:0.5px solid var(--line-soft,#f0f1f3)">
+                            <td style="${TD};max-width:300px">
+                                <div style="font-size:12px;font-weight:500;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${filename}">${short}</div>
+                                <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
+                                    ${appBadgeHTML(b.application)}
+                                    <span style="font-size:10px;color:var(--ink-3);font-family:monospace">${b.batchId}</span>
+                                    ${records}
+                                </div>
+                                ${b.uploadedBy ? `<div style="margin-top:4px">
+                                    <span style="font-size:10px;font-weight:500;background:#e8f0fe;color:#1967d2;
+                                                 padding:2px 7px;border-radius:99px;display:inline-flex;align-items:center;gap:3px">
+                                        <i data-lucide="user" style="width:10px;height:10px"></i>${b.uploadedBy}
+                                    </span>
+                                </div>` : ''}
                             </td>
-                            <td class="px-4 py-2.5 text-xs text-gray-500">
-                                ${new Date(b.uploadedAt).toLocaleString('fr-FR')}
+                            <td style="${TD};white-space:nowrap">
+                                <div style="font-size:12px;color:var(--ink-2)">${date}</div>
+                                <div style="font-size:11px;color:var(--ink-3)">${time}</div>
                             </td>
-                            <td class="px-4 py-2.5">${getStatusBadge(b.status)}</td>
-                            <td class="px-4 py-2.5 flex justify-start items-center gap-2">
-                                <button onclick="viewBatchDetails('${b.batchId}')" class="p-1.5 hover:bg-blue-50 rounded-full transition" title="Voir données">
-                                    <i data-lucide="eye" class="w-4 h-4 text-blue-500"></i>
+                            <td style="${TD}">${getStatusBadge(b.status)}</td>
+                            <td style="${TD};white-space:nowrap">
+                                <button onclick="viewBatchDetails('${b.batchId}')" title="Voir les données"
+                                        style="${ICON_BTN}" onmouseover="this.style.color='#1967d2'" onmouseout="this.style.color='var(--ink-3)'">
+                                    <i data-lucide="eye" style="width:15px;height:15px"></i>
                                 </button>
-                                <button onclick="viewBatchSummary('${b.batchId}')" class="p-1.5 hover:bg-teal-50 rounded-full transition" title="Résumé d'exécution">
-                                    <i data-lucide="file-text" class="w-4 h-4 text-teal-600"></i>
+                                <button onclick="viewBatchSummary('${b.batchId}')" title="Résumé d'exécution"
+                                        style="${ICON_BTN}" onmouseover="this.style.color='#0f6e56'" onmouseout="this.style.color='var(--ink-3)'">
+                                    <i data-lucide="bar-chart-2" style="width:15px;height:15px"></i>
                                 </button>
                             </td>
-                        </tr>
-                    `).join('')}
+                        </tr>`;
+    }).join('')}
                 </tbody>
             </table>
-        </div>
-    `;
+        </div>`;
 
-    container.innerHTML = html;
-    lucide.createIcons();
+    createIcons(container);
 };
 
-// -----------------------------
-// EXECUTION SUMMARY (MODAL)
-// -----------------------------
-const viewBatchSummary = async (batchId) => {
-    try {
-        // Fetch the batch data from the API
-        const res = await secureFetch(`${API_BASE}/batches/${batchId}`);
-        if (!res) return;
-        if (!res.ok) throw new Error("Erreur lors de la récupération du résumé");
-
-        const batch = await res.json();
-
-        /** * 1. Data Destructuring
-         * Based on your JSON, we use 'details' as the primary source of truth.
-         */
-        const { application, totalRecords, details } = batch;
-
-        // Calculate counts based on the 'status' field in the details array
-        const success = details ? details.filter(r => r.status === 'SUCCESS').length : 0;
-        const failure = details ? details.filter(r => r.status === 'FAILED').length : 0;
-
-        /**
-         * 2. Financial Total Calculation
-         * We check both Debit and Credit amounts as per T24 FUNDS_TRANSFER structure
-         */
-        let totalAmount = 0;
-        if (application === 'FUNDS_TRANSFER' && details) {
-            totalAmount = details.reduce((sum, item) => {
-                const amt = parseFloat(item.data['DEBIT.AMOUNT'] || item.data['CREDIT.AMOUNT']) || 0;
-                return sum + amt;
-            }, 0);
-        }
-
-        /**
-         * 3. Error Rows Rendering (Anomaly Journal)
-         * Parses stringified JSON error messages into human-readable text
-         */
-        let errorRowsHtml = '';
-        if (failure > 0 && details) {
-            errorRowsHtml = details
-                .filter(r => r.status === 'FAILED')
-                .map(r => {
-                    let cleanError = r.errorMessage;
-                    try {
-                        // Parse nested JSON from T24 response
-                        const parsed = JSON.parse(r.errorMessage);
-                        if (parsed.error && parsed.error.errorDetails && parsed.error.errorDetails.length > 0) {
-                            cleanError = parsed.error.errorDetails[0].message;
-                        }
-                    } catch (e) {
-                        // If not JSON (e.g., timeout error), keep the original text
-                    }
-
-                    return `
-                        <div class="flex items-start gap-3 p-3 bg-red-50 border-l-4 border-red-500 rounded-r-lg mb-2 shadow-sm">
-                            <i data-lucide="alert-circle" class="w-4 h-4 text-red-600 mt-0.5 shrink-0"></i>
-                            <div class="text-xs">
-                                <p class="font-bold text-red-800 uppercase text-[10px]">Ligne ${r.lineNumber}</p>
-                                <p class="text-red-700 font-medium">${cleanError}</p>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-        }
-
-        /**
-         * 4. UI Construction
-         * Using Tailwind CSS classes for the layout
-         */
-        const dashboardHtml = `
-            <div class="space-y-6">
-                <div class="grid grid-cols-3 gap-3">
-                    <div class="p-3 bg-gray-50 rounded-md border border-gray-100 text-center">
-                        <p class="text-[10px] uppercase font-bold text-gray-400">Total</p>
-                        <p class="text-xl font-black text-gray-800">${totalRecords}</p>
-                    </div>
-                    <div class="p-3 bg-green-50 rounded-md border border-green-100 text-center">
-                        <p class="text-[10px] uppercase font-bold text-green-500">Succès</p>
-                        <p class="text-xl font-black text-green-700">${success}</p>
-                    </div>
-                    <div class="p-3 bg-red-50 rounded-md border border-red-100 text-center">
-                        <p class="text-[10px] uppercase font-bold text-red-500">Échecs</p>
-                        <p class="text-xl font-black text-red-700">${failure}</p>
-                    </div>
-                </div>
-
-                <div class="bg-indigo-600 rounded-md p-5 text-white shadow-lg relative overflow-hidden">
-                    <div class="relative z-10">
-                        <p class="text-indigo-100 text-xs font-bold uppercase tracking-widest mb-1">Volume Financier</p>
-                        <p class="text-3xl font-black tracking-tight">
-                            ${totalAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' })}
-                        </p>
-                    </div>
-                    <i data-lucide="banknote" class="absolute -right-1 -bottom-4 w-36 h-36 text-white/30 rotate-12"></i>
-                </div>
-
-                <div class="mt-4">
-                    <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                        ${failure > 0
-                            ? '<i data-lucide="alert-triangle" class="w-4 h-4 text-orange-500"></i> Journal des anomalies'
-                            : '<i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i> Statut Technique'}
-                    </h4>
-                    <div class="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                        ${failure > 0
-                            ? errorRowsHtml
-                            : '<p class="text-xs text-gray-500 italic text-center py-4">Toutes les transactions ont été traitées avec succès.</p>'}
-                    </div>
-                </div>
-
-                <div class="flex gap-3 pt-4">
-                    <button onclick="downloadExecutionReport('${batchId}')"
-                            class="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-md text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
-                        <i data-lucide="download" class="w-4 h-4"></i> Rapport CSV
-                    </button>
-                    <button onclick="closeModal('batchSummaryModal')"
-                            class="px-6 py-2.5 bg-gray-900 text-white rounded-md text-sm font-bold hover:bg-black transition-all">
-                        Fermer
-                    </button>
-                </div>
-            </div>
-        `;
-
-        // Update DOM elements
-        document.getElementById('batchSummaryContent').innerHTML = dashboardHtml;
-        document.getElementById('batchSummaryTitle').innerText = `Résumé : ${batchId.slice(-10)}`;
-
-        // Open Modal and re-trigger Lucide icon generation
-        openModal('batchSummaryModal');
-        if (window.lucide) {
-            lucide.createIcons();
-        }
-
-    } catch (err) {
-        console.error("View Summary Error:", err);
-        if (window.showSnackbar) {
-            showSnackbar(err.message, "error");
-        }
-    }
-};
-
-/**
- * GENERATE DYNAMIC CSV REPORT
- * Merges technical T24 results with original business data.
- */
-const downloadExecutionReport = async (batchId) => {
-    try {
-        const res = await secureFetch(`${API_BASE}/batches/${batchId}`);
-        if (!res) return;
-        if (!res.ok) throw new Error("Impossible de récupérer les données du batch.");
-        const batch = await res.json();
-
-        // FIX: In your JSON, data is in 'details', not 'summary'
-        const records = batch.details;
-
-        if (!records || records.length === 0) {
-            showSnackbar("Aucune donnée disponible pour l'export.", "info");
-            return;
-        }
-
-        // 1. Collect all unique field names from the 'data' objects
-        let allPossibleFields = new Set();
-        records.forEach(item => {
-            if (item.data) {
-                Object.keys(item.data).forEach(key => {
-                    // Only include fields that have at least one non-null value in the batch
-                    if (item.data[key] !== null && item.data[key] !== undefined) {
-                        allPossibleFields.add(key);
-                    }
-                });
-            }
-        });
-
-        const dynamicFields = Array.from(allPossibleFields).sort();
-
-        // 2. Define CSV Headers
-        const headers = [
-            "Ligne",
-            "Statut T24",
-            "Reference T24",
-            "Message Erreur (Propre)",
-            ...dynamicFields
-        ];
-
-        // 3. Map rows for CSV
-        const csvRows = records.map(record => {
-            const bizData = record.data || {};
-
-            // Clean the error message (Handling the stringified JSON from T24)
-            let cleanError = record.errorMessage || "";
-            if (record.status === 'FAILED' && cleanError.startsWith('{')) {
-                try {
-                    const parsed = JSON.parse(cleanError);
-                    cleanError = parsed.error?.errorDetails?.[0]?.message || cleanError;
-                } catch (e) { /* Keep original if parsing fails */ }
-            }
-
-            // Technical columns
-            const row = [
-                record.lineNumber,
-                `"${record.status}"`,
-                `"${record.t24Reference || 'N/A'}"`,
-                `"${cleanError.replace(/"/g, '""')}"` // Escape quotes for CSV
-            ];
-
-            // Business columns
-            dynamicFields.forEach(field => {
-                const value = bizData[field] ?? "";
-                row.push(`"${value.toString().replace(/"/g, '""')}"`);
-            });
-
-            return row;
-        });
-
-        // 4. Build CSV String
-        const csvString = [
-            headers.join(","),
-            ...csvRows.map(r => r.join(","))
-        ].join("\n");
-
-        // 5. Trigger Download with UTF-8 BOM (Essential for Excel to read French accents/symbols)
-        const blob = new Blob(["\ufeff" + csvString], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Report_${batch.application}_${batchId.slice(-8)}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        showSnackbar("Rapport CSV généré avec succès", "success");
-
-    } catch (err) {
-        console.error("CSV Export Error:", err);
-        showSnackbar("Erreur lors de l'exportation : " + err.message, "error");
-    }
-};
+// viewBatchSummary and downloadExecutionReport are defined in shared.js
+// and exported to window there — no redeclaration needed here.
 
 // Global Exposure
 window.viewBatchDetails = viewBatchDetails;
-window.viewBatchSummary = viewBatchSummary;
 window.refreshValidatedView = refreshValidatedView;
-window.downloadExecutionReport = downloadExecutionReport;

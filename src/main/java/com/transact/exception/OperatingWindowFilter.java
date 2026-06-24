@@ -30,8 +30,9 @@ public class OperatingWindowFilter implements ContainerRequestFilter {
     private static final String[] EXEMPT_PREFIXES = {
             "login", "forgot-password", "reset-password", "closed", "access-denied",
             "css/", "javascript/", "images/", "favicon.ico",
-            "api/login", "api/logout", "api/status", "api/auth/",
-            "api/admin/", "q/health"
+            "api/v1/login", "api/v1/logout", "api/v1/status", "api/v1/auth/",
+            "api/v1/admin/operating-window/status",
+            "api/v1/admin/", "q/health"
     };
 
     @Inject
@@ -55,7 +56,7 @@ public class OperatingWindowFilter implements ContainerRequestFilter {
         OperatingWindow window = OperatingWindow.get();
         if (window.isOpenNow()) return;
 
-        if (path.startsWith("api/")) {
+        if (path.startsWith("api/v1/")) {
             ctx.abortWith(Response.status(403)
                     .type(MediaType.APPLICATION_JSON)
                     .entity(Map.of(

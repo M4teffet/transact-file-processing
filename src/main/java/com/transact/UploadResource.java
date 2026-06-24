@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 
-@Path("/api/inputter")
+@Path("/api/v1/inputter")
 @Tag(name = "File Upload", description = "Upload and validate CSV files")
 @RolesAllowed("INPUTTER")
 public class UploadResource {
@@ -53,6 +53,9 @@ public class UploadResource {
     @Inject
     ApplicationService applicationService;
 
+    @Inject
+    com.transact.service.IdempotencyService idempotency;
+
     // Inject components to access the authenticated user identity
     @Inject
     JsonWebToken jwt;
@@ -64,10 +67,18 @@ public class UploadResource {
     @RolesAllowed("INPUTTER")
     @Path("/upload")
     @Produces(MediaType.APPLICATION_JSON)
+    @org.eclipse.microprofile.openapi.annotations.Operation(
+            summary = "Upload d'un fichier CSV",
+            description = "Crée un nouveau lot. L'en-tête Idempotency-Key évite les doublons sur double-clic.")
     public Response uploadFile(
+            @HeaderParam("Idempotency-Key") String idempotencyKey,
             @RestForm("applicationName") String applicationName,
             @RestForm("file") FileUpload fileUpload
     ) {
+        // Replay if this exact upload was already accepted
+        Response cached = idempotency.checkAndReturn(idempotencyKey);
+        if (cached != null) return cached;
+
         // 1. Validate Inputs
         if (applicationName == null || applicationName.isBlank()) return badRequest("applicationName is required");
         if (fileUpload == null || fileUpload.filePath() == null) return badRequest("File is required");
@@ -234,11 +245,17 @@ public class UploadResource {
     }
 
     private Response successResponse(FileBatch batch, int count) {
+        return successResponse(batch, count, null);
+    }
+
+    private Response successResponse(FileBatch batch, int count, String idempotencyKey) {
         var json = new JsonObject()
                 .put("batchId", batch.id.toHexString())
                 .put("status", batch.status)
                 .put("recordCount", count);
-        return Response.ok(json.encode()).build();
+        String body = json.encode();
+        if (idempotencyKey != null) idempotency.store(idempotencyKey, 200, body);
+        return Response.ok(body).build();
     }
 
     private Response validationErrorResponse(ValidationException e) {

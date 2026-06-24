@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Path("/api/users")
+@Path("/api/v1/users")
 @RolesAllowed("ADMIN")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -164,6 +164,47 @@ public class UserResource {
         } catch (Exception e) {
             LOG.errorf(e, "[Users] Failed to create user %s by admin %s", username, admin);
             return serverError("Failed to create user. Please contact support.");
+        }
+    }
+
+    // ── DELETE /api/users/{username} ─────────────────────────────────────────
+
+    @DELETE
+    @Path("/{username}")
+    public Response deleteUser(@PathParam("username") String username) {
+        String admin = identity.getPrincipal().getName();
+
+        if (isBlank(username)) return badRequest("Username is required");
+
+        String normalized = username.trim().toUpperCase();
+
+        // Prevent an admin from deleting their own account
+        if (normalized.equals(admin.toUpperCase())) {
+            return Response.status(400)
+                    .entity(new ErrorResponse("SELF_DELETE", "You cannot delete your own account", Instant.now()))
+                    .build();
+        }
+
+        AppUser user = AppUser.findByUsername(normalized).orElse(null);
+        if (user == null) {
+            return Response.status(404)
+                    .entity(new ErrorResponse("NOT_FOUND", "User '" + normalized + "' not found", Instant.now()))
+                    .build();
+        }
+
+        try {
+            user.delete();
+
+            LOG.infof("[Users] Deleted user %s by admin %s", normalized, admin);
+            AdminAuditLog.record(admin, "USER_DELETED", normalized,
+                    "Utilisateur supprimé par " + admin,
+                    java.util.Map.of("role", user.getRole().toString(), "country", user.countryCode));
+
+            return Response.noContent().build();
+
+        } catch (Exception e) {
+            LOG.errorf(e, "[Users] Failed to delete user %s by admin %s", normalized, admin);
+            return serverError("Failed to delete user. Please contact support.");
         }
     }
 

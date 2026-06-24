@@ -13,10 +13,10 @@ import java.time.Instant;
 @MongoEntity(collection = "batch_statistics")
 public class BatchStatistics extends PanacheMongoEntity {
 
-    /**
-     * Same ID as FileBatch
-     */
-    public ObjectId id;
+    // ✅ FIXED: removed `public ObjectId id` which shadowed PanacheMongoEntity.id (@BsonId).
+    // The shadow caused the BSON codec to see two id fields; the parent's @BsonId was ignored,
+    // so _id could be serialised as null and persistOrUpdate() would insert duplicates instead
+    // of upserting.  Now we use the inherited id field directly — set via `stats.id = batchId`.
 
     public ObjectId applicationId;
     public String batchStatus;

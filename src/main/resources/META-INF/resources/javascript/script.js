@@ -5,7 +5,7 @@
  */
 
 // 1. CONFIGURATION & STATE
-const DEV_API_BASE = "/api"; // relative — works in dev and production
+const DEV_API_BASE = "/api/v1"; // relative — works in dev and production
 
 let state = {
     fieldOrder: [],
@@ -63,12 +63,9 @@ async function loadApplications() {
     const el = elements.appSelect();
     el.innerHTML = '<option value="">Chargement...</option>';
     try {
-        const res = await fetch(`/api/applications`, {
-            credentials: 'same-origin',
-            headers: { 'Accept': 'application/json' }
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const apps = await res.json();
+        // 30-min cache — the application list almost never changes during a session
+        const apps = await fetchCached(`${DEV_API_BASE}/applications`, 30 * 60 * 1000);
+        if (!apps) throw new Error('Aucune donnée reçue');
         el.innerHTML = '<option value="">Choisir une application...</option>';
         apps.forEach(app => el.add(new Option(`${app.code} – ${app.label}`, app.code)));
     } catch (err) {
@@ -111,7 +108,7 @@ async function loadFields(appCode) {
             chevron.classList.remove("rotate-180");
         }
 
-        if (window.lucide) window.lucide.createIcons();
+        if (window.lucide) createIcons([mDiv, oDiv]);
     } catch (err) {
         showAppSnackbar("Erreur lors du chargement des champs", "error");
     }
@@ -222,6 +219,11 @@ function previewCsv(file) {
             `).join('');
 
             elements.previewSection()?.classList.remove("hidden");
+            // Scroll the preview into view so the user sees it immediately
+            // without having to manually scroll down the page
+            setTimeout(() => {
+                elements.previewSection()?.scrollIntoView({behavior: 'smooth', block: 'start'});
+            }, 50); // brief delay lets the browser paint the unhidden section first
             const fullBtn = elements.fullPreviewBtn();
             if (fullBtn) {
                 fullBtn.classList.toggle('hidden', data.length <= 5);

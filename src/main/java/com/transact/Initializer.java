@@ -1,5 +1,8 @@
 package com.transact;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.Indexes;
 import com.transact.processor.model.*;
 import com.transact.service.PasswordService;
 import io.quarkus.runtime.StartupEvent;
@@ -28,17 +31,39 @@ public class Initializer {
     @Inject
     PasswordService passwordService;
 
+    @Inject
+    MongoClient mongoClient;
+
+    @ConfigProperty(name = "quarkus.mongodb.database", defaultValue = "transactdb")
+    String dbName;
+
     @ConfigProperty(name = "app.admin.initial-password", defaultValue = "Admin@12345!")
     String initialAdminPassword;
 
     void onStart(@Observes StartupEvent event) {
         LOG.info("=== Initializer starting ===");
+        ensureIdempotencyIndex();
         initializeCountry();
         initializeDepartment();
         initializeAdminUser();
         initializeFeatures();
         initializeApplications();
         LOG.info("=== Initializer complete ===");
+    }
+
+    void ensureIdempotencyIndex() {
+        try {
+            var coll = mongoClient.getDatabase(dbName).getCollection("idempotency_keys");
+            // Unique index on key for fast lookup + dedup
+            coll.createIndex(Indexes.ascending("key"),
+                    new IndexOptions().unique(true).background(true));
+            // TTL index — MongoDB auto-deletes documents when expireAt < now
+            coll.createIndex(Indexes.ascending("expireAt"),
+                    new IndexOptions().expireAfter(0L, java.util.concurrent.TimeUnit.SECONDS));
+            LOG.info("Index idempotency_keys: OK");
+        } catch (Exception e) {
+            LOG.warnf("Impossible de créer les index idempotency_keys: %s", e.getMessage());
+        }
     }
 
     void initializeAdminUser() {

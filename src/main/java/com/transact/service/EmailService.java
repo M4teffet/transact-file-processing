@@ -126,6 +126,126 @@ public class EmailService {
         send(toEmail, "[FLUX] Réinitialisation de mot de passe", html(content), defaultEntite);
     }
 
+    /**
+     * Notifies the INPUTTER that their batch has finished processing.
+     * <p>
+     * Called by both FundsTransferProcessor and FundsTransferReversalProcessor
+     * after finalizeBatch() successfully updates FileBatch.status.  The call
+     * is fire-and-forget — failures are logged but never re-thrown so a broken
+     * mail server cannot affect the processing pipeline.
+     *
+     * @param toEmail         uploader's email address
+     * @param username        uploader's username (displayed in greeting)
+     * @param filename        original uploaded filename
+     * @param applicationName application label (e.g. "FUNDS_TRANSFER")
+     * @param batchStatus     final FileBatch status constant
+     * @param total           total rows in the batch
+     * @param success         rows that completed successfully
+     * @param failure         rows that failed permanently
+     * @param batchesUrl      absolute URL to the /batches page
+     */
+    public void sendBatchCompletion(
+            String toEmail,
+            String username,
+            String filename,
+            String applicationName,
+            String batchStatus,
+            long total,
+            long success,
+            long failure,
+            String batchesUrl) {
+
+        String subject = buildCompletionSubject(filename, batchStatus);
+
+        String content =
+                heading("Traitement de lot terminé") +
+                        para("Bonjour <strong>" + esc(username) + "</strong>,") +
+                        para("Le traitement du lot <strong>" + esc(filename) + "</strong>" +
+                                " (" + esc(applicationName) + ") est terminé.") +
+                        statusPill(batchStatus) +
+                        statsBlock(total, success, failure) +
+                        ctaButton("Voir mes batches", batchesUrl) +
+                        divider() +
+                        para("<small>Ce lot a été traité automatiquement par <strong>FLUX</strong>. " +
+                                "Pour toute question, contactez votre administrateur.</small>");
+
+        send(toEmail, subject, html(content), defaultEntite);
+    }
+
+    // ── Batch completion template helpers ─────────────────────────────────────
+
+    private String buildCompletionSubject(String filename, String status) {
+        String label = switch (status) {
+            case "PROCESSED" -> "Terminé avec succès";
+            case "PROCESSED_WITH_ERROR" -> "Terminé avec erreurs";
+            case "PROCESSED_FAILED" -> "Échec du traitement";
+            default -> status.replace('_', ' ');
+        };
+        return "[FLUX] " + label + " — " + (filename != null ? filename : "lot");
+    }
+
+    /**
+     * Coloured status pill — green / orange / red depending on outcome.
+     */
+    private String statusPill(String status) {
+        String label, bg, border, color;
+        switch (status) {
+            case "PROCESSED" -> {
+                label = "✓  Terminé avec succès";
+                bg = "#f0fdf4";
+                border = "#86efac";
+                color = "#15803d";
+            }
+            case "PROCESSED_WITH_ERROR" -> {
+                label = "⚠  Terminé avec erreurs";
+                bg = "#fff7ed";
+                border = "#fdba74";
+                color = "#c2410c";
+            }
+            default -> {              // PROCESSED_FAILED
+                label = "✗  Échec du traitement";
+                bg = "#fef2f2";
+                border = "#fca5a5";
+                color = "#b91c1c";
+            }
+        }
+        return "<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:20px 0;\">" +
+                "<tr><td>" +
+                "<div style=\"display:inline-block;background:" + bg + ";border:1.5px solid " + border + ";" +
+                "border-radius:4px;padding:10px 20px;font-size:14px;font-weight:700;" +
+                "letter-spacing:0.3px;color:" + color + ";\">" +
+                label +
+                "</div>" +
+                "</td></tr></table>";
+    }
+
+    /**
+     * Three-column stats block: total / success / failure.
+     * Uses nested tables for maximum email client compatibility.
+     */
+    private String statsBlock(long total, long success, long failure) {
+        return "<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" " +
+                "style=\"margin:24px 0;border-collapse:separate;border-spacing:0;\">" +
+                "<tr>" +
+                statCell(String.valueOf(total), "Total lignes", "#f8f9fa", "#6b7280", "#111827") +
+                "<td width=\"12\"></td>" +
+                statCell(String.valueOf(success), "Succès", "#f0fdf4", "#15803d", "#14532d") +
+                "<td width=\"12\"></td>" +
+                statCell(String.valueOf(failure), "Échecs", "#fef2f2", "#b91c1c", "#7f1d1d") +
+                "</tr></table>";
+    }
+
+    private String statCell(String value, String label, String bg, String labelColor, String valueColor) {
+        return "<td style=\"background:" + bg + ";border-radius:4px;padding:18px 16px;" +
+                "text-align:center;width:33%;\">" +
+                "<div style=\"font-size:28px;font-weight:800;color:" + valueColor + ";line-height:1;\">" +
+                esc(value) + "</div>" +
+                "<div style=\"font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;" +
+                "color:" + labelColor + ";margin-top:6px;\">" +
+                esc(label) + "</div>" +
+                "</td>";
+    }
+
     // ── HTML template engine ──────────────────────────────────────────────────
 
     public void sendWelcome(String toEmail, String username, String tempPassword) {
