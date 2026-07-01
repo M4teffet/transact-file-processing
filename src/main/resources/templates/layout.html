@@ -5,7 +5,9 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>{#insert title}FLUX Orange Bank{/insert}</title>
     <link href="/css/tailwind.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&display=swap"
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400&display=swap"
           rel="stylesheet">
     <script src="/javascript/vendor/lucide.min.js"></script>
     <link href="/images/favicon.ico" rel="shortcut icon"/>
@@ -21,8 +23,16 @@
             --orange:#e86e00; --orange-deep:#c45d00;
         }
         html { font-size: 0.92rem; }
-        body { font-family: 'Inter', sans-serif; font-weight: 300; color: var(--ink-2); }
-        .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+        body {
+            font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+            font-weight: 300;
+            color: var(--ink-2);
+        }
+
+        .mono {
+            font-family: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', monospace;
+        }
         .tnum { font-variant-numeric: tabular-nums; }
 
         /* ── Global re-skin of Tailwind utilities (applies to every page) ── */
@@ -213,15 +223,6 @@
                 </span>
             </div>
 
-            <!-- Operating window status badge — visible to all roles -->
-            <div id="op-window-badge" style="display:none;align-items:center;gap:6px;
-                 padding:3px 10px 3px 7px;border:1px solid transparent;font-size:.72rem;
-                 font-weight:400;letter-spacing:.04em;transition:all .3s;">
-                <span id="op-window-dot" style="width:6px;height:6px;border-radius:50%;
-                      flex-shrink:0;display:inline-block;"></span>
-                <span id="op-window-label"></span>
-            </div>
-
             <!-- User dropdown -->
             <div class="relative" id="user-menu-wrapper">
                 <button class="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/10 transition"
@@ -272,48 +273,68 @@
 </div>
 
 <!-- Delete modal -->
-<div class="fixed inset-0 z-50 hidden bg-black/60 flex items-center justify-center" id="deleteConfirmationModal">
-    <div class="bg-white shadow-xl p-5 max-w-md mx-4 w-full" style="border-top:3px solid #dc2626;">
-        <h3 class="font-bold text-gray-900 mb-2" style="font-size:1rem;">Confirmer la suppression</h3>
-        <p class="text-gray-600 mb-5" style="font-size:.85rem;">Voulez-vous vraiment supprimer ce batch ? Cette action
-            est irréversible.</p>
-        <div class="flex justify-end gap-2">
-            <button class="px-3 py-1.5 text-gray-700 bg-gray-100 hover:bg-gray-200 transition"
-                    onclick="cancelDelete()" style="font-size:.85rem;">Annuler
+<div class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60"
+     id="deleteConfirmationModal"
+     onclick="if(event.target===this)cancelDelete()">
+    <div class="bg-white w-full max-w-sm mx-4 shadow-xl" style="border-top:3px solid #dc2626;">
+        <div class="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i data-lucide="trash-2" class="w-4 h-4 text-red-600"></i>
+                <h3 class="text-sm font-semibold text-gray-900">Supprimer le lot</h3>
+            </div>
+            <button class="p-1 hover:bg-gray-100 text-gray-400 transition" onclick="cancelDelete()" aria-label="Fermer">
+                <i data-lucide="x" class="w-4 h-4"></i>
             </button>
-            <button class="px-3 py-1.5 text-white bg-red-600 hover:bg-red-700 transition"
-                    onclick="confirmDelete()" style="font-size:.85rem;">Supprimer
+        </div>
+        <div class="px-5 py-4">
+            <p class="text-xs text-gray-500 leading-relaxed">
+                Ce lot sera définitivement supprimé. Cette action est irréversible.
+            </p>
+        </div>
+        <div class="px-5 py-3 border-t border-gray-100 flex gap-2 justify-end">
+            <button class="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition"
+                    onclick="cancelDelete()">Annuler
+            </button>
+            <button class="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition flex items-center gap-1.5"
+                    onclick="confirmDelete()">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Supprimer
             </button>
         </div>
     </div>
 </div>
 
 <!-- Batch details modal -->
-<div class="fixed inset-0 hidden items-center justify-center z-50" id="batchDetailsModal"
+<div class="fixed inset-0 hidden flex items-center justify-center z-50 bg-black/60" id="batchDetailsModal"
      onclick="if(event.target===this)closeModal('batchDetailsModal')">
-    <div class="absolute inset-0 bg-black/60"></div>
-    <div class="relative bg-white w-11/12 max-w-6xl shadow-xl p-5 z-10 overflow-y-auto max-h-[90vh]"
+    <div class="relative bg-white w-11/12 max-w-6xl shadow-xl z-10 overflow-y-auto max-h-[90vh]"
          style="border-top:3px solid var(--orange);">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="font-semibold text-gray-900" style="font-size:1rem;">Détails du batch</h2>
-            <button class="p-1.5 hover:bg-gray-100 text-gray-500 transition"
-                    onclick="closeModal('batchDetailsModal')">
-                <i class="w-4 h-4" data-lucide="x"></i>
+        <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+                <i data-lucide="file-text" class="w-4 h-4 text-orange-600"></i>
+                <h2 class="text-sm font-semibold text-gray-900">Détails du lot</h2>
+            </div>
+            <button class="p-1 hover:bg-gray-100 text-gray-400 transition"
+                    onclick="closeModal('batchDetailsModal')" aria-label="Fermer">
+                <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
-        <div id="batchDetailsContent"></div>
+        <div class="p-5" id="batchDetailsContent"></div>
     </div>
 </div>
 
 <!-- Batch summary modal -->
-<div class="fixed inset-0 hidden items-center justify-center z-50 bg-black/60" id="batchSummaryModal">
+<div class="fixed inset-0 hidden flex items-center justify-center z-50 bg-black/60" id="batchSummaryModal"
+     onclick="if(event.target===this) closeSummaryModal()">
     <div class="relative bg-white w-11/12 max-w-4xl shadow-xl z-10 overflow-y-auto max-h-[90vh]"
          style="border-top:3px solid var(--orange);">
-        <div class="flex justify-between items-center px-5 py-3 border-b border-gray-200">
-            <h3 class="font-semibold text-gray-900" id="batchSummaryTitle" style="font-size:1rem;">Résumé du batch</h3>
-            <button class="p-1.5 hover:bg-gray-100 text-gray-500 transition"
-                    onclick="closeModal('batchSummaryModal')">
-                <i class="w-4 h-4" data-lucide="x"></i>
+        <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-orange-600"></i>
+                <h3 class="text-sm font-semibold text-gray-900" id="batchSummaryTitle">Résumé du lot</h3>
+            </div>
+            <button class="p-1 hover:bg-gray-100 text-gray-400 transition"
+                    onclick="closeSummaryModal()" aria-label="Fermer">
+                <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
         <div class="p-5 text-gray-700" id="batchSummaryContent" style="font-size:.85rem;"></div>

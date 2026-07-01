@@ -19,7 +19,7 @@ public class ApplicationService {
         List<FieldDTO> optional = new ArrayList<>();
 
         for (SchemaField field : app.getSchema()) {
-            FieldDTO dto = new FieldDTO(field.getFieldName(), field.getDataType());
+            FieldDTO dto = new FieldDTO(field.getFieldName(), field.getDescription(), field.getDataType());
             if (field.isRequired()) {
                 mandatory.add(dto);
             } else {
@@ -49,6 +49,7 @@ public class ApplicationService {
     @Schema(name = "FieldDTO")
     public record FieldDTO(
             @Schema(description = "Field code", example = "DEBIT.ACCT.NO") String fieldName,
+            @Schema(description = "Human label", example = "Debit Account No.") String description,
             @Schema(description = "Data type", example = "STRING") String dataType
     ) {
     }

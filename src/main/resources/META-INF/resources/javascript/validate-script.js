@@ -87,7 +87,7 @@ const renderUploadedBatches = () => {
                         <th style="${TH}">Lot</th>
                         <th style="${TH}">Date d'import</th>
                         <th style="${TH}">Statut</th>
-                        <th style="${TH}"></th>
+                        <th style="${TH};width:1%;white-space:nowrap"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -118,7 +118,7 @@ const renderUploadedBatches = () => {
                                 <div style="font-size:11px;color:var(--ink-3)">${time}</div>
                             </td>
                             <td style="${TD}">${getStatusBadge(b.status)}</td>
-                            <td style="${TD};white-space:nowrap">
+                            <td style="${TD};white-space:nowrap;width:1%">
                                 <button onclick="viewBatchDetails('${b.batchId}')" title="Voir les données"
                                         style="${BTN}" onmouseover="this.style.color='#1967d2'" onmouseout="this.style.color='var(--ink-3)'">
                                     <i data-lucide="eye" style="width:15px;height:15px"></i>
@@ -158,7 +158,9 @@ const validateBatchNow = (id) => {
     document.getElementById('confirmBatchId').textContent    = id;
     document.getElementById('confirmFilename').textContent   = batch.originalFilename || 'N/A';
     document.getElementById('confirmApp').textContent        = batch.application || 'N/A';
-    document.getElementById('confirmRecords').textContent = (batch.totalRecords.toLocaleString('fr-FR') || '—') + ' enregistrement(s)';
+    document.getElementById('confirmRecords').textContent = batch.totalRecords > 0
+        ? batch.totalRecords.toLocaleString('fr-FR') + ' lignes'
+        : '—';
     document.getElementById('confirmUploadedAt').textContent = batch.uploadedAt
         ? new Date(batch.uploadedAt).toLocaleString('fr-FR') : '—';
 

@@ -1,8 +1,7 @@
 package com.transact;
 
 import com.mongodb.client.MongoClient;
-import com.mongodb.client.model.IndexOptions;
-import com.mongodb.client.model.Indexes;
+import com.mongodb.client.model.*;
 import com.transact.processor.model.*;
 import com.transact.service.PasswordService;
 import io.quarkus.runtime.StartupEvent;
@@ -43,6 +42,8 @@ public class Initializer {
     void onStart(@Observes StartupEvent event) {
         LOG.info("=== Initializer starting ===");
         ensureIdempotencyIndex();
+        initializePasswordPolicy();
+        migrateApplicationRequiredFields();
         initializeCountry();
         initializeDepartment();
         initializeAdminUser();
@@ -63,6 +64,81 @@ public class Initializer {
             LOG.info("Index idempotency_keys: OK");
         } catch (Exception e) {
             LOG.warnf("Impossible de créer les index idempotency_keys: %s", e.getMessage());
+        }
+    }
+
+    /**
+     * One-time migration: existing Application documents were created before
+     * isRequired was properly written. All fields have isRequired=null → false.
+     * <p>
+     * Uses native MongoDB arrayFilters to set isRequired on specific elements
+     * inside the schema array without touching the rest of the document —
+     * safe to run on every startup because the values are idempotent after the
+     * first run.
+     */
+    void migrateApplicationRequiredFields() {
+        try {
+            var coll = Application.mongoCollection();
+            var opts = new UpdateOptions();
+
+            // ── FUNDS_TRANSFER ────────────────────────────────────────────────
+            var ft = Application.findByName("FUNDS_TRANSFER");
+            if (ft != null) {
+                var mandatory = List.of("TRANSACTION.TYPE", "DEBIT.ACCT.NO", "CREDIT.ACCT.NO");
+
+                // Set isRequired=true for the three mandatory fields
+                coll.updateOne(
+                        Filters.eq("_id", ft.id),
+                        Updates.set("schema.$[elem].isRequired", true),
+                        opts.arrayFilters(List.of(
+                                Filters.in("elem.fieldName", mandatory)
+                        ))
+                );
+
+                // Set isRequired=false for every other field still null
+                coll.updateOne(
+                        Filters.eq("_id", ft.id),
+                        Updates.set("schema.$[elem].isRequired", false),
+                        opts.arrayFilters(List.of(
+                                Filters.and(
+                                        Filters.nin("elem.fieldName", mandatory),
+                                        Filters.eq("elem.isRequired", null)
+                                )
+                        ))
+                );
+
+                LOG.infof("[Migration] FUNDS_TRANSFER: %d champs obligatoires marqués", mandatory.size());
+            }
+
+            // ── FUNDS_TRANSFER_REVERSAL ───────────────────────────────────────
+            var ftr = Application.findByName("FUNDS_TRANSFER_REVERSAL");
+            if (ftr != null) {
+                coll.updateOne(
+                        Filters.eq("_id", ftr.id),
+                        Updates.set("schema.$[elem].isRequired", false),
+                        opts.arrayFilters(List.of(
+                                Filters.eq("elem.isRequired", null)
+                        ))
+                );
+
+                LOG.info("[Migration] FUNDS_TRANSFER_REVERSAL: champs optionnels normalisés");
+            }
+
+        } catch (Exception e) {
+            LOG.warnf("[Migration] migrateApplicationRequiredFields: %s", e.getMessage());
+        }
+    }
+
+    void initializePasswordPolicy() {
+        try {
+            if (PasswordPolicyEntity.count() == 0) {
+                var policy = new PasswordPolicyEntity();
+                // Defaults: minLength=10, all flags true (matching the old @ConfigProperty defaults)
+                policy.persist();
+                LOG.info("[Policy] Document de politique initialisé avec les valeurs par défaut");
+            }
+        } catch (Exception e) {
+            LOG.warnf("[Policy] Impossible d'initialiser la politique : %s", e.getMessage());
         }
     }
 

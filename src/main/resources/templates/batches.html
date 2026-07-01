@@ -1,75 +1,59 @@
 {#include layout}
-{#title}Batches Uploadés - Orange Bank{/title}
+    {#title}Mes Batches - Orange Bank{/title}
 
-{#head}
-
-{/head}
+    {#head}{/head}
 
 {#aside}
 {#insert aside}{#include sidebar-inputter/}{/insert}
-
 {/aside}
 
 {#default}
-<div class="max-w-7xl mx-auto space-y-8">
+    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:24px">
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-
-        <!-- Card 1 -->
-        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
-            <!-- Background pattern -->
-            <div class="absolute inset-0 opacity-[0.75]"
-                 style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
-            </div>
-            <!-- Content -->
-            <div class="relative bg-white/10 p-4 flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-500">Total Chargés</p>
-                    <p class="text-xl font-semibold text-orange-600" id="uploadedCount">0</p>
-                </div>
-                <svg class="w-6 h-6 text-orange-600" fill="none"
-                     stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 13v8"/>
-                    <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
-                    <path d="m8 17 4-4 4 4"/>
+        <!-- KPI cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <!-- Total Chargés -->
+            <div style="position:relative;overflow:hidden;border:0.5px solid #e5e7eb;background:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+                <!-- Decorative circles -->
+                <svg style="position:absolute;right:-10px;top:-10px;opacity:.06;pointer-events:none" width="100"
+                     height="100" viewBox="0 0 100 100">
+                    <circle cx="80" cy="20" r="40" fill="#e86e00"/>
+                    <circle cx="60" cy="60" r="25" fill="#e86e00"/>
                 </svg>
-            </div>
-        </div>
-
-        <!-- Card 2 -->
-        <div class="relative overflow-hidden rounded-md border border-gray-200 shadow-xs">
-            <!-- Background pattern -->
-            <div class="absolute inset-0 opacity-[0.75]"
-                 style="background-image: url('/images/pattern-2k.png'); background-size: cover; background-position: center;">
-            </div>
-
-            <!-- Content -->
-            <div class="relative bg-white/10 p-4 flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-500">Total Validés</p>
-                    <p class="text-xl font-semibold text-emerald-600" id="validatedCount">0</p>
-                </div>
-                <svg class="w-6 h-6 text-emerald-600" fill="none"
-                     stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21.801 10A10 10 0 1 1 17 3.335"/>
-                    <path d="m9 11 3 3L22 4"/>
-                </svg>
+                    <p style="font-size:12px;color:#6b7280;margin-bottom:4px">Total Chargés</p>
+                    <p style="font-size:26px;font-weight:300;color:#e86e00;line-height:1;font-variant-numeric:tabular-nums"
+                       id="uploadedCount">0</p>
             </div>
+                <i data-lucide="cloud-upload"
+                   style="width:32px;height:32px;color:#e86e00;opacity:.35;flex-shrink:0"></i>
+            </div>
+            <!-- Total Validés -->
+            <div style="position:relative;overflow:hidden;border:0.5px solid #e5e7eb;background:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+                <svg style="position:absolute;right:-10px;top:-10px;opacity:.06;pointer-events:none" width="100"
+                     height="100" viewBox="0 0 100 100">
+                    <circle cx="80" cy="20" r="40" fill="#059669"/>
+                    <circle cx="60" cy="60" r="25" fill="#059669"/>
+                </svg>
+                <div>
+                    <p style="font-size:12px;color:#6b7280;margin-bottom:4px">Total Validés</p>
+                    <p style="font-size:26px;font-weight:300;color:#059669;line-height:1;font-variant-numeric:tabular-nums"
+                       id="validatedCount">0</p>
+            </div>
+                <i data-lucide="circle-check-big"
+                   style="width:32px;height:32px;color:#059669;opacity:.35;flex-shrink:0"></i>
         </div>
-
     </div>
 
-    <div class="bg-white rounded-md shadow-xs border border-gray-200 overflow-hidden">
-        <div class="p-4">
-            <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-3">
+        <!-- Batch table -->
+        <div class="bg-white rounded-md shadow-xs border border-gray-200 p-8">
+            <div class="flex items-center gap-3">
                 <i class="w-5 h-5 text-orange-600" data-lucide="list"></i>
-                Liste des Batches Uploadés
-            </h3>
+                <h3 class="text-sm font-semibold text-gray-700">Liste des Batches Uploadés</h3>
+                <div id="batchSearchAnchor" style="margin-left:auto"></div>
         </div>
-        <div class="p-4 divide-y divide-gray-200" id="uploadedBatchesContainer">
-        </div>
+            <div class="divide-y divide-gray-200" id="uploadedBatchesContainer"></div>
     </div>
-
 </div>
 {/default}
 

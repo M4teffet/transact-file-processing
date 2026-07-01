@@ -291,7 +291,7 @@
             if (!statusEl) return;
             try {
                 var doFetch = (typeof secureFetch === 'function') ? secureFetch : fetch;
-                var res = await doFetch('/api/admin/operating-window');
+                var res = await doFetch('/api/v1/admin/operating-window');
                 if (!res || !res.ok) throw new Error();
                 var d = await res.json();
 
