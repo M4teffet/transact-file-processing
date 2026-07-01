@@ -494,6 +494,66 @@ function initUploadPage() {
         navigator.clipboard.writeText(text).then(() => showAppSnackbar("Copié dans le presse-papiers", "success"));
     };
 
+    window.downloadTemplate = () => {
+        const appCode = elements.appSelect()?.value;
+        if (!appCode) {
+            showAppSnackbar("Choisissez d'abord une application", "error");
+            return;
+        }
+
+        // Build header from current field order (mandatory first, then optional)
+        const headers = state.fieldOrder.length > 0
+            ? state.fieldOrder
+            : [...state.mandatoryFields, ...state.optionalFields];
+
+        if (!headers.length) {
+            showAppSnackbar("Aucun champ disponible pour cette application", "error");
+            return;
+        }
+
+        // Row 1: header
+        // Row 2: a sample row showing the expected format per field type
+        const sampleValues = {
+            'TRANSACTION.TYPE': 'AC',
+            'DEBIT.ACCT.NO': '00193700',
+            'CREDIT.ACCT.NO': '00284710',
+            'DEBIT.AMOUNT': '250000',
+            'CREDIT.AMOUNT': '',
+            'DEBIT.CURRENCY': 'XOF',
+            'CREDIT.CURRENCY': '',
+            'DEBIT.VALUE.DATE': '20260101',
+            'CREDIT.VALUE.DATE': '',
+            'PAYMENT.DETAILS': 'VIREMENT SALAIRES',
+            'ORDERING.BANK': 'OBA',
+            'ORDERING.CUST': '',
+            'PROCESSING.DATE': '',
+            'T24.REFERENCE': 'FT2406210001',
+        };
+
+        const sampleRow = headers.map(h => {
+            const v = sampleValues[h] ?? '';
+            return v.includes(',') ? `"${v}"` : v;
+        });
+
+        const csv = [
+            headers.join(','),
+            sampleRow.join(',')
+        ].join('\n');
+
+        const blob = new Blob(['\ufeff' + csv], {type: 'text/csv;charset=utf-8;'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `template_${appCode}.csv`;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showAppSnackbar(`Modèle ${appCode}.csv téléchargé`, "success");
+    };
+
     if (window.lucide) window.lucide.createIcons();
 }
 

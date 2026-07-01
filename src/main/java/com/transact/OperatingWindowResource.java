@@ -69,6 +69,17 @@ public class OperatingWindowResource {
     @Operation(summary = "Lire la configuration de la fenêtre de service")
     public Response getWindow() {
         OperatingWindow w = OperatingWindow.get();
+        if (w == null) {
+            // No document yet — return a safe default so the admin UI doesn't break
+            return Response.ok(Map.of(
+                    "enabled", false,
+                    "openHour", 8,
+                    "closeHour", 18,
+                    "adminKeepOpen", false,
+                    "openNow", true,
+                    "zone", ""
+            )).build();
+        }
         return Response.ok(toDto(w)).build();
     }
 

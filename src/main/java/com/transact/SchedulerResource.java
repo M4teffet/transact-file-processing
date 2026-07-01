@@ -9,39 +9,39 @@ import jakarta.ws.rs.core.Response;
 import java.time.Instant;
 import java.util.List;
 
-
-@Path("/api/v1")
+/**
+ * Admin endpoint for runtime feature toggles.
+ * <p>
+ * Fix: the original used a nested static class with @Path("/api/v1/admin/features")
+ * on the inner class while the outer class had @Path("/api/v1"). JAX-RS concatenates
+ * these, giving /api/v1/api/v1/admin/features — a 404 for every admin.js feature call.
+ * Flattened to a single class with the correct absolute path.
+ */
+@Path("/api/v1/admin/features")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class SchedulerResource {
 
-    @Path("/api/v1/admin/features")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-
-    public static class FeatureToggleResource {
-
-        @POST
-        @RolesAllowed("ADMIN")
-        @Path("/toggle/{key}")
-        public Response toggleFeature(@PathParam("key") String key, @QueryParam("enabled") boolean enabled) {
-            AppFeatureConfig config = AppFeatureConfig.find("configKey", key).firstResult();
-
-            if (config == null) {
-                config = new AppFeatureConfig();
-                config.configKey = key;
-                config.description = "Management for " + key;
-            }
-
-            config.isEnabled = enabled;
-            config.lastUpdated = Instant.now();
-            config.persistOrUpdate();
-
-            return Response.ok(config).build();
+    @POST
+    @RolesAllowed("ADMIN")
+    @Path("/toggle/{key}")
+    public Response toggleFeature(@PathParam("key") String key,
+                                  @QueryParam("enabled") boolean enabled) {
+        AppFeatureConfig config = AppFeatureConfig.find("configKey", key).firstResult();
+        if (config == null) {
+            config = new AppFeatureConfig();
+            config.configKey = key;
+            config.description = "Management for " + key;
         }
+        config.isEnabled = enabled;
+        config.lastUpdated = Instant.now();
+        config.persistOrUpdate();
+        return Response.ok(config).build();
+    }
 
-        @GET
-        @RolesAllowed("ADMIN")
-        public List<AppFeatureConfig> getAllFeatures() {
-            return AppFeatureConfig.listAll();
-        }
+    @GET
+    @RolesAllowed("ADMIN")
+    public List<AppFeatureConfig> getAllFeatures() {
+        return AppFeatureConfig.listAll();
     }
 }

@@ -144,7 +144,7 @@ public class UploadResource {
             // 7. Save row data now that batch has an id
             saveBatchData(batch, validatedData);
 
-            return successResponse(batch, validatedData.size());
+            return successResponse(batch, validatedData.size(), idempotencyKey);
 
         } catch (ValidationException e) {
             // Keep the GridFS file even on validation failure — it lets admins

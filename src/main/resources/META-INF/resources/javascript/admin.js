@@ -139,7 +139,12 @@ class AdminDashboard {
                 item.innerHTML = `
                     <div class="flex-1 min-w-0 mr-4">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${enabled ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}" id="feat-badge-${feature.configKey}">
+                            <span id="feat-badge-${feature.configKey}"
+                                  style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;
+                                         font-size:10px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;
+                                         ${enabled
+                    ? 'background:#f0fdf4;color:#166534;border:0.5px solid rgba(22,101,52,.25)'
+                    : 'background:#f8fafc;color:#475569;border:0.5px solid rgba(71,85,105,.25)'}">
                                 ${enabled ? 'Actif' : 'Inactif'}
                             </span>
                             <h4 class="font-semibold text-gray-900 text-sm">${feature.configKey}</h4>
@@ -181,7 +186,7 @@ class AdminDashboard {
 
                         if (badge) {
                             badge.textContent = newState ? 'Actif' : 'Inactif';
-                            badge.className = `inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${newState ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}`;
+                            badge.style.cssText = `display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;${newState ? 'background:#f0fdf4;color:#166534;border:0.5px solid rgba(22,101,52,.25)' : 'background:#f8fafc;color:#475569;border:0.5px solid rgba(71,85,105,.25)'}`;
                         }
 
                         showSnackbar(`${key} ${newState ? 'activé' : 'désactivé'}`, 'success');

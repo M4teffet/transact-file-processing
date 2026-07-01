@@ -78,6 +78,59 @@ const loadUploadedBatches = async () => {
 
 // ── Table ─────────────────────────────────────────────────────────────────────
 
+let batchSearchQuery = '';
+
+const _filterBatches = (list, q) => {
+    if (!q || !q.trim()) return list;
+    const lq = q.toLowerCase().trim();
+    return list.filter(b =>
+        (b.originalFilename || '').toLowerCase().includes(lq) ||
+        (b.batchId || '').toLowerCase().includes(lq) ||
+        (b.application || '').toLowerCase().includes(lq) ||
+        (b.status || '').toLowerCase().includes(lq)
+    );
+};
+
+const _ensureBatchSearch = () => {
+    const anchor = document.getElementById('batchSearchAnchor');
+    if (!anchor || anchor.dataset.ready) return;
+    anchor.dataset.ready = '1';
+    anchor.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+            <div style="position:relative">
+                <i data-lucide="search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);
+                   width:13px;height:13px;color:var(--ink-3,#80868b);pointer-events:none"></i>
+                <input id="batchSearchInput" type="text"
+                       placeholder="Rechercher…"
+                       style="width:240px;padding:5px 10px 5px 28px;font-size:12px;
+                              border:0.5px solid var(--line,#e0e0e0);
+                              background:var(--color-background-primary,#fff);
+                              color:var(--ink-2,#5f6368);outline:none;box-sizing:border-box"/>
+            </div>
+            <p style="font-size:10px;color:var(--ink-3,#9ca3af);margin:0">
+                Ex. transactions.csv · PROCESSED · 6a37af…
+            </p>
+        </div>`;
+    anchor.querySelector('input').addEventListener('input', e => {
+        batchSearchQuery = e.target.value;
+        _renderBatchTbody();
+    });
+    createIcons(anchor);
+};
+
+const _renderBatchTbody = () => {
+    const tbody = document.getElementById('batchTbody');
+    if (!tbody) return;
+    const TD = `padding:11px 16px;border-bottom:0.5px solid var(--line-soft,#f0f1f3)`;
+    const BTN = `padding:5px;background:none;border:none;cursor:pointer;color:var(--ink-3,#80868b);display:inline-flex;align-items:center;justify-content:center`;
+    const filtered = _filterBatches(uploadedBatches, batchSearchQuery);
+    if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="4" style="padding:2rem;text-align:center;font-size:12px;color:var(--ink-3,#80868b)">Aucun résultat pour « ${batchSearchQuery} »</td></tr>`;
+    } else {
+        tbody.innerHTML = filtered.map(b => renderBatchRow(b, TD, BTN)).join('');
+    }
+    createIcons(tbody);
+};
 const renderUploadedBatches = () => {
     const container = document.getElementById('uploadedBatchesContainer');
     if (!container) return;
@@ -92,9 +145,12 @@ const renderUploadedBatches = () => {
         return;
     }
 
+    _ensureBatchSearch();
+
     const TH = `padding:10px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3,#80868b);text-transform:uppercase;letter-spacing:.07em`;
     const TD = `padding:11px 16px;border-bottom:0.5px solid var(--line-soft,#f0f1f3)`;
     const BTN = `padding:5px;background:none;border:none;cursor:pointer;color:var(--ink-3,#80868b);display:inline-flex;align-items:center;justify-content:center`;
+    const filtered = _filterBatches(uploadedBatches, batchSearchQuery);
 
     container.innerHTML = `
         <div style="overflow-x:auto">
@@ -107,8 +163,10 @@ const renderUploadedBatches = () => {
                         <th style="${TH}"></th>
                     </tr>
                 </thead>
-                <tbody data-batch-tbody>
-                    ${uploadedBatches.map(b => renderBatchRow(b, TD, BTN)).join('')}
+                <tbody id="batchTbody">
+                    ${filtered.length
+        ? filtered.map(b => renderBatchRow(b, TD, BTN)).join('')
+        : `<tr><td colspan="4" style="padding:2rem;text-align:center;font-size:12px;color:var(--ink-3,#80868b)">Aucun résultat pour « ${batchSearchQuery} »</td></tr>`}
                 </tbody>
             </table>
         </div>`;
@@ -224,123 +282,7 @@ function stopAllPollers() {
     for (const [id] of activePollers) stopPoller(id);
 }
 
-function progressRowId(batchId) {
-    return `progress-row-${batchId}`;
-}
 
-function injectProgressRow(batchId, data) {
-    const batchRow = document.querySelector(`tr[data-batch-id="${batchId}"]`);
-    if (!batchRow) return;
-    removeProgressRow(batchId);
-    const tr = document.createElement('tr');
-    tr.id = progressRowId(batchId);
-    tr.innerHTML = buildProgressRowHTML(data);
-    batchRow.insertAdjacentElement('afterend', tr);
-}
-
-function updateProgressRow(batchId, data) {
-    const row = document.getElementById(progressRowId(batchId));
-    if (!row) {
-        injectProgressRow(batchId, data);
-        return;
-    }
-    row.innerHTML = buildProgressRowHTML(data);
-}
-
-function removeProgressRow(batchId) {
-    document.getElementById(progressRowId(batchId))?.remove();
-}
-
-function buildProgressRowHTML(d) {
-    const total = d.total || 0;
-    const successCount = d.successCount || 0;
-    const failureCount = d.failureCount || 0;
-    const done = successCount + failureCount;
-    const pending = Math.max(0, total - done);
-    const pct = total > 0 ? Math.min(100, Math.round(done * 100 / total)) : 0;
-    const sp = total > 0 ? (successCount / total * 100).toFixed(3) : 0;
-    const fp = total > 0 ? (failureCount / total * 100).toFixed(3) : 0;
-    const isDone = pct >= 100;
-    const hasFailure = failureCount > 0;
-    const accent = isDone ? (hasFailure ? '#ea4335' : '#34a853') : '#1a73e8';
-
-    const label = isDone
-        ? (hasFailure
-            ? `<span style="color:#c5221f">✗ Terminé — ${failureCount.toLocaleString('fr-FR')} ligne${failureCount > 1 ? 's' : ''} échouée${failureCount > 1 ? 's' : ''}</span>`
-            : `<span style="color:#188038">✓ Traitement terminé</span>`)
-        : `<span style="color:#1a73e8">En cours de traitement...</span>`;
-
-    const pendingSegment = pending > 0
-        ? `<div style="flex:1;background:#e8eaed;position:relative;overflow:hidden">
-               <div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(26,115,232,.18),transparent);animation:g-shimmer 1.6s ease-in-out infinite"></div>
-           </div>`
-        : '';
-
-    return `<td colspan="4" style="padding:0 0 6px;background:#f8f9fa;border-top:none">
-        <div style="margin:0 4px;border-left:3px solid ${accent};background:#fff;
-                    box-shadow:0 1px 2px rgba(0,0,0,.06);padding:9px 16px 9px 12px;
-                    transition:border-color .4s ease">
-
-            <div style="display:flex;justify-content:space-between;align-items:center;
-                        margin-bottom:8px;font-size:12px;font-weight:500">
-                ${label}
-                <span style="color:var(--ink-2,#111);font-size:13px;font-weight:500;
-                             font-variant-numeric:tabular-nums">
-                    ${pct}<span style="font-size:10px;font-weight:400;color:var(--ink-3,#80868b);margin-left:1px">%</span>
-                </span>
-            </div>
-
-            <div style="height:6px;overflow:hidden;display:flex;background:#e8eaed;margin-bottom:9px">
-                <div style="width:${sp}%;background:#34a853;transition:width .5s ease;
-                            min-width:${successCount > 0 ? '3px' : '0'}"></div>
-                <div style="width:${fp}%;background:#ea4335;transition:width .5s ease;
-                            min-width:${failureCount > 0 ? '3px' : '0'}"></div>
-                ${pendingSegment}
-            </div>
-
-            <div style="display:flex;align-items:center;gap:0;flex-wrap:wrap;row-gap:4px">
-                <div style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px 2px 6px;
-                            background:#e6f4ea;border-radius:99px;margin-right:7px">
-                    <span style="width:6px;height:6px;border-radius:50%;background:#34a853;flex-shrink:0"></span>
-                    <span style="font-size:10px;font-weight:500;color:#188038">
-                        ${successCount.toLocaleString('fr-FR')} réussie${successCount !== 1 ? 's' : ''}
-                    </span>
-                </div>
-                <div style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px 2px 6px;
-                            background:${failureCount > 0 ? '#fce8e6' : '#f1f3f4'};border-radius:99px;margin-right:7px">
-                    <span style="width:6px;height:6px;border-radius:50%;background:${failureCount > 0 ? '#ea4335' : '#bdc1c6'};flex-shrink:0"></span>
-                    <span style="font-size:10px;font-weight:500;color:${failureCount > 0 ? '#c5221f' : '#80868b'}">
-                        ${failureCount.toLocaleString('fr-FR')} échouée${failureCount !== 1 ? 's' : ''}
-                    </span>
-                </div>
-                ${pending > 0 ? `
-                <div style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px 2px 6px;
-                            background:#e8f0fe;border-radius:99px">
-                    <span style="width:6px;height:6px;border-radius:50%;background:#4285f4;flex-shrink:0;
-                                 animation:g-pulse 1.2s ease-in-out infinite"></span>
-                    <span style="font-size:10px;font-weight:500;color:#1967d2">
-                        ${pending.toLocaleString('fr-FR')} en attente
-                    </span>
-                </div>` : ''}
-                <span style="margin-left:auto;font-size:10px;color:#80868b;white-space:nowrap;
-                             font-variant-numeric:tabular-nums">
-                    ${done.toLocaleString('fr-FR')} / ${total.toLocaleString('fr-FR')} lignes
-                </span>
-            </div>
-        </div>
-    </td>`;
-}
-
-// Inject keyframes once
-if (!document.getElementById('progress-pulse-style')) {
-    const s = document.createElement('style');
-    s.id = 'progress-pulse-style';
-    s.textContent = `
-        @keyframes g-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
-        @keyframes g-pulse{0%,100%{opacity:1}50%{opacity:.35}}
-    `;
-    document.head.appendChild(s);
-}
 
 // ── Delete modal ──────────────────────────────────────────────────────────────
 

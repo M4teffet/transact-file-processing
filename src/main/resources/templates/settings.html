@@ -6,13 +6,13 @@
 {/aside}
 
 {#default}
-<div class="max-w-6xl mx-auto pb-10">
+    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:20px">
 
     <!-- Page header -->
-    <div class="flex justify-between items-end pb-4 mb-6" style="border-bottom:2px solid var(--ink);">
+        <div class="page-header">
         <div>
             <h2 class="page-title">Paramètres</h2>
-            <p class="text-xs text-gray-500 mt-1">Référentiels, utilisateurs et configuration</p>
+            <p class="page-subtitle">Référentiels, utilisateurs et configuration</p>
         </div>
     </div>
 
@@ -102,7 +102,7 @@
                             </div>
                         </div>
 
-                        <button class="w-full py-2 px-4 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
+                        <button class="btn-flux btn-flux-primary" style="width:100%;justify-content:center"
                                 id="createUserBtn"
                                 type="submit">
                             <i class="w-3.5 h-3.5" data-lucide="user-plus"></i>
@@ -168,7 +168,7 @@
                                        placeholder="CI2250001" required>
                             </div>
                         </div>
-                        <button class="w-full py-2 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
+                        <button class="btn-flux btn-flux-primary" style="width:100%;justify-content:center"
                                 type="submit">
                             <i class="w-3.5 h-3.5" data-lucide="plus"></i> Ajouter le pays
                         </button>
@@ -205,7 +205,7 @@
                                        placeholder="Ex: Finance" required>
                             </div>
                         </div>
-                        <button class="w-full py-2 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
+                        <button class="btn-flux btn-flux-primary" style="width:100%;justify-content:center"
                                 type="submit">
                             <i class="w-3.5 h-3.5" data-lucide="plus"></i> Créer le département
                         </button>
@@ -294,7 +294,7 @@
                     <div class="bg-orange-50 border border-orange-200 rounded-md p-3 text-xs text-orange-800">
                         <strong>Aperçu :</strong> <span id="pol-preview">Chargement...</span>
                     </div>
-                    <button class="w-full py-2 px-4 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
+                    <button class="btn-flux btn-flux-primary" style="width:100%;justify-content:center"
                             id="savePolicyBtn">
                         <i class="w-3.5 h-3.5" data-lucide="save"></i> Enregistrer la politique
                     </button>
@@ -312,7 +312,7 @@
                         <i class="w-4 h-4 text-orange-600" data-lucide="lock"></i>
                         <span class="text-sm font-semibold text-gray-800">Gestion des accès</span>
                     </div>
-                    <button class="p-1 text-gray-400 hover:text-orange-600 transition"
+                    <button class="btn-flux btn-flux-sm"
                             onclick="loadSecurityUserList()" title="Rafraîchir">
                         <i class="w-3.5 h-3.5" data-lucide="refresh-cw"></i>
                     </button>
@@ -351,7 +351,8 @@
                                 Bloque l'accès des inputters et autoriseurs en dehors des heures configurées.
                             </p>
                         </div>
-                        <button aria-checked="false" class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors bg-gray-300"
+                        <button aria-checked="false"
+                                class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors bg-gray-300"
                                 id="windowEnabledToggle"
                                 role="switch" type="button">
                             <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform translate-x-0.5"
@@ -396,7 +397,8 @@
                                 Ouvre immédiatement l'accès hors horaire — utile pour les fins de mois.
                             </p>
                         </div>
-                        <button aria-checked="false" class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors bg-gray-300"
+                        <button aria-checked="false"
+                                class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors bg-gray-300"
                                 id="windowKeepOpenToggle"
                                 role="switch" type="button">
                             <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform translate-x-0.5"
@@ -404,7 +406,8 @@
                         </button>
                     </div>
 
-                    <button class="w-full py-2 px-4 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5" id="windowSaveBtn"
+                    <button class="btn-flux btn-flux-primary" style="width:100%;justify-content:center"
+                            id="windowSaveBtn"
                             type="button">
                         <i class="w-3.5 h-3.5" data-lucide="save"></i> Enregistrer
                     </button>

@@ -70,28 +70,25 @@ public class WebPageResource {
 
     // ── Root redirect — sends each role to their home page ────────────────────
 
+    @Location("audit-trail")
+    Template auditTrailTemplate;
+
     @GET
     @Path("/")
     @Authenticated
     @Produces(MediaType.TEXT_HTML)
-    public jakarta.ws.rs.core.Response getRootPage(@jakarta.ws.rs.core.Context jakarta.ws.rs.core.UriInfo uriInfo) {
+    public jakarta.ws.rs.core.Response getRootPage(
+            @jakarta.ws.rs.core.Context jakarta.ws.rs.core.UriInfo uriInfo,
+            @jakarta.ws.rs.core.Context jakarta.ws.rs.core.HttpHeaders headers) {
+
         String target;
         if (identity.hasRole("ADMIN")) target = "dashboard";
         else if (identity.hasRole("INPUTTER")) target = "upload";
         else if (identity.hasRole("AUTHORISER")) target = "validate";
         else target = "login";
 
-        // ✅ FIXED: the old code used uriInfo.getBaseUri().getHost() which returns ONLY the
-        // hostname — stripping the port entirely.  That produced https://localhost/validate
-        // (port 443) instead of https://localhost:8443/validate.
-        //
-        // getBaseUriBuilder() already incorporates X-Forwarded-Proto / X-Forwarded-Host
-        // because quarkus.http.proxy.proxy-address-forwarding=true is set in
-        // application.properties, so the builder knows the correct external scheme,
-        // host AND port.  path(target) appends the page and build() assembles the
-        // correct absolute URI.
         return jakarta.ws.rs.core.Response.temporaryRedirect(
-                uriInfo.getBaseUriBuilder().path(target).build()
+                buildExternalUri(uriInfo, headers, target)
         ).build();
     }
 
@@ -190,6 +187,62 @@ public class WebPageResource {
     }
 
     // ── Utility ───────────────────────────────────────────────────────────────
+
+    /**
+     * Builds an absolute redirect URI that works correctly behind nginx.
+     * <p>
+     * The root cause of https://localhost/validate (wrong port) is that Java's
+     * URI.getHost() silently drops the port, and Quarkus's UriInfo does not
+     * reliably inherit the external port from X-Forwarded-Host when only
+     * proxy-address-forwarding is enabled.
+     * <p>
+     * Solution: read the forwarded headers directly.
+     * X-Forwarded-Proto  → "https"            (set by nginx proxy_params)
+     * X-Forwarded-Host   → "localhost:8443"   (set by nginx proxy_params)
+     * X-Forwarded-Port   → "8443"             (set by nginx proxy_params, fallback)
+     */
+    private java.net.URI buildExternalUri(
+            jakarta.ws.rs.core.UriInfo uriInfo,
+            jakarta.ws.rs.core.HttpHeaders headers,
+            String path) {
+
+        // ── scheme ────────────────────────────────────────────────────────────
+        String proto = headers.getHeaderString("X-Forwarded-Proto");
+        if (proto == null || proto.isBlank()) {
+            proto = uriInfo.getBaseUri().getScheme();
+        }
+
+        // ── host (with port) ──────────────────────────────────────────────────
+        // X-Forwarded-Host is set by nginx as "$host:8443" — it already
+        // contains the external port, so use it directly when available.
+        String host = headers.getHeaderString("X-Forwarded-Host");
+        if (host == null || host.isBlank()) {
+            // Host header set by nginx is $host (hostname only, no port).
+            // Combine it with X-Forwarded-Port to reconstruct "host:port".
+            String rawHost = headers.getHeaderString("Host");
+            String fwdPort = headers.getHeaderString("X-Forwarded-Port");
+            if (rawHost != null && !rawHost.isBlank()) {
+                host = (fwdPort != null && !fwdPort.isBlank() && !rawHost.contains(":"))
+                        ? rawHost + ":" + fwdPort
+                        : rawHost;
+            }
+        }
+        // Last resort: use the internal authority — nginx proxy_redirect will
+        // rewrite it to the correct external URL (see nginx.conf).
+        if (host == null || host.isBlank()) {
+            host = uriInfo.getBaseUri().getAuthority();
+        }
+
+        return java.net.URI.create(proto + "://" + host + "/" + path);
+    }
+
+    @GET
+    @Path("/audit-trail")
+    @Location("audit-trail")
+    @RolesAllowed("ADMIN")
+    public TemplateInstance auditTrail() {
+        return auditTrailTemplate.data("activePage", "audit-trail");
+    }
 
     @GET
     @Path("/access-denied")

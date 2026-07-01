@@ -4,16 +4,16 @@
 
 const getCountryData = (code) => {
     try {
-        const regionNames = new Intl.DisplayNames(['fr'], { type: 'region' });
+        const regionNames = new Intl.DisplayNames(['fr'], {type: 'region'});
         const name = regionNames.of(code.toUpperCase()) || code.toUpperCase();
         const codeL = code.toLowerCase();
         const flag = `<img src="https://flagcdn.com/16x12/${codeL}.png"
                            srcset="https://flagcdn.com/32x24/${codeL}.png 2x"
                            width="16" height="12" alt="${code}"
                            style="display:inline-block;vertical-align:middle;">`;
-        return { name, flag };
+        return {name, flag};
     } catch {
-        return { name: code, flag: '' };
+        return {name: code, flag: ''};
     }
 };
 
@@ -28,7 +28,9 @@ async function parseErrorResponse(res) {
         }
         const text = await res.text();
         return text.trim() || msg;
-    } catch { return msg; }
+    } catch {
+        return msg;
+    }
 }
 
 // ── Tab navigation ────────────────────────────────────────────────────────────
@@ -48,15 +50,23 @@ document.querySelectorAll('.settings-tab').forEach(tab => {
 let _allUsers = [];
 
 function renderUserItem(user) {
-    const roleLabel = { ADMIN: 'Admin', INPUTTER: 'Initiateur', AUTHORISER: 'Validateur' }[user.role] || user.role;
-    const roleCls = { ADMIN: 'bg-purple-50 text-purple-700 border-purple-200', INPUTTER: 'bg-blue-50 text-blue-700 border-blue-200', AUTHORISER: 'bg-green-50 text-green-700 border-green-200' }[user.role] || 'bg-gray-100 text-gray-600 border-gray-200';
+    const roleLabel = {ADMIN: 'Admin', INPUTTER: 'Initiateur', AUTHORISER: 'Validateur'}[user.role] || user.role;
+    const roleCls = {
+        ADMIN: 'bg-purple-50 text-purple-700 border-purple-200',
+        INPUTTER: 'bg-blue-50 text-blue-700 border-blue-200',
+        AUTHORISER: 'bg-green-50 text-green-700 border-green-200'
+    }[user.role] || 'bg-gray-100 text-gray-600 border-gray-200';
     const initials = user.username.slice(0, 2).toUpperCase();
     const isLocked = user.status === 'LOCKED';
     const avatarCls = isLocked ? 'bg-red-50 border-red-200 text-red-600' : 'bg-orange-50 border-orange-200 text-orange-600';
-    const dotCls = { ACTIVE: 'bg-green-400', LOCKED: 'bg-red-500', PENDING: 'bg-yellow-400' }[user.status] || 'bg-gray-300';
+    const dotCls = {
+        ACTIVE: 'bg-green-400',
+        LOCKED: 'bg-red-500',
+        PENDING: 'bg-yellow-400'
+    }[user.status] || 'bg-gray-300';
 
     const pwdBadge = user.mustChangePassword
-        ? `<span class="text-[9px] bg-orange-50 text-orange-600 border border-orange-200 px-1.5 py-0.5 rounded-full">pwd requis</span>`
+        ? `<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;background:#fff7ed;color:#c2410c;border:0.5px solid rgba(194,65,12,.25)">Pwd requis</span>`
         : '';
 
     const unlockBtn = isLocked
@@ -137,13 +147,15 @@ async function unlockUser(username) {
         } else {
             showSnackbar(data.message || 'Échec du déverrouillage.', 'error');
         }
-    } catch { showSnackbar('Erreur réseau.', 'error'); }
+    } catch {
+        showSnackbar('Erreur réseau.', 'error');
+    }
 }
 
 // ── Country rendering ─────────────────────────────────────────────────────────
 
 function renderCountryItem(c) {
-    const { name, flag } = getCountryData(c.code);
+    const {name, flag} = getCountryData(c.code);
     return `
     <li class="group flex items-center justify-between p-2.5 rounded-md hover:bg-gray-50 transition-colors" data-code="${c.code}">
         <div class="flex items-center gap-2.5">
@@ -170,7 +182,7 @@ async function loadCountries() {
         if (select) {
             select.innerHTML = '<option value="">— Pays —</option>' +
                 countries.map(c => {
-                    const { name } = getCountryData(c.code);
+                    const {name} = getCountryData(c.code);
                     return `<option value="${c.code}">${name} (${c.companyId})</option>`;
                 }).join('');
         }
@@ -180,7 +192,9 @@ async function loadCountries() {
                 : '<li class="text-xs text-gray-400 py-3 text-center">Aucun pays configuré</li>';
             if (window.lucide) createIcons(listEl);
         }
-    } catch (err) { console.error('Failed to load countries:', err); }
+    } catch (err) {
+        console.error('Failed to load countries:', err);
+    }
 }
 
 // ── Department rendering ──────────────────────────────────────────────────────
@@ -216,7 +230,9 @@ async function loadDepartments() {
                 : '<li class="text-xs text-gray-400 py-3 text-center">Aucun département configuré</li>';
             if (window.lucide) createIcons(listEl);
         }
-    } catch (err) { console.error('Failed to load departments:', err); }
+    } catch (err) {
+        console.error('Failed to load departments:', err);
+    }
 }
 
 // ── Applications ──────────────────────────────────────────────────────────────
@@ -253,7 +269,9 @@ async function loadApplications() {
             const first = container.querySelector('.app-list-item');
             if (first) first.click();
         }
-    } catch (err) { console.error('Failed to load applications:', err); }
+    } catch (err) {
+        console.error('Failed to load applications:', err);
+    }
 }
 
 async function selectApplication(appName, description) {
@@ -277,33 +295,69 @@ function renderApplicationSchema(data) {
     if (!container) return;
 
     const mandatory = data.mandatory || [];
-    const optional  = data.optional  || [];
+    const optional = data.optional || [];
 
     if (!mandatory.length && !optional.length) {
         container.innerHTML = `<p class="text-xs text-gray-400 py-4 text-center">Aucun champ défini</p>`;
         return;
     }
 
-    const tag = (f, req) => `
-        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] m-0.5 ${req ? 'bg-orange-50 border-orange-200 text-orange-800' : 'bg-gray-50 border-gray-200 text-gray-600'}">
-            ${req ? '<span style="width:5px;height:5px;border-radius:50%;background:#e86e00;display:inline-block;flex-shrink:0;"></span>' : ''}
-            ${f.fieldName}
-        </span>`;
+    const row = (f, req) => `
+        <tr class="${req ? 'bg-orange-50/40' : ''}">
+            <td style="padding:6px 10px;border-bottom:0.5px solid #f1f5f9;white-space:nowrap">
+                <div style="display:flex;align-items:center;gap:6px">
+                    ${req
+        ? `<span style="font-size:11px;color:#c45d00;font-weight:700;line-height:1">*</span>`
+        : `<span style="width:5px;display:inline-block"></span>`}
+                    <span style="font-size:11px;font-family:monospace;color:${req ? '#92400e' : '#4b5563'};font-weight:${req ? '500' : '400'}">${f.fieldName}</span>
+                </div>
+            </td>
+            <td style="padding:6px 10px;border-bottom:0.5px solid #f1f5f9;font-size:11px;color:#6b7280">${f.description || f.fieldName}</td>
+            <td style="padding:6px 10px;border-bottom:0.5px solid #f1f5f9">
+                <span style="font-size:10px;font-weight:500;font-family:monospace;
+                             background:#f3f4f6;color:#374151;padding:1px 5px;border-radius:3px">${f.type || 'STRING'}</span>
+            </td>
+            <td style="padding:6px 10px;border-bottom:0.5px solid #f1f5f9;text-align:center">
+                ${req
+        ? `<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;
+                                   font-size:10px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;
+                                   background:#fff7ed;color:#c2410c;border:0.5px solid rgba(194,65,12,.25)">Requis</span>`
+        : `<span style="font-size:10px;color:#9ca3af">—</span>`}
+            </td>
+        </tr>`;
 
     container.innerHTML = `
         <div>
-            <div class="flex items-center gap-2 mb-2">
-                <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Schéma des champs</p>
-                <span class="text-[9px] text-gray-400">${mandatory.length} requis · ${optional.length} optionnels</span>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                <p style="font-size:10px;font-weight:500;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em">Schéma des champs</p>
+                <span style="font-size:10px;color:#9ca3af">—</span>
+                <span style="font-size:10px;color:#c45d00;font-weight:500">${mandatory.length} obligatoire${mandatory.length !== 1 ? 's' : ''}</span>
+                <span style="font-size:10px;color:#9ca3af">·</span>
+                <span style="font-size:10px;color:#6b7280">${optional.length} optionnel${optional.length !== 1 ? 's' : ''}</span>
             </div>
-            <div class="flex flex-wrap">
-                ${mandatory.map(f => tag(f, true)).join('')}
-                ${optional.map(f => tag(f, false)).join('')}
+            <div style="overflow-x:auto;border:0.5px solid #e5e7eb">
+                <table style="width:100%;border-collapse:collapse">
+                    <thead>
+                        <tr style="border-bottom:1px solid #e5e7eb;background:#f9fafb">
+                            <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:500;
+                                       color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Champ T24</th>
+                            <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:500;
+                                       color:#9ca3af;text-transform:uppercase;letter-spacing:.08em">Libellé</th>
+                            <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:500;
+                                       color:#9ca3af;text-transform:uppercase;letter-spacing:.08em">Type</th>
+                            <th style="padding:6px 10px;text-align:center;font-size:9px;font-weight:500;
+                                       color:#9ca3af;text-transform:uppercase;letter-spacing:.08em">Requis</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${mandatory.map(f => row(f, true)).join('')}
+                        ${optional.map(f => row(f, false)).join('')}
+                    </tbody>
+                </table>
             </div>
-            <div class="mt-3 flex items-center gap-4 text-[10px] text-gray-400">
-                <span class="flex items-center gap-1"><span style="width:5px;height:5px;border-radius:50%;background:#e86e00;display:inline-block;"></span> Obligatoire</span>
-                <span class="flex items-center gap-1"><span style="width:5px;height:5px;border-radius:50%;background:#d1d5db;display:inline-block;"></span> Optionnel</span>
-            </div>
+            <p style="font-size:9px;color:#9ca3af;margin-top:6px">
+                <span style="color:#c45d00;font-weight:700">*</span> Champ obligatoire dans le fichier CSV
+            </p>
         </div>`;
 }
 
@@ -312,7 +366,7 @@ function renderApplicationSchema(data) {
 // Username availability check
 // Derive username from email (part before @ in uppercase) and show preview
 document.getElementById('userEmail')?.addEventListener('input', e => {
-    const email   = e.target.value.trim();
+    const email = e.target.value.trim();
     const preview = document.getElementById('usernamePreview');
     if (!preview) return;
     const atIdx = email.indexOf('@');
@@ -336,21 +390,21 @@ function updateEmailRequirement() {
     if (!emailInput) return;
     const isAdmin = role === 'ADMIN';
     emailInput.required = !isAdmin;
-    if (req)  req.classList.toggle('hidden', isAdmin);
-    if (opt)  opt.classList.toggle('hidden', !isAdmin);
+    if (req) req.classList.toggle('hidden', isAdmin);
+    if (opt) opt.classList.toggle('hidden', !isAdmin);
     if (hint) hint.textContent = isAdmin ? 'Optionnel pour le rôle ADMIN' : 'Requis pour MFA et réinitialisation du mot de passe';
 }
 
 // User form
 document.getElementById('userForm')?.addEventListener('submit', async e => {
     e.preventDefault();
-    const email      = document.getElementById('userEmail')?.value.trim();
-    const role       = document.getElementById('role')?.value;
-    const country    = document.getElementById('userCountry')?.value;
+    const email = document.getElementById('userEmail')?.value.trim();
+    const role = document.getElementById('role')?.value;
+    const country = document.getElementById('userCountry')?.value;
     const department = parseInt(document.getElementById('department')?.value);
 
     // Derive username from email (part before @ uppercased)
-    const atIdx  = email ? email.indexOf('@') : -1;
+    const atIdx = email ? email.indexOf('@') : -1;
     const username = atIdx > 0 ? email.slice(0, atIdx).toUpperCase() : '';
 
     if (!username || !email || !role || !country || !department) {
@@ -366,8 +420,8 @@ document.getElementById('userForm')?.addEventListener('submit', async e => {
     try {
         const res = await secureFetch('/api/v1/users', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, role, country, department, email: email || null }),
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, role, country, department, email: email || null}),
         });
         if (res && res.ok) {
             showSnackbar('Utilisateur créé avec succès !', 'success');
@@ -379,8 +433,9 @@ document.getElementById('userForm')?.addEventListener('submit', async e => {
         } else {
             showSnackbar(await parseErrorResponse(res), 'error');
         }
-    } catch { showSnackbar('Erreur réseau', 'error'); }
-    finally {
+    } catch {
+        showSnackbar('Erreur réseau', 'error');
+    } finally {
         btn.disabled = false;
         btn.innerHTML = orig;
         if (window.lucide) createIcons(btn);
@@ -390,26 +445,35 @@ document.getElementById('userForm')?.addEventListener('submit', async e => {
 // Country form
 document.getElementById('countryForm')?.addEventListener('submit', async e => {
     e.preventDefault();
-    const code      = document.getElementById('countryCode')?.value.trim().toUpperCase();
+    const code = document.getElementById('countryCode')?.value.trim().toUpperCase();
     const companyId = document.getElementById('companyId')?.value.trim();
-    if (!code || code.length !== 2 || !/^[A-Z]{2}$/.test(code)) { showSnackbar('Code pays: 2 lettres majuscules', 'error'); return; }
-    if (!companyId) { showSnackbar('Company ID requis', 'error'); return; }
+    if (!code || code.length !== 2 || !/^[A-Z]{2}$/.test(code)) {
+        showSnackbar('Code pays: 2 lettres majuscules', 'error');
+        return;
+    }
+    if (!companyId) {
+        showSnackbar('Company ID requis', 'error');
+        return;
+    }
 
     const btn = e.target.querySelector('button[type="submit"]');
-    const orig = btn.innerHTML; btn.disabled = true; btn.textContent = 'Ajout…';
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = 'Ajout…';
     try {
         const res = await secureFetch('/api/v1/country', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code, companyId }),
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({code, companyId}),
         });
         if (res && res.ok) {
             showSnackbar('Pays ajouté !', 'success');
             e.target.reset();
             bustCache('/api/v1/country/list');
             await loadCountries();
-        }
-        else showSnackbar(await parseErrorResponse(res), 'error');
-    } catch { showSnackbar('Erreur réseau', 'error'); } finally {
+        } else showSnackbar(await parseErrorResponse(res), 'error');
+    } catch {
+        showSnackbar('Erreur réseau', 'error');
+    } finally {
         btn.disabled = false;
         btn.innerHTML = orig;
         if (window.lucide) createIcons(btn);
@@ -421,24 +485,33 @@ document.getElementById('departmentForm')?.addEventListener('submit', async e =>
     e.preventDefault();
     const code = parseInt(document.getElementById('deptCode')?.value.trim(), 10);
     const description = document.getElementById('deptDesc')?.value.trim();
-    if (!code || code <= 0) { showSnackbar('Code département: nombre positif', 'error'); return; }
-    if (!description) { showSnackbar('Description requise', 'error'); return; }
+    if (!code || code <= 0) {
+        showSnackbar('Code département: nombre positif', 'error');
+        return;
+    }
+    if (!description) {
+        showSnackbar('Description requise', 'error');
+        return;
+    }
 
     const btn = e.target.querySelector('button[type="submit"]');
-    const orig = btn.innerHTML; btn.disabled = true; btn.textContent = 'Création…';
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = 'Création…';
     try {
         const res = await secureFetch('/api/v1/departments', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code, description }),
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({code, description}),
         });
         if (res && res.ok) {
             showSnackbar('Département créé !', 'success');
             e.target.reset();
             bustCache('/api/v1/departments/list');
             await loadDepartments();
-        }
-        else showSnackbar(await parseErrorResponse(res), 'error');
-    } catch { showSnackbar('Erreur réseau', 'error'); } finally {
+        } else showSnackbar(await parseErrorResponse(res), 'error');
+    } catch {
+        showSnackbar('Erreur réseau', 'error');
+    } finally {
         btn.disabled = false;
         btn.innerHTML = orig;
         if (window.lucide) createIcons(btn);
@@ -449,7 +522,7 @@ document.getElementById('departmentForm')?.addEventListener('submit', async e =>
 
 document.addEventListener('click', async e => {
     const countryBtn = e.target.closest('[data-delete-country]');
-    const deptBtn    = e.target.closest('[data-delete-dept]');
+    const deptBtn = e.target.closest('[data-delete-dept]');
     if (!countryBtn && !deptBtn) return;
 
     if (countryBtn) {
@@ -461,9 +534,10 @@ document.addEventListener('click', async e => {
                 showSnackbar(`Pays ${code} supprimé`, 'success');
                 bustCache('/api/v1/country/list');
                 await loadCountries();
-            }
-            else showSnackbar(await parseErrorResponse(res), 'error');
-        } catch { showSnackbar('Erreur réseau', 'error'); }
+            } else showSnackbar(await parseErrorResponse(res), 'error');
+        } catch {
+            showSnackbar('Erreur réseau', 'error');
+        }
         return;
     }
 
@@ -476,9 +550,10 @@ document.addEventListener('click', async e => {
                 showSnackbar(`Département ${code} supprimé`, 'success');
                 bustCache('/api/v1/departments/list');
                 await loadDepartments();
-            }
-            else showSnackbar(await parseErrorResponse(res), 'error');
-        } catch { showSnackbar('Erreur réseau', 'error'); }
+            } else showSnackbar(await parseErrorResponse(res), 'error');
+        } catch {
+            showSnackbar('Erreur réseau', 'error');
+        }
     }
 });
 
@@ -503,31 +578,33 @@ async function loadPasswordPolicy() {
         if (!res || !res.ok) return;
         const p = await res.json();
         const ml = document.getElementById('pol-minLength');
-        const d  = document.getElementById('pol-digit');
-        const u  = document.getElementById('pol-upper');
-        const s  = document.getElementById('pol-special');
+        const d = document.getElementById('pol-digit');
+        const u = document.getElementById('pol-upper');
+        const s = document.getElementById('pol-special');
         if (ml) ml.value = p.minLength || 10;
-        if (d)  d.checked = p.requireDigit !== false;
-        if (u)  u.checked = p.requireUppercase !== false;
-        if (s)  s.checked = p.requireSpecial !== false;
+        if (d) d.checked = p.requireDigit !== false;
+        if (u) u.checked = p.requireUppercase !== false;
+        if (s) s.checked = p.requireSpecial !== false;
         updatePolicyPreview();
-    } catch(e) { console.error('Policy load error', e); }
+    } catch (e) {
+        console.error('Policy load error', e);
+    }
 }
 
 function updatePolicyPreview() {
-    const len   = document.getElementById('pol-minLength')?.value || 10;
+    const len = document.getElementById('pol-minLength')?.value || 10;
     const digit = document.getElementById('pol-digit')?.checked;
     const upper = document.getElementById('pol-upper')?.checked;
-    const spec  = document.getElementById('pol-special')?.checked;
+    const spec = document.getElementById('pol-special')?.checked;
     const rules = [`Min. ${len} caractères`];
     if (digit) rules.push('chiffre requis');
     if (upper) rules.push('majuscule requise');
-    if (spec)  rules.push('caractère spécial requis');
+    if (spec) rules.push('caractère spécial requis');
     const prev = document.getElementById('pol-preview');
     if (prev) prev.textContent = rules.join(' · ');
 }
 
-['pol-minLength','pol-digit','pol-upper','pol-special'].forEach(id => {
+['pol-minLength', 'pol-digit', 'pol-upper', 'pol-special'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', updatePolicyPreview);
     document.getElementById(id)?.addEventListener('input', updatePolicyPreview);
 });
@@ -535,27 +612,33 @@ function updatePolicyPreview() {
 document.getElementById('savePolicyBtn')?.addEventListener('click', async () => {
     const btn = document.getElementById('savePolicyBtn');
     const orig = btn.innerHTML;
-    btn.disabled = true; btn.textContent = 'Enregistrement…';
+    btn.disabled = true;
+    btn.textContent = 'Enregistrement…';
     try {
         const res = await secureFetch('/api/v1/admin/policy', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                minLength:        parseInt(document.getElementById('pol-minLength')?.value) || 10,
-                requireDigit:     document.getElementById('pol-digit')?.checked   || false,
-                requireUppercase: document.getElementById('pol-upper')?.checked   || false,
-                requireSpecial:   document.getElementById('pol-special')?.checked || false,
+                minLength: parseInt(document.getElementById('pol-minLength')?.value) || 10,
+                requireDigit: document.getElementById('pol-digit')?.checked || false,
+                requireUppercase: document.getElementById('pol-upper')?.checked || false,
+                requireSpecial: document.getElementById('pol-special')?.checked || false,
             })
         });
         if (res && res.ok) {
             showSnackbar('Politique de mot de passe enregistrée', 'success');
             const ok = document.getElementById('pol-success');
-            if (ok) { ok.classList.remove('hidden'); setTimeout(() => ok.classList.add('hidden'), 4000); }
+            if (ok) {
+                ok.classList.remove('hidden');
+                setTimeout(() => ok.classList.add('hidden'), 4000);
+            }
         } else {
-            const d = await res?.json().catch(()=>({}));
+            const d = await res?.json().catch(() => ({}));
             showSnackbar(d.message || 'Erreur lors de la sauvegarde', 'error');
         }
-    } catch(e) { showSnackbar('Erreur réseau', 'error'); } finally {
+    } catch (e) {
+        showSnackbar('Erreur réseau', 'error');
+    } finally {
         btn.disabled = false;
         btn.innerHTML = orig;
         if (window.lucide) createIcons(btn);
@@ -575,7 +658,7 @@ async function loadSecurityUserList() {
         if (!res || !res.ok) throw new Error();
         _secUsers = await res.json();
         renderSecurityList(_secUsers);
-    } catch(e) {
+    } catch (e) {
         list.innerHTML = '<p class="text-xs text-red-500 py-2 text-center">Erreur de chargement</p>';
     }
 }
@@ -583,24 +666,27 @@ async function loadSecurityUserList() {
 function filterSecurityList(q) {
     const query = q.trim().toLowerCase();
     renderSecurityList(query ? _secUsers.filter(u =>
-        u.username.toLowerCase().includes(query) || (u.role||'').toLowerCase().includes(query)
+        u.username.toLowerCase().includes(query) || (u.role || '').toLowerCase().includes(query)
     ) : _secUsers);
 }
 
 function renderSecurityList(users) {
     const list = document.getElementById('sec-user-list');
     if (!list) return;
-    if (!users.length) { list.innerHTML = '<p class="text-xs text-gray-400 py-2 text-center">Aucun utilisateur</p>'; return; }
+    if (!users.length) {
+        list.innerHTML = '<p class="text-xs text-gray-400 py-2 text-center">Aucun utilisateur</p>';
+        return;
+    }
 
-    const roleLabel = { ADMIN: 'Admin', INPUTTER: 'Initiateur', AUTHORISER: 'Validateur' };
-    const statusDot = { ACTIVE: 'bg-green-400', LOCKED: 'bg-red-500', PENDING: 'bg-yellow-400' };
+    const roleLabel = {ADMIN: 'Admin', INPUTTER: 'Initiateur', AUTHORISER: 'Validateur'};
+    const statusDot = {ACTIVE: 'bg-green-400', LOCKED: 'bg-red-500', PENDING: 'bg-yellow-400'};
     const currentUser = sessionStorage.getItem('username') || '';
 
     list.innerHTML = users.map(u => {
-        const isLocked  = u.status === 'LOCKED';
-        const isSelf    = u.username === currentUser;
-        const dotCls    = statusDot[u.status] || 'bg-gray-300';
-        const initials  = u.username.slice(0,2).toUpperCase();
+        const isLocked = u.status === 'LOCKED';
+        const isSelf = u.username === currentUser;
+        const dotCls = statusDot[u.status] || 'bg-gray-300';
+        const initials = u.username.slice(0, 2).toUpperCase();
         const avatarCls = isLocked ? 'bg-red-50 border-red-200 text-red-600' : 'bg-orange-50 border-orange-200 text-orange-600';
         const actionBtn = isSelf ? '' : isLocked
             ? `<button onclick="secToggleLock('${u.username}', false)"
@@ -618,7 +704,7 @@ function renderSecurityList(users) {
                 <div>
                     <div class="flex items-center gap-1.5">
                         <span class="text-xs font-semibold text-gray-900">${u.username}</span>
-                        <span class="text-[9px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">${roleLabel[u.role]||u.role}</span>
+                        <span class="text-[9px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">${roleLabel[u.role] || u.role}</span>
                     </div>
                     <div class="flex items-center gap-1 mt-0.5">
                         <span class="w-1.5 h-1.5 rounded-full ${dotCls}"></span>
@@ -639,7 +725,7 @@ async function secToggleLock(username, lock) {
         const endpoint = lock ? 'lock' : 'unlock';
         const res = await secureFetch(`/api/v1/auth/${endpoint}/${encodeURIComponent(username)}`, {method: 'POST'});
         if (!res) return;
-        const data = await res.json().catch(()=>({}));
+        const data = await res.json().catch(() => ({}));
         if (res.ok) {
             showSnackbar(`Compte ${username} ${lock ? 'verrouillé' : 'déverrouillé'}`, 'success');
             await loadSecurityUserList();
@@ -647,23 +733,25 @@ async function secToggleLock(username, lock) {
         } else {
             showSnackbar(data.message || `Impossible de ${action} ce compte`, 'error');
         }
-    } catch(e) { showSnackbar('Erreur réseau', 'error'); }
+    } catch (e) {
+        showSnackbar('Erreur réseau', 'error');
+    }
 }
 
 // ── Fenêtre de service ───────────────────────────────────────────────────────
 (function () {
-    const state = { enabled: false, openHour: 8, closeHour: 18, zone: 'Africa/Abidjan', adminKeepOpen: false };
+    const state = {enabled: false, openHour: 8, closeHour: 18, zone: 'Africa/Abidjan', adminKeepOpen: false};
 
     function elems() {
         return {
-            enabledT  : document.getElementById('windowEnabledToggle'),
-            keepT     : document.getElementById('windowKeepOpenToggle'),
-            openSel   : document.getElementById('windowOpenHour'),
-            closeSel  : document.getElementById('windowCloseHour'),
-            zoneInput : document.getElementById('windowZone'),
-            saveBtn   : document.getElementById('windowSaveBtn'),
-            badge     : document.getElementById('windowStatusBadge'),
-            meta      : document.getElementById('windowMeta'),
+            enabledT: document.getElementById('windowEnabledToggle'),
+            keepT: document.getElementById('windowKeepOpenToggle'),
+            openSel: document.getElementById('windowOpenHour'),
+            closeSel: document.getElementById('windowCloseHour'),
+            zoneInput: document.getElementById('windowZone'),
+            saveBtn: document.getElementById('windowSaveBtn'),
+            badge: document.getElementById('windowStatusBadge'),
+            meta: document.getElementById('windowMeta'),
         };
     }
 
@@ -685,11 +773,11 @@ async function secToggleLock(username, lock) {
     }
 
     function paint(s) {
-        const { enabledT, keepT, openSel, closeSel, zoneInput, badge, meta } = elems();
+        const {enabledT, keepT, openSel, closeSel, zoneInput, badge, meta} = elems();
         if (!enabledT) return;
         paintToggle(enabledT, document.getElementById('windowEnabledKnob'), s.enabled);
-        paintToggle(keepT,    document.getElementById('windowKeepOpenKnob'), s.adminKeepOpen);
-        if (openSel)  openSel.value  = s.openHour;
+        paintToggle(keepT, document.getElementById('windowKeepOpenKnob'), s.adminKeepOpen);
+        if (openSel) openSel.value = s.openHour;
         if (closeSel) closeSel.value = s.closeHour;
         if (zoneInput) zoneInput.value = s.zone || 'Africa/Abidjan';
 
@@ -710,7 +798,7 @@ async function secToggleLock(username, lock) {
         if (meta) {
             meta.textContent = s.updatedBy
                 ? `Dernière modification par ${s.updatedBy}` +
-                  (s.lastUpdated ? ` · ${new Date(s.lastUpdated).toLocaleString('fr-FR')}` : '')
+                (s.lastUpdated ? ` · ${new Date(s.lastUpdated).toLocaleString('fr-FR')}` : '')
                 : '';
         }
     }
@@ -722,10 +810,11 @@ async function secToggleLock(username, lock) {
                 const data = await res.json();
                 Object.assign(state, data);
             }
-        } catch (e) { /* keep defaults */ }
+        } catch (e) { /* keep defaults */
+        }
 
-        const { openSel, closeSel } = elems();
-        populateHourSelect(openSel,  state.openHour);
+        const {openSel, closeSel} = elems();
+        populateHourSelect(openSel, state.openHour);
         populateHourSelect(closeSel, state.closeHour);
         paint(state);
     }
@@ -744,30 +833,32 @@ async function secToggleLock(username, lock) {
 
         // Toggle listeners (attached once DOM is ready)
         const enabledT = document.getElementById('windowEnabledToggle');
-        const keepT    = document.getElementById('windowKeepOpenToggle');
-        const saveBtn  = document.getElementById('windowSaveBtn');
+        const keepT = document.getElementById('windowKeepOpenToggle');
+        const saveBtn = document.getElementById('windowSaveBtn');
 
         if (enabledT) enabledT.addEventListener('click', () => {
-            state.enabled = !state.enabled; paint(state);
+            state.enabled = !state.enabled;
+            paint(state);
         });
         if (keepT) keepT.addEventListener('click', () => {
-            state.adminKeepOpen = !state.adminKeepOpen; paint(state);
+            state.adminKeepOpen = !state.adminKeepOpen;
+            paint(state);
         });
 
         if (saveBtn) saveBtn.addEventListener('click', async () => {
-            const { openSel, closeSel, zoneInput } = elems();
+            const {openSel, closeSel, zoneInput} = elems();
             saveBtn.disabled = true;
             try {
                 const payload = {
-                    enabled      : state.enabled,
-                    openHour     : parseInt(openSel.value, 10),
-                    closeHour    : parseInt(closeSel.value, 10),
-                    zone         : (zoneInput && zoneInput.value.trim()) || 'Africa/Abidjan',
+                    enabled: state.enabled,
+                    openHour: parseInt(openSel.value, 10),
+                    closeHour: parseInt(closeSel.value, 10),
+                    zone: (zoneInput && zoneInput.value.trim()) || 'Africa/Abidjan',
                     adminKeepOpen: state.adminKeepOpen,
                 };
                 const res = await secureFetch('/api/v1/admin/operating-window', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(payload),
                 });
                 if (!res) return;

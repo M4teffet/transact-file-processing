@@ -1,25 +1,34 @@
 package com.transact;
 
+import com.transact.processor.model.PasswordPolicyEntity;
 import com.transact.service.PasswordService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Map;
 
 /**
  * ADMIN endpoint for reading and updating the password policy at runtime.
- * Writes changes back to application.properties so they survive restarts.
+ *
+ * Policy is persisted to MongoDB (password_policy collection) so it survives
+ * server restarts and works correctly inside Docker / JAR deployments.
+ *
+ * The old implementation wrote to application.properties at runtime, which
+ * failed silently in production because:
+ *   1. The JAR is read-only — file writes are a no-op or throw.
+ *   2. @ConfigProperty values are injected once at startup; even a successful
+ *      write only takes effect after a full restart.
  */
 @Path("/api/v1/admin/policy")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "Politique de sécurité")
 public class PolicyResource {
 
     private static final Logger LOG = Logger.getLogger(PolicyResource.class);
@@ -27,60 +36,46 @@ public class PolicyResource {
     @Inject
     PasswordService passwordService;
 
-    @ConfigProperty(name = "app.password.min-length", defaultValue = "10")
-    int minLength;
-    @ConfigProperty(name = "app.password.require-digit", defaultValue = "true")
-    boolean requireDigit;
-    @ConfigProperty(name = "app.password.require-uppercase", defaultValue = "true")
-    boolean requireUppercase;
-    @ConfigProperty(name = "app.password.require-special", defaultValue = "true")
-    boolean requireSpecial;
-
     /**
-     * GET /api/admin/policy — returns current policy
+     * GET /api/v1/admin/policy — returns the current active policy.
+     * Always reads from MongoDB so the UI reflects what was last saved.
      */
     @GET
     @RolesAllowed("ADMIN")
+    @Operation(summary = "Lire la politique de mot de passe active")
     public Response getPolicy() {
         return Response.ok(passwordService.getPolicy()).build();
     }
 
     /**
-     * POST /api/admin/policy — update policy (persisted to config)
+     * POST /api/v1/admin/policy — persist an updated policy to MongoDB.
+     * Takes effect immediately on the next password operation — no restart needed.
      */
     @POST
     @RolesAllowed("ADMIN")
+    @Operation(summary = "Mettre à jour la politique de mot de passe")
     public Response updatePolicy(PolicyUpdateRequest req) {
         if (req == null)
-            return Response.status(400).entity(Map.of("message", "Corps de requête manquant")).build();
+            return Response.status(400)
+                    .entity(Map.of("message", "Corps de requête manquant")).build();
         if (req.minLength() < 6 || req.minLength() > 32)
-            return Response.status(400).entity(Map.of("message", "Longueur min. entre 6 et 32")).build();
+            return Response.status(400)
+                    .entity(Map.of("message", "Longueur min. doit être entre 6 et 32")).build();
 
         try {
-            // Write to application.properties at runtime
-            java.nio.file.Path propFile = Paths.get("src/main/resources/application.properties");
-            if (!Files.exists(propFile)) {
-                // Try classpath location
-                propFile = Paths.get("config/application.properties");
-            }
+            // Build and upsert the policy document
+            PasswordPolicyEntity policy = new PasswordPolicyEntity();
+            policy.minLength = req.minLength();
+            policy.requireDigit = req.requireDigit();
+            policy.requireUppercase = req.requireUppercase();
+            policy.requireSpecial = req.requireSpecial();
+            policy.save();
 
-            if (Files.exists(propFile)) {
-                String props = Files.readString(propFile);
-                props = props.replaceAll("app\\.password\\.min-length=\\d+",
-                        "app.password.min-length=" + req.minLength());
-                props = props.replaceAll("app\\.password\\.require-digit=(true|false)",
-                        "app.password.require-digit=" + req.requireDigit());
-                props = props.replaceAll("app\\.password\\.require-uppercase=(true|false)",
-                        "app.password.require-uppercase=" + req.requireUppercase());
-                props = props.replaceAll("app\\.password\\.require-special=(true|false)",
-                        "app.password.require-special=" + req.requireSpecial());
-                Files.writeString(propFile, props);
-                LOG.infof("[Policy] Updated: minLen=%d digit=%b upper=%b special=%b",
-                        req.minLength(), req.requireDigit(), req.requireUppercase(), req.requireSpecial());
-            }
+            LOG.infof("[Policy] Updated → minLen=%d digit=%b upper=%b special=%b",
+                    req.minLength(), req.requireDigit(), req.requireUppercase(), req.requireSpecial());
 
             return Response.ok(Map.of(
-                    "message", "Politique mise à jour. Redémarrage requis pour appliquer.",
+                    "message", "Politique mise à jour avec succès",
                     "minLength", req.minLength(),
                     "requireDigit", req.requireDigit(),
                     "requireUppercase", req.requireUppercase(),
@@ -88,8 +83,9 @@ public class PolicyResource {
             )).build();
 
         } catch (Exception e) {
-            LOG.errorf(e, "[Policy] Update failed");
-            return Response.status(500).entity(Map.of("message", "Erreur lors de la mise à jour")).build();
+            LOG.errorf(e, "[Policy] Échec de la mise à jour");
+            return Response.status(500)
+                    .entity(Map.of("message", "Erreur lors de la sauvegarde de la politique")).build();
         }
     }
 

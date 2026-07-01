@@ -1,205 +1,143 @@
 {#include layout}
-{#title}Rapports - FLUX{/title}
-
-{#head}
-
-{/head}
-
-{#aside}
-{#insert aside}{#include sidebar-admin/}{/insert}
-
-{/aside}
-
+{#title}Rapports — FLUX{/title}
+{#aside}{#include sidebar-admin activePage="reports"/}{/aside}
 {#default}
-<div class="max-w-7xl mx-auto space-y-8">
-    <!-- Header -->
+
+<div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:20px">
+
+    <!-- Page header -->
     <div class="page-header">
         <div>
-            <h2 class="page-title">Rapports Détaillés</h2>
-            <p class="page-subtitle">Analyse complète des batchs avec traçabilité</p>
+            <h2 class="page-title">Rapports</h2>
+            <p class="page-subtitle">Analyse complète des lots avec traçabilité</p>
         </div>
-        <div class="flex items-center gap-3">
-            <button class="flex items-center gap-2 px-4 py-2 bg-white rounded-md border border-gray-300 hover:border-orange-500 hover:shadow-sm transition-all duration-200 group"
-                    onclick="refreshAllReports()">
-                <i class="w-4 h-4 text-gray-600 group-hover:text-orange-600 transition-all duration-300"
-                   data-lucide="refresh-cw"></i>
-                <span class="text-sm font-medium text-gray-700">Actualiser</span>
+        <div class="flex items-center gap-2">
+            <button class="btn-flux" onclick="refreshAllReports()">
+                <i data-lucide="refresh-cw" style="width:13px;height:13px"></i>Actualiser
             </button>
-            <div class="h-8 w-px bg-gray-300"></div>
-            <button class="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md transition-all duration-200"
-                    onclick="exportToPDF()">
-                <i class="w-4 h-4" data-lucide="file-text"></i>
-                <span class="text-sm font-medium">Exporter PDF</span>
+            <button class="btn-flux btn-flux-primary" onclick="exportToPDF()">
+                <i data-lucide="printer" style="width:13px;height:13px"></i>Exporter
             </button>
         </div>
     </div>
 
-    <!-- Filters Section -->
-    <div class="bg-white rounded-md shadow-sm border border-gray-200 p-6">
-        <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-            <i class="w-5 h-5 text-orange-600" data-lucide="filter"></i>
-            Filtres de Recherche
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Date Range -->
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Date de début</label>
-                <input class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
-                       id="startDate"
-                       type="date">
-            </div>
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Date de fin</label>
-                <input class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
-                       id="endDate"
-                       type="date">
-            </div>
-            <!-- Country Filter -->
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Pays</label>
-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
-                        id="countryFilter">
-                    <option value="">Tous les pays</option>
-                </select>
-            </div>
-            <!-- Department Filter -->
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Département</label>
-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
-                        id="departmentFilter">
-                    <option value="">Tous les départements</option>
-                </select>
-            </div>
-            <!-- Status Filter -->
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Statut</label>
-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
-                        id="statusFilter">
-                    <option value="">Tous les statuts</option>
-                    <option value="PROCESSED">Traité avec succès</option>
-                    <option value="PROCESSED_WITH_ERROR">Traité avec erreurs</option>
-                    <option value="VALIDATED">Validé</option>
-                    <option value="UPLOADED">Uploadé</option>
-                </select>
-            </div>
-            <!-- Inputter Filter -->
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Initiateur</label>
-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
-                        id="inputterFilter">
-                    <option value="">Tous les initiateurs</option>
-                </select>
-            </div>
-            <!-- Validator Filter -->
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Validateur</label>
-                <select class="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
-                        id="validatorFilter">
-                    <option value="">Tous les validateurs</option>
-                </select>
-            </div>
-            <!-- Apply Button -->
-            <div class="flex items-end">
-                <button class="w-full px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold rounded-md transition-colors"
-                        onclick="applyFilters()">
-                    Appliquer les filtres
-                </button>
-            </div>
+    <!-- Filters -->
+    <div class="flux-card">
+        <div class="flux-card-header">
+            <i data-lucide="filter" style="width:15px;height:15px;color:var(--orange)"></i>
+            <span class="flux-card-title">Filtres</span>
         </div>
-        <!-- Active Filters Display -->
-        <div class="mt-4 flex flex-wrap gap-2 hidden" id="activeFilters"></div>
-    </div>
-
-    <!-- Summary KPIs -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" id="reportKpis"></div>
-
-    <!-- Detailed Batch Table -->
-    <div class="bg-white rounded-md shadow-sm border border-gray-200">
-        <div class="p-6 border-b border-gray-200">
-            <div class="flex justify-between items-center">
-                <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <i class="w-5 h-5 text-orange-600" data-lucide="table"></i>
-                    Détails des Batchs
-                </h3>
-                <div class="flex items-center gap-3">
-                    <input class="px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-orange-500"
-                           id="searchTable" onkeyup="searchInTable()"
-                           placeholder="Rechercher dans le tableau..."
-                           type="text">
-                    <button class="flex items-center gap-2 px-4 py-2 border border-gray-300 hover:border-orange-500 rounded-md text-sm transition-colors"
-                            onclick="exportTableToCSV()">
-                        <i class="w-4 h-4" data-lucide="download"></i>
-                        CSV
+        <div class="flux-card-body">
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="flux-label">Date de début</label>
+                    <input class="flux-input" id="startDate" type="date">
+                </div>
+                <div>
+                    <label class="flux-label">Date de fin</label>
+                    <input class="flux-input" id="endDate" type="date">
+                </div>
+                <div>
+                    <label class="flux-label">Pays</label>
+                    <select class="flux-select" id="countryFilter">
+                        <option value="">Tous les pays</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="flux-label">Département</label>
+                    <select class="flux-select" id="departmentFilter">
+                        <option value="">Tous les départements</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="flux-label">Statut</label>
+                    <select class="flux-select" id="statusFilter">
+                        <option value="">Tous les statuts</option>
+                        <option value="PROCESSED">Traité</option>
+                        <option value="PROCESSED_WITH_ERROR">Partiel</option>
+                        <option value="PROCESSED_FAILED">Échec</option>
+                        <option value="PROCESSING">En cours</option>
+                        <option value="VALIDATED">Validé</option>
+                        <option value="UPLOADED">Importé</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="flux-label">Initiateur</label>
+                    <select class="flux-select" id="inputterFilter">
+                        <option value="">Tous les initiateurs</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="flux-label">Validateur</label>
+                    <select class="flux-select" id="validatorFilter">
+                        <option value="">Tous les validateurs</option>
+                    </select>
+                </div>
+                <div style="display:flex;align-items:flex-end;gap:6px">
+                    <button class="btn-flux btn-flux-primary" onclick="applyFilters(true)" style="flex:1;justify-content:center">
+                        <i data-lucide="search" style="width:13px;height:13px"></i>Rechercher
+                    </button>
+                    <button class="btn-flux" onclick="resetFilters()">
+                        <i data-lucide="x" style="width:13px;height:13px"></i>
                     </button>
                 </div>
             </div>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm" id="batchDetailsTable">
-                <thead>
-                <tr class="border-b border-gray-200 bg-gray-50">
-                    <th class="px-4 py-3 text-left font-bold text-gray-700">Batch ID</th>
-                    <th class="px-4 py-3 text-left font-bold text-gray-700">Application</th>
-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Statut</th>
-                    <th class="px-4 py-3 text-left font-bold text-gray-700">Initiateur</th>
-                    <th class="px-4 py-3 text-left font-bold text-gray-700">Validateur</th>
-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Pays</th>
-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Département</th>
-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Records</th>
-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Réussies</th>
-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Échouées</th>
-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Erreurs</th>
-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Date Upload</th>
-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Date Validation</th>
-                    <th class="px-4 py-3 text-center font-bold text-gray-700">Fichier</th>
-                </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200" id="batchTableBody">
-                <tr>
-                    <td class="px-4 py-12 text-center text-gray-500" colspan="14">
-                        <div class="flex flex-col items-center gap-3">
-                            <i class="w-10 h-10 animate-spin text-orange-600" data-lucide="loader"></i>
-                            <span>Chargement des données...</span>
-                        </div>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-        <!-- Pagination -->
-        <div class="p-4 border-t border-gray-200 flex items-center justify-between">
-            <div class="text-sm text-gray-600">
-                Affichage de <span id="showingFrom">0</span> à <span id="showingTo">0</span> sur <span
-                    id="totalItems">0</span>
-                batchs
-            </div>
-            <div class="flex items-center gap-2">
-                <button class="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        id="prevPageBtn"
-                        onclick="previousPage()">
-                    Précédent
-                </button>
-                <span class="text-sm text-gray-600">Page <span id="currentPage">1</span> sur <span
-                        id="totalPages">1</span></span>
-                <button class="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        id="nextPageBtn"
-                        onclick="nextPage()">
-                    Suivant
-                </button>
-            </div>
+
+            <!-- Active filter chips -->
+            <div class="hidden" id="activeFilters" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--line)"></div>
         </div>
     </div>
 
-</div>
+    <!-- KPI summary -->
+    <div id="reportKpis"></div>
 
+    <!-- Results table -->
+    <div class="flux-card">
+        <div class="flux-card-header" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+                <i data-lucide="table" style="width:15px;height:15px;color:var(--orange)"></i>
+                <span class="flux-card-title">Détail des lots</span>
+            </div>
+            <input class="flux-input" id="searchTable" oninput="searchInTable()"
+                   placeholder="Rechercher dans les résultats…"
+                   style="width:220px;padding:4px 10px;font-size:11px"/>
+        </div>
+
+        <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse">
+                <thead>
+                    <tr style="border-bottom:0.5px solid var(--line);background:var(--surface-2)">
+                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Lot</th>
+                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Application</th>
+                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Statut</th>
+                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Initiateur</th>
+                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Validateur</th>
+                        <th style="padding:9px 16px;text-align:center;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Pays</th>
+                        <th style="padding:9px 16px;text-align:center;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Dept</th>
+                        <th style="padding:9px 16px;text-align:right;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Lignes</th>
+                        <th style="padding:9px 16px;text-align:right;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Succès</th>
+                        <th style="padding:9px 16px;text-align:right;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Échecs</th>
+                        <th style="padding:9px 16px;text-align:right;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Err.</th>
+                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Date import</th>
+                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Date validation</th>
+                        <th style="padding:9px 16px;width:1%"></th>
+                    </tr>
+                </thead>
+                <tbody id="batchTableBody">
+                    <tr><td colspan="14" style="padding:3rem;text-align:center;font-size:12px;color:var(--ink-3)">
+                        Appliquez des filtres et cliquez sur Rechercher
+                    </td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination — rendered by updatePaginationControls() -->
+        <div id="reportPagination"></div>
+    </div>
+
+</div>
 {/default}
 
 {#script}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <script src="/javascript/reports.js"></script>
-<script>
-    lucide.createIcons();
-</script>
 {/script}
-{/include}

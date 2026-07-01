@@ -1,0 +1,100 @@
+{#include layout}
+{#title}Audit Trail - FLUX{/title}
+{#aside}
+{#include sidebar-admin/}
+{/aside}
+{#default}
+
+<div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:20px">
+
+    <!-- Page header -->
+    <div class="page-header">
+        <div>
+            <h2 class="page-title">Journal d'audit</h2>
+            <p class="page-subtitle">Toutes les actions administratives enregistrées</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button class="btn-flux" onclick="loadAudit()">
+                <i data-lucide="refresh-cw" style="width:13px;height:13px"></i>Actualiser
+            </button>
+            <button class="btn-flux btn-flux-primary" onclick="exportAudit()">
+                <i data-lucide="download" style="width:13px;height:13px"></i>Exporter CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flux-card">
+        <div class="flux-card-header">
+            <i data-lucide="filter" style="width:15px;height:15px;color:var(--orange)"></i>
+            <span class="flux-card-title">Filtres</span>
+        </div>
+        <div class="flux-card-body">
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div>
+                    <label class="flux-label">Type d'action</label>
+                    <select id="auditActionFilter" onchange="loadAudit()" class="flux-select">
+                        <option value="">Toutes les actions</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="flux-label">Effectué par</label>
+                    <input id="auditPerformedBy" oninput="debouncedLoad()" placeholder="Utilisateur…"
+                           class="flux-input"/>
+                </div>
+                <div>
+                    <label class="flux-label">Cible</label>
+                    <input id="auditTarget" oninput="debouncedLoad()" placeholder="Utilisateur, lot…"
+                           class="flux-input"/>
+                </div>
+                <div>
+                    <label class="flux-label">Du</label>
+                    <input id="auditFrom" type="date" onchange="loadAudit()" class="flux-input"/>
+                </div>
+                <div>
+                    <label class="flux-label">Au</label>
+                    <input id="auditTo" type="date" onchange="loadAudit()" class="flux-input"/>
+                </div>
+                <div style="display:flex;align-items:flex-end;gap:6px">
+                    <button class="btn-flux" onclick="clearAuditFilters()" style="flex:1;justify-content:center">
+                        <i data-lucide="x" style="width:13px;height:13px"></i>Réinitialiser
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="flux-card">
+        <div class="flux-card-header" style="justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:8px">
+                <i data-lucide="shield-check" style="width:15px;height:15px;color:var(--orange)"></i>
+                <span class="flux-card-title">Événements</span>
+            </div>
+            <span id="auditCount" style="font-size:11px;color:var(--ink-3)"></span>
+        </div>
+
+        <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse">
+                <thead>
+                    <tr style="border-bottom:0.5px solid var(--line);background:var(--surface-2)">
+                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Date</th>
+                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Action</th>
+                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Effectué par</th>
+                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Cible</th>
+                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Description</th>
+                    </tr>
+                </thead>
+                <tbody id="auditTbody">
+                    <tr><td colspan="5" style="padding:3rem;text-align:center;font-size:12px;color:var(--ink-3)">Chargement…</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="auditPagination"></div>
+    </div>
+
+</div>
+{/default}
+{#script}
+<script src="/javascript/audit.js"></script>
+{/script}
