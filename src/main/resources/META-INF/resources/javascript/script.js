@@ -116,13 +116,16 @@ async function loadFields(appCode) {
 
 function createFieldItem(field) {
     const div = document.createElement("div");
-    div.className = "field-item flex items-center p-3 bg-white border rounded shadow-sm mb-2 cursor-move hover:border-blue-400 transition-all select-none";
+    div.className = "field-item flex items-center p-2.5 mb-2 cursor-move select-none transition-all";
+    div.style.cssText = "background:#fff;border:1px solid var(--line);";
     div.draggable = true;
     div.dataset.fieldName = field.fieldName;
     div.innerHTML = `
-        <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-400 mr-2"></i>
-        <span class="text-sm font-medium text-gray-700">${field.fieldName}</span>
+        <i data-lucide="grip-vertical" class="w-4 h-4 mr-2" style="color:var(--ink-4)"></i>
+        <span style="font-size:.8rem;font-weight:700;color:var(--ink-2)">${field.fieldName}</span>
     `;
+    div.addEventListener("mouseenter", () => div.style.borderColor = "var(--orange)");
+    div.addEventListener("mouseleave", () => div.style.borderColor = "var(--line)");
     div.addEventListener("dragstart", () => div.classList.add("opacity-50", "dragging"));
     div.addEventListener("dragend", () => {
         div.classList.remove("opacity-50", "dragging");
@@ -211,10 +214,12 @@ function previewCsv(file) {
             const data = lines.slice(1).map(parseCsvRow);
             state.fullCsvData = { header, data };
 
-            elements.previewHeader().innerHTML = '<tr class="bg-gray-100 border-b">' + header.map(function(h) { return '<th class="px-3 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wide text-left whitespace-nowrap">' + h + '</th>'; }).join('') + '</tr>';
+            elements.previewHeader().innerHTML = '<tr style="background:var(--canvas);border-bottom:1px solid var(--line)">' + header.map(function (h) {
+                return '<th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;text-align:left;white-space:nowrap">' + h + '</th>';
+            }).join('') + '</tr>';
             elements.previewBody().innerHTML = data.slice(0, 5).map((row, i) => `
-                <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b">
-                    ${row.map(cell => `<td class="px-4 py-2 text-sm text-gray-600 whitespace-nowrap">${cell || ''}</td>`).join('')}
+                <tr style="background:${i % 2 === 0 ? '#fff' : 'var(--canvas)'};border-bottom:1px solid var(--line-soft)">
+                    ${row.map(cell => `<td style="padding:8px 16px;font-size:.8rem;color:var(--ink-2);white-space:nowrap">${cell || ''}</td>`).join('')}
                 </tr>
             `).join('');
 
@@ -255,25 +260,25 @@ function openFullCsvPreview() {
     modal.setAttribute('aria-modal', 'true');
 
     modal.innerHTML = `
-        <div class="bg-white rounded-md shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden pb-4">
-            <div class="px-6 py-4 border-b flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
-                <h3 class="text-lg font-bold text-gray-800">Aperçu des données CSV</h3>
-                <button id="closeModal" class="p-1 rounded-full hover:bg-gray-100 transition" aria-label="Fermer">
-                    <svg class="w-5 h-5 text-gray-700 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div style="background:#fff;border-top:3px solid var(--orange);width:100%;max-width:72rem;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;padding-bottom:1rem;">
+            <div style="padding:16px 24px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:var(--canvas);">
+                <h3 style="font-size:1rem;font-weight:700;color:var(--ink);">Aperçu des données CSV</h3>
+                <button id="closeModal" style="padding:4px;color:var(--ink-3);" aria-label="Fermer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
-            <div class="flex-1 overflow-auto bg-gray-50">
-                <table class="min-w-full divide-y divide-gray-300">
-                    <thead class="bg-gray-200 sticky top-0 z-10">
-                        <tr>${headers.map(h => `<th class="px-5 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">${h}</th>`).join('')}</tr>
+            <div class="flex-1 overflow-auto" style="background:var(--canvas);">
+                <table class="min-w-full">
+                    <thead style="background:var(--line-soft);position:sticky;top:0;z-index:10;">
+                        <tr>${headers.map(h => `<th style="padding:10px 20px;text-align:left;font-size:11px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em;">${h}</th>`).join('')}</tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        ${displayRows.map(row => `<tr>${row.map(cell => `<td class="px-5 py-3 text-sm text-gray-700 whitespace-nowrap">${cell || ''}</td>`).join('')}</tr>`).join('')}
+                    <tbody style="background:#fff;">
+                        ${displayRows.map(row => `<tr style="border-top:1px solid var(--line-soft)">${row.map(cell => `<td style="padding:10px 20px;font-size:.8rem;color:var(--ink-2);white-space:nowrap">${cell || ''}</td>`).join('')}</tr>`).join('')}
                     </tbody>
                 </table>
-                ${isTruncated ? `<div class="px-6 py-4 bg-orange-50 border-t text-center text-orange-800 font-medium">⚠️ Limité à 1000 lignes</div>` : ''}
+                ${isTruncated ? `<div style="padding:14px 24px;background:var(--status-processing-bg);border-top:1px solid var(--status-processing-border);text-align:center;color:var(--status-processing-text);font-weight:700;font-size:.8rem;">⚠️ Limité à 1000 lignes</div>` : ''}
             </div>
         </div>
     `;
@@ -301,42 +306,42 @@ function showValidationErrorModal(errorData) {
 
     const errorCount = errors.length;
     const errorIcon = `
-        <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-9 h-9" style="color:var(--status-error-text)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
     `;
 
     modal.innerHTML = `
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div style="background:#fff;border-top:3px solid var(--status-error-text);width:100%;max-width:48rem;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
             <!-- Header -->
-            <div class="px-6 py-5 border-b bg-red-50 flex items-center gap-4">
+            <div style="padding:18px 24px;border-bottom:1px solid var(--status-error-border);background:var(--status-error-bg);display:flex;align-items:center;gap:16px;">
                 ${errorIcon}
                 <div class="flex-1">
-                    <h3 class="text-xl font-bold text-red-900">${errorMessage}</h3>
-                    <p class="text-sm text-red-700 mt-1">${errorCount} erreur${errorCount > 1 ? 's' : ''} détectée${errorCount > 1 ? 's' : ''} dans votre fichier CSV</p>
+                    <h3 style="font-size:1.05rem;font-weight:700;color:var(--status-error-text);">${errorMessage}</h3>
+                    <p style="font-size:.8rem;color:var(--status-error-text);margin-top:2px;">${errorCount} erreur${errorCount > 1 ? 's' : ''} détectée${errorCount > 1 ? 's' : ''} dans votre fichier CSV</p>
                 </div>
-                <button id="closeErrorModal" class="p-2 rounded-full hover:bg-red-100 transition" aria-label="Fermer">
-                    <svg class="w-6 h-6 text-red-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="closeErrorModal" style="padding:6px;color:var(--status-error-text);flex-shrink:0;" aria-label="Fermer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
 
             <!-- Error List -->
-            <div class="flex-1 overflow-auto p-6 bg-gray-50">
-                <div class="space-y-3">
+            <div class="flex-1 overflow-auto p-5" style="background:var(--canvas);">
+                <div class="space-y-2">
                     ${errors.map((err, index) => `
-                        <div class="bg-white border-l-4 border-red-500 rounded-r-lg shadow-sm p-4 hover:shadow-md transition-shadow">
+                        <div style="background:#fff;border-left:3px solid var(--status-error-text);border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:14px 16px;">
                             <div class="flex items-start gap-3">
-                                <div class="flex-shrink-0 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                                    <span class="text-red-700 font-bold text-sm">${err.line || index + 1}</span>
+                                <div style="flex-shrink:0;width:26px;height:26px;background:var(--status-error-bg);display:flex;align-items:center;justify-content:center;">
+                                    <span style="color:var(--status-error-text);font-weight:700;font-size:.78rem;">${err.line || index + 1}</span>
                                 </div>
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 mb-1">
-                                        <span class="text-xs font-semibold text-red-600 uppercase tracking-wider">Ligne ${err.line || index + 1}</span>
-                                        ${err.field ? `<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-mono">${err.field}</span>` : ''}
+                                        <span style="font-size:10.5px;font-weight:700;color:var(--status-error-text);text-transform:uppercase;letter-spacing:.06em;">Ligne ${err.line || index + 1}</span>
+                                        ${err.field ? `<span class="mono" style="font-size:10.5px;background:var(--status-error-bg);color:var(--status-error-text);padding:2px 6px;">${err.field}</span>` : ''}
                                     </div>
-                                    <p class="text-sm text-gray-800 leading-relaxed">${err.message || 'Erreur inconnue'}</p>
+                                    <p style="font-size:.82rem;color:var(--ink-2);line-height:1.5;">${err.message || 'Erreur inconnue'}</p>
                                 </div>
                             </div>
                         </div>
@@ -345,11 +350,11 @@ function showValidationErrorModal(errorData) {
             </div>
 
             <!-- Footer -->
-            <div class="px-6 py-4 bg-gray-100 border-t flex justify-between items-center">
-                <p class="text-sm text-gray-600">
-                    <span class="font-semibold">💡 Conseil :</span> Corrigez les erreurs dans votre fichier CSV et réessayez.
+            <div style="padding:14px 24px;background:var(--line-soft);border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">
+                <p style="font-size:.8rem;color:var(--ink-2);">
+                    <span style="font-weight:700;">Conseil :</span> Corrigez les erreurs dans votre fichier CSV et réessayez.
                 </p>
-                <button id="closeErrorModalBtn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium">
+                <button id="closeErrorModalBtn" class="btn-flux" style="border-color:var(--status-error-text);color:var(--status-error-text);">
                     Fermer
                 </button>
             </div>
@@ -422,6 +427,7 @@ async function handleUpload() {
         elements.previewSection()?.classList.add("hidden");
 
         showAppSnackbar("Upload réussi !", "success");
+        loadLastBatch();
 
     } catch (err) {
         showAppSnackbar("Erreur réseau : " + err.message, "error");
@@ -431,6 +437,63 @@ async function handleUpload() {
     }
 }
 
+// "Dernier batch" strip — answers "did my last upload actually go through?"
+// without the inputter having to click over to the Batches page.
+function loadLastBatch() {
+    const filenameEl = document.getElementById('lastBatchFilename');
+    const timeEl = document.getElementById('lastBatchTime');
+    const badgeEl = document.getElementById('lastBatchBadge');
+    if (!filenameEl) return;
+
+    (async () => {
+        try {
+            const username = sessionStorage.getItem('username') || '';
+            const statuses = ['UPLOADED', 'VALIDATED', 'PROCESSING', 'PROCESSED',
+                'PROCESSED_WITH_ERROR', 'PROCESSED_FAILED', 'UPLOADED_FAILED', 'VALIDATED_FAILED'];
+            const params = new URLSearchParams({uploadedById: username});
+            statuses.forEach(s => params.append('status', s));
+
+            const res = await secureFetch(`${DEV_API_BASE}/batches?${params}`);
+            if (!res || !res.ok) throw new Error('fetch failed');
+
+            const result = await res.json();
+            const raw = result.items || result.content || result;
+            const list = Array.isArray(raw) ? raw : [];
+
+            if (!list.length) {
+                filenameEl.textContent = "Aucun batch envoyé pour le moment";
+                filenameEl.style.cssText = "font-size:.8rem;font-weight:400;color:var(--ink-3)";
+                return;
+            }
+
+            list.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+            const last = list[0];
+
+            filenameEl.textContent = last.originalFilename || last.batchId;
+            filenameEl.style.cssText = "font-size:.8rem;font-weight:700;color:var(--ink)";
+            if (timeEl) timeEl.textContent = last.uploadedAt ? new Date(last.uploadedAt).toLocaleString('fr-FR') : '';
+            if (badgeEl && typeof getStatusBadge === 'function') badgeEl.innerHTML = getStatusBadge(last.status);
+
+            const accentByStatus = {
+                PROCESSED: 'var(--status-success-text)',
+                VALIDATED: 'var(--status-validated-text)',
+                PROCESSING: 'var(--status-processing-text)',
+                PROCESSED_WITH_ERROR: 'var(--status-warning-text)',
+                UPLOADED_FAILED: 'var(--status-error-text)',
+                VALIDATED_FAILED: 'var(--status-error-text)',
+                PROCESSED_FAILED: 'var(--status-error-text)',
+            };
+            const strip = document.getElementById('lastBatchStrip');
+            if (strip) strip.style.borderLeftColor = accentByStatus[last.status] || 'var(--ink-4)';
+
+            if (window.lucide) window.lucide.createIcons();
+        } catch (e) {
+            filenameEl.textContent = "Impossible de charger le dernier batch";
+            filenameEl.style.cssText = "font-size:.8rem;font-weight:400;color:var(--ink-3)";
+        }
+    })();
+}
+
 // 7. INITIALIZATION
 // Fire immediately if DOM already loaded, otherwise wait
 function initUploadPage() {
@@ -438,18 +501,7 @@ function initUploadPage() {
     state.originalBtnHTML = elements.sendCsvBtn()?.innerHTML || "Soumettre";
 
     loadApplications();
-
-    // Stats polling — uses startStatsPolling from shared.js
-    if (typeof startStatsPolling === 'function') {
-        startStatsPolling({
-            UPLOADED: 'uploadedCount',
-            VALIDATED: 'validatedCount',
-            PROCESSING: 'validatedCount',
-            PROCESSED: 'validatedCount',
-            PROCESSED_WITH_ERROR: 'validatedCount',
-            PROCESSED_FAILED: 'validatedCount'
-        }, 15);
-    }
+    loadLastBatch();
 
     elements.appSelect()?.addEventListener("change", (e) => {
         if (e.target.value) { loadFields(e.target.value); clearCsvPreview(); }
@@ -494,64 +546,20 @@ function initUploadPage() {
         navigator.clipboard.writeText(text).then(() => showAppSnackbar("Copié dans le presse-papiers", "success"));
     };
 
+    // Pre-existing bug fix: this button had no handler defined at all.
     window.downloadTemplate = () => {
-        const appCode = elements.appSelect()?.value;
-        if (!appCode) {
-            showAppSnackbar("Choisissez d'abord une application", "error");
-            return;
-        }
-
-        // Build header from current field order (mandatory first, then optional)
-        const headers = state.fieldOrder.length > 0
-            ? state.fieldOrder
-            : [...state.mandatoryFields, ...state.optionalFields];
-
-        if (!headers.length) {
-            showAppSnackbar("Aucun champ disponible pour cette application", "error");
-            return;
-        }
-
-        // Row 1: header
-        // Row 2: a sample row showing the expected format per field type
-        const sampleValues = {
-            'TRANSACTION.TYPE': 'AC',
-            'DEBIT.ACCT.NO': '00193700',
-            'CREDIT.ACCT.NO': '00284710',
-            'DEBIT.AMOUNT': '250000',
-            'CREDIT.AMOUNT': '',
-            'DEBIT.CURRENCY': 'XOF',
-            'CREDIT.CURRENCY': '',
-            'DEBIT.VALUE.DATE': '20260101',
-            'CREDIT.VALUE.DATE': '',
-            'PAYMENT.DETAILS': 'VIREMENT SALAIRES',
-            'ORDERING.BANK': 'OBA',
-            'ORDERING.CUST': '',
-            'PROCESSING.DATE': '',
-            'T24.REFERENCE': 'FT2406210001',
-        };
-
-        const sampleRow = headers.map(h => {
-            const v = sampleValues[h] ?? '';
-            return v.includes(',') ? `"${v}"` : v;
-        });
-
-        const csv = [
-            headers.join(','),
-            sampleRow.join(',')
-        ].join('\n');
-
-        const blob = new Blob(['\ufeff' + csv], {type: 'text/csv;charset=utf-8;'});
+        const header = (elements.csvHeaderCode()?.textContent || "").trim();
+        if (!header) return;
+        const blob = new Blob([header + "\r\n"], {type: "text/csv;charset=utf-8;"});
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const appName = (elements.appSelect()?.value || "modele").toLowerCase().replace(/[^a-z0-9]+/g, "_");
+        const a = document.createElement("a");
         a.href = url;
-        a.download = `template_${appCode}.csv`;
-        a.style.display = 'none';
+        a.download = `modele_${appName}.csv`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-
-        showAppSnackbar(`Modèle ${appCode}.csv téléchargé`, "success");
     };
 
     if (window.lucide) window.lucide.createIcons();

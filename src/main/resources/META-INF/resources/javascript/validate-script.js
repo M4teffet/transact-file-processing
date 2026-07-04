@@ -7,34 +7,113 @@
 
 let uploadedBatches = [];
 let batchIdToDelete = null;
+let validateSearchQuery = '';
+
+const _filterUploaded = (list, q) => {
+    if (!q || !q.trim()) return list;
+    const lq = q.toLowerCase().trim();
+    return list.filter(b =>
+        (b.originalFilename || '').toLowerCase().includes(lq) ||
+        (b.batchId || '').toLowerCase().includes(lq) ||
+        (b.application || '').toLowerCase().includes(lq) ||
+        (b.uploadedBy || '').toLowerCase().includes(lq)
+    );
+};
+
+const _ensureValidateSearch = () => {
+    const anchor = document.getElementById('validateSearchAnchor');
+    if (!anchor || anchor.dataset.ready) return;
+    anchor.dataset.ready = '1';
+    anchor.innerHTML = `
+        <div style="position:relative">
+            <i data-lucide="search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);
+               width:13px;height:13px;color:var(--ink-3);pointer-events:none"></i>
+            <input id="validateSearchInput" type="text"
+                   placeholder="Rechercher…"
+                   style="width:240px;padding:5px 10px 5px 28px;font-size:12px;
+                          border:1px solid var(--line);background:#fff;
+                          color:var(--ink-2);outline:none;box-sizing:border-box"/>
+        </div>`;
+    anchor.querySelector('input').addEventListener('input', e => {
+        validateSearchQuery = e.target.value;
+        renderUploadedBatches();
+    });
+    createIcons(anchor);
+};
 
 /**
- * CONFIGURATION DES STATS POUR CETTE PAGE
+ * Action globale de rafraîchissement (Dernier lot validé + Liste)
  */
-const validationStatsMapping = {
-    VALIDATED: 'validatedCount',
-    PROCESSING: 'processedCount',
-    PROCESSED: 'processedCount',
-    PROCESSED_WITH_ERROR: 'processedCount',
-    PROCESSED_FAILED: 'processedCount'
+const refreshDashboard = () => {
+    loadLastValidatedBatch();
+    loadUploadedBatches();
 };
 
 document.addEventListener('DOMContentLoaded', () => {
     // Vérifie si nous sommes sur la page de validation (identifiée par ID ou élément spécifique)
-    if (document.getElementById('validatedPage') || document.getElementById('uploadedBatchesContainer')) {
+    if (document.getElementById('validatePage') || document.getElementById('uploadedBatchesContainer')) {
         refreshDashboard();
     }
 
     document.getElementById('logoutBtn')?.addEventListener('click', logoutUser);
 });
 
-/**
- * Action globale de rafraîchissement (Stats + Liste)
- */
-const refreshDashboard = () => {
-    loadStats(validationStatsMapping);
-    loadUploadedBatches();
-};
+// "Dernier lot validé" strip — mirrors the Upload page's "Dernier batch":
+// answers "did the last batch I validated actually go through T24 OK?"
+// without the authoriser needing to click over to the Validated page.
+// The /batches endpoint has no server-side validatedById filter, so we
+// pull the post-validation statuses and filter client-side.
+function loadLastValidatedBatch() {
+    const filenameEl = document.getElementById('lastValidatedFilename');
+    const timeEl = document.getElementById('lastValidatedTime');
+    const badgeEl = document.getElementById('lastValidatedBadge');
+    if (!filenameEl) return;
+
+    (async () => {
+        try {
+            const username = sessionStorage.getItem('username') || '';
+            const statuses = ['VALIDATED', 'PROCESSING', 'PROCESSED', 'PROCESSED_WITH_ERROR', 'PROCESSED_FAILED'];
+            const params = new URLSearchParams();
+            statuses.forEach(s => params.append('status', s));
+
+            const res = await secureFetch(`${API_BASE}/batches?${params}`);
+            if (!res || !res.ok) throw new Error('fetch failed');
+
+            const result = await res.json();
+            const raw = result.items || result.content || result;
+            const list = (Array.isArray(raw) ? raw : []).filter(b => b.validatedBy === username);
+
+            if (!list.length) {
+                filenameEl.textContent = "Aucun lot validé pour le moment";
+                filenameEl.style.cssText = "font-size:.8rem;font-weight:400;color:var(--ink-3)";
+                return;
+            }
+
+            list.sort((a, b) => new Date(b.validatedAt || 0) - new Date(a.validatedAt || 0));
+            const last = list[0];
+
+            filenameEl.textContent = last.originalFilename || last.batchId;
+            filenameEl.style.cssText = "font-size:.8rem;font-weight:700;color:var(--ink)";
+            if (timeEl) timeEl.textContent = last.validatedAt ? new Date(last.validatedAt).toLocaleString('fr-FR') : '';
+            if (badgeEl && typeof getStatusBadge === 'function') badgeEl.innerHTML = getStatusBadge(last.status);
+
+            const accentByStatus = {
+                PROCESSED: 'var(--status-success-text)',
+                VALIDATED: 'var(--status-validated-text)',
+                PROCESSING: 'var(--status-processing-text)',
+                PROCESSED_WITH_ERROR: 'var(--status-warning-text)',
+                PROCESSED_FAILED: 'var(--status-error-text)',
+            };
+            const strip = document.getElementById('lastValidatedStrip');
+            if (strip) strip.style.borderLeftColor = accentByStatus[last.status] || 'var(--ink-4)';
+
+            if (window.lucide) window.lucide.createIcons();
+        } catch (e) {
+            filenameEl.textContent = "Impossible de charger le dernier lot validé";
+            filenameEl.style.cssText = "font-size:.8rem;font-weight:400;color:var(--ink-3)";
+        }
+    })();
+}
 
 /**
  * CHARGEMENT DES DONNÉES
@@ -75,15 +154,18 @@ const renderUploadedBatches = () => {
         return;
     }
 
-    const TH = `padding:10px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em`;
-    const TD = `padding:11px 16px;border-bottom:0.5px solid var(--line-soft,#f0f1f3)`;
+    _ensureValidateSearch();
+
+    const filtered = _filterUploaded(uploadedBatches, validateSearchQuery);
+    const TH = `padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em`;
+    const TD = `padding:11px 16px;border-bottom:1px solid var(--line-soft)`;
     const BTN = `padding:5px;background:none;border:none;cursor:pointer;color:var(--ink-3);display:inline-flex;align-items:center`;
 
     container.innerHTML = `
         <div style="overflow-x:auto">
             <table style="min-width:100%;border-collapse:collapse">
                 <thead>
-                    <tr style="border-bottom:0.5px solid var(--line)">
+                    <tr style="border-bottom:1px solid var(--line)">
                         <th style="${TH}">Lot</th>
                         <th style="${TH}">Date d'import</th>
                         <th style="${TH}">Statut</th>
@@ -91,24 +173,24 @@ const renderUploadedBatches = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    ${uploadedBatches.map(b => {
+                    ${filtered.length ? filtered.map(b => {
         const filename = b.originalFilename || '—';
         const short = filename.length > 36 ? filename.slice(0, 34) + '…' : filename;
         const {date, time} = formatDateParts(b.uploadedAt);
         const records = b.totalRecords
             ? `<span style="font-size:10px;color:var(--ink-3)">${b.totalRecords.toLocaleString('fr-FR')} lignes</span>`
             : '';
-        return `<tr style="border-bottom:0.5px solid var(--line-soft,#f0f1f3)">
+        return `<tr style="border-bottom:1px solid var(--line-soft)">
                             <td style="${TD};max-width:300px">
-                                <div style="font-size:12px;font-weight:500;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${filename}">${short}</div>
+                                <div style="font-size:12px;font-weight:700;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${filename}">${short}</div>
                                 <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
                                     ${appBadgeHTML(b.application)}
-                                    <span style="font-size:10px;color:var(--ink-3);font-family:monospace">${b.batchId}</span>
+                                    <span class="mono" style="font-size:10px;color:var(--ink-3)">${b.batchId}</span>
                                     ${records}
                                 </div>
                                 ${b.uploadedBy ? `<div style="margin-top:4px">
-                                    <span style="font-size:10px;font-weight:500;background:#e8f0fe;color:#1967d2;
-                                                 padding:2px 7px;border-radius:99px;display:inline-flex;align-items:center;gap:3px">
+                                    <span style="font-size:10px;font-weight:700;background:var(--canvas);color:var(--ink-2);border:1px solid var(--line);
+                                                 padding:2px 7px;display:inline-flex;align-items:center;gap:3px">
                                         <i data-lucide="user" style="width:10px;height:10px"></i>${b.uploadedBy}
                                     </span>
                                 </div>` : ''}
@@ -120,23 +202,23 @@ const renderUploadedBatches = () => {
                             <td style="${TD}">${getStatusBadge(b.status)}</td>
                             <td style="${TD};white-space:nowrap;width:1%">
                                 <button onclick="viewBatchDetails('${b.batchId}')" title="Voir les données"
-                                        style="${BTN}" onmouseover="this.style.color='#1967d2'" onmouseout="this.style.color='var(--ink-3)'">
+                                        style="${BTN}" onmouseover="this.style.color='var(--orange)'" onmouseout="this.style.color='var(--ink-3)'">
                                     <i data-lucide="eye" style="width:15px;height:15px"></i>
                                 </button>
                                 <button onclick="openDeleteModal('${b.batchId}')" title="Supprimer"
-                                        style="${BTN}" onmouseover="this.style.color='#c5221f'" onmouseout="this.style.color='var(--ink-3)'">
+                                        style="${BTN}" onmouseover="this.style.color='var(--status-error-text)'" onmouseout="this.style.color='var(--ink-3)'">
                                     <i data-lucide="trash-2" style="width:15px;height:15px"></i>
                                 </button>
                                 <button onclick="validateBatchNow('${b.batchId}')"
-                                        style="margin-left:6px;padding:4px 11px;font-size:11px;font-weight:500;
-                                               color:#fff;background:#16a34a;border:none;cursor:pointer;
+                                        style="margin-left:6px;padding:5px 12px;font-size:11px;font-weight:700;
+                                               color:#fff;background:var(--orange);border:1.5px solid var(--orange);cursor:pointer;
                                                display:inline-flex;align-items:center;gap:5px"
-                                        onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='#16a34a'">
+                                        onmouseover="this.style.background='var(--orange-deep)';this.style.borderColor='var(--orange-deep)'" onmouseout="this.style.background='var(--orange)';this.style.borderColor='var(--orange)'">
                                     <i data-lucide="check-circle" style="width:12px;height:12px"></i>Valider
                                 </button>
                             </td>
                         </tr>`;
-    }).join('')}
+    }).join('') : emptyFilterRowHTML(validateSearchQuery, 4)}
                 </tbody>
             </table>
         </div>`;
@@ -146,35 +228,70 @@ const renderUploadedBatches = () => {
 /**
  * ACTION : VALIDATION
  */
+/**
+ * Batches over this record count require the authoriser to type "VALIDER"
+ * before the confirm button is enabled (README: threshold-gated confirmation).
+ */
+const LARGE_BATCH_THRESHOLD = 500;
 let _pendingValidationId = null;
+let _pendingRequiresTypedConfirm = false;
 
 const validateBatchNow = (id) => {
     const batch = uploadedBatches.find(b => b.batchId === id);
     if (!batch) return;
 
     _pendingValidationId = id;
+    _pendingRequiresTypedConfirm = (batch.totalRecords || 0) > LARGE_BATCH_THRESHOLD;
 
     // Populate modal content
-    document.getElementById('confirmBatchId').textContent    = id;
     document.getElementById('confirmFilename').textContent   = batch.originalFilename || 'N/A';
     document.getElementById('confirmApp').textContent        = batch.application || 'N/A';
+    document.getElementById('confirmUploadedBy').textContent = batch.uploadedBy || 'N/A';
     document.getElementById('confirmRecords').textContent = batch.totalRecords > 0
-        ? batch.totalRecords.toLocaleString('fr-FR') + ' lignes'
+        ? batch.totalRecords.toLocaleString('fr-FR')
         : '—';
-    document.getElementById('confirmUploadedAt').textContent = batch.uploadedAt
-        ? new Date(batch.uploadedAt).toLocaleString('fr-FR') : '—';
+
+    const typedWrap = document.getElementById('confirmTypedWrap');
+    const typedInput = document.getElementById('confirmTypedInput');
+    if (typedInput) typedInput.value = '';
+    if (typedWrap) typedWrap.classList.toggle('hidden', !_pendingRequiresTypedConfirm);
+    updateConfirmValidateBtnState();
 
     if (typeof openModal === 'function') openModal('validateConfirmModal');
 };
 
+const onConfirmTypedInput = () => updateConfirmValidateBtnState();
+window.onConfirmTypedInput = onConfirmTypedInput;
+
+const updateConfirmValidateBtnState = () => {
+    const btn = document.getElementById('confirmValidateBtn');
+    if (!btn) return;
+    if (!_pendingRequiresTypedConfirm) {
+        btn.disabled = false;
+        btn.style.opacity = '';
+        btn.style.cursor = '';
+        return;
+    }
+    const typedInput = document.getElementById('confirmTypedInput');
+    const matches = (typedInput?.value || '').trim() === 'VALIDER';
+    btn.disabled = !matches;
+    btn.style.opacity = matches ? '' : '.5';
+    btn.style.cursor = matches ? '' : 'not-allowed';
+};
+
 const cancelValidation = () => {
     _pendingValidationId = null;
+    _pendingRequiresTypedConfirm = false;
     if (typeof closeModal === 'function') closeModal('validateConfirmModal');
 };
 
 const confirmValidation = async () => {
     const id = _pendingValidationId;
     if (!id) return;
+
+    // Defense in depth — the button is disabled client-side, but never trust that alone.
+    const typedInput = document.getElementById('confirmTypedInput');
+    if (_pendingRequiresTypedConfirm && (typedInput?.value || '').trim() !== 'VALIDER') return;
 
     const confirmBtn = document.getElementById('confirmValidateBtn');
     const confirmText = document.getElementById('confirmValidateBtnText');

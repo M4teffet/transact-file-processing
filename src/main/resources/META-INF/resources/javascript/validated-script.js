@@ -142,17 +142,27 @@ const loadValidatedBatches = async () => {
 // RENDER TABLE
 // -----------------------------
 let validatedSearchQuery = '';
+let validatedStatusFilter = 'all';
 
 const _filterValidated = (list, q) => {
-    if (!q || !q.trim()) return list;
+    const groupStatuses = statusesForFilterKey(validatedStatusFilter);
+    let out = groupStatuses ? list.filter(b => groupStatuses.includes(b.status)) : list;
+    if (!q || !q.trim()) return out;
     const lq = q.toLowerCase().trim();
-    return list.filter(b =>
+    return out.filter(b =>
         (b.originalFilename || '').toLowerCase().includes(lq) ||
         (b.batchId || '').toLowerCase().includes(lq) ||
         (b.application || '').toLowerCase().includes(lq) ||
         (b.status || '').toLowerCase().includes(lq) ||
         (b.uploadedBy || '').toLowerCase().includes(lq)
     );
+};
+
+const _ensureValidatedStatusChips = () => {
+    renderStatusFilterChips('validatedStatusChips', validatedStatusFilter, (key) => {
+        validatedStatusFilter = key;
+        renderValidatedBatches();
+    });
 };
 
 const _ensureValidatedSearch = () => {
@@ -189,7 +199,7 @@ const _renderValidatedTbody = () => {
     const ICON_BTN = `padding:5px;background:none;border:none;cursor:pointer;color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center`;
     const filtered = _filterValidated(validatedBatches, validatedSearchQuery);
     if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="4" style="padding:2rem;text-align:center;font-size:12px;color:var(--ink-3)">Aucun résultat pour « ${validatedSearchQuery} »</td></tr>`;
+        tbody.innerHTML = emptyFilterRowHTML(validatedSearchQuery, 4);
         return;
     }
     tbody.innerHTML = filtered.map(b => _validatedRow(b, TD, ICON_BTN)).join('');
@@ -205,15 +215,15 @@ const _validatedRow = (b, TD, ICON_BTN) => {
         : '';
     return `<tr style="border-bottom:0.5px solid var(--line-soft,#f0f1f3)" data-batch-id="${b.batchId}">
         <td style="${TD};max-width:300px">
-            <div style="font-size:12px;font-weight:500;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${filename}">${short}</div>
+            <div style="font-size:12px;font-weight:700;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${filename}">${short}</div>
             <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
                 ${appBadgeHTML(b.application)}
                 <span style="font-size:10px;color:var(--ink-3);font-family:monospace">${b.batchId}</span>
                 ${records}
             </div>
             ${b.uploadedBy ? `<div style="margin-top:4px">
-                <span style="font-size:10px;font-weight:500;background:#e8f0fe;color:#1967d2;
-                             padding:2px 7px;border-radius:99px;display:inline-flex;align-items:center;gap:3px">
+                <span style="font-size:10px;font-weight:700;background:var(--canvas);color:var(--ink-2);border:1px solid var(--line);
+                             padding:2px 7px;display:inline-flex;align-items:center;gap:3px">
                     <i data-lucide="user" style="width:10px;height:10px"></i>${b.uploadedBy}
                 </span>
             </div>` : ''}
@@ -225,11 +235,11 @@ const _validatedRow = (b, TD, ICON_BTN) => {
         <td style="${TD}">${getStatusBadge(b.status)}</td>
         <td style="${TD};white-space:nowrap">
             <button onclick="viewBatchDetails('${b.batchId}')" title="Voir les données"
-                    style="${ICON_BTN}" onmouseover="this.style.color='#1967d2'" onmouseout="this.style.color='var(--ink-3)'">
+                    style="${ICON_BTN}" onmouseover="this.style.color='var(--orange)'" onmouseout="this.style.color='var(--ink-3)'">
                 <i data-lucide="eye" style="width:15px;height:15px"></i>
             </button>
             <button onclick="viewBatchSummary('${b.batchId}')" title="Résumé d'exécution"
-                    style="${ICON_BTN}" onmouseover="this.style.color='#0f6e56'" onmouseout="this.style.color='var(--ink-3)'">
+                    style="${ICON_BTN}" onmouseover="this.style.color='var(--status-success-text)'" onmouseout="this.style.color='var(--ink-3)'">
                 <i data-lucide="bar-chart-2" style="width:15px;height:15px"></i>
             </button>
         </td>
@@ -252,8 +262,9 @@ const renderValidatedBatches = () => {
     }
 
     _ensureValidatedSearch();
+    _ensureValidatedStatusChips();
 
-    const TH = `padding:10px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em`;
+    const TH = `padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em`;
     const TD = `padding:11px 16px;border-bottom:0.5px solid var(--line-soft,#f0f1f3)`;
     const ICON_BTN = `padding:5px;background:none;border:none;cursor:pointer;color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center`;
     const filtered = _filterValidated(validatedBatches, validatedSearchQuery);
@@ -272,7 +283,7 @@ const renderValidatedBatches = () => {
                 <tbody id="validatedTbody">
                     ${filtered.length
         ? filtered.map(b => _validatedRow(b, TD, ICON_BTN)).join('')
-        : `<tr><td colspan="4" style="padding:2rem;text-align:center;font-size:12px;color:var(--ink-3)">Aucun résultat pour « ${validatedSearchQuery} »</td></tr>`}
+        : emptyFilterRowHTML(validatedSearchQuery, 4)}
                 </tbody>
             </table>
         </div>`;

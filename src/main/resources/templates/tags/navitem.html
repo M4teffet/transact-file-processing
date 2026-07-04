@@ -1,0 +1,18 @@
+{! Shared sidebar nav-item — Qute USER TAG (files under templates/tags/ are
+    auto-registered by Quarkus and invoked as {#tagname param=value/}).
+    A plain {#include} does NOT support arbitrary named parameters — that
+    mechanism is specific to user tags, which is why this lives here.
+
+    Params: href (string), icon (lucide icon name), label (string),
+            page (current activePage), matchPage (page value that marks this item active)
+    Usage:  {#navitem href="/dashboard" icon="layout-dashboard" label="Administration" page=activePage matchPage="dashboard"/}
+    For a link that is never active (e.g. a static "Support" link), pass a matchPage
+    value that can never occur, e.g. matchPage="__none__".
+!}
+{#if page == matchPage}
+<a class="nav-item nav-item-active" href="{href}">
+    {#else}
+    <a class="nav-item" href="{href}">
+        {/if}
+        <i class="w-4 h-4 flex-shrink-0" data-lucide="{icon}"></i> {label}
+    </a>

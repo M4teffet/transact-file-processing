@@ -51,39 +51,43 @@ let _allUsers = [];
 
 function renderUserItem(user) {
     const roleLabel = {ADMIN: 'Admin', INPUTTER: 'Initiateur', AUTHORISER: 'Validateur'}[user.role] || user.role;
-    const roleCls = {
-        ADMIN: 'bg-purple-50 text-purple-700 border-purple-200',
-        INPUTTER: 'bg-blue-50 text-blue-700 border-blue-200',
-        AUTHORISER: 'bg-green-50 text-green-700 border-green-200'
-    }[user.role] || 'bg-gray-100 text-gray-600 border-gray-200';
+    const roleStyle = {
+        ADMIN: 'background:var(--status-processing-bg);color:var(--status-processing-text);border-color:var(--status-processing-border);',
+        INPUTTER: 'background:var(--status-pending-bg);color:var(--status-pending-text);border-color:var(--status-pending-border);',
+        AUTHORISER: 'background:var(--status-validated-bg);color:var(--status-validated-text);border-color:var(--status-validated-border);'
+    }[user.role] || 'background:var(--status-pending-bg);color:var(--status-pending-text);border-color:var(--status-pending-border);';
     const initials = user.username.slice(0, 2).toUpperCase();
     const isLocked = user.status === 'LOCKED';
-    const avatarCls = isLocked ? 'bg-red-50 border-red-200 text-red-600' : 'bg-orange-50 border-orange-200 text-orange-600';
-    const dotCls = {
-        ACTIVE: 'bg-green-400',
-        LOCKED: 'bg-red-500',
-        PENDING: 'bg-yellow-400'
-    }[user.status] || 'bg-gray-300';
+    const avatarStyle = isLocked
+        ? 'background:var(--status-error-bg);border-color:var(--status-error-border);color:var(--status-error-text);'
+        : 'background:var(--status-processing-bg);border-color:var(--status-processing-border);color:var(--orange);';
+    const dotStyle = {
+        ACTIVE: 'background:var(--status-success-text);',
+        LOCKED: 'background:var(--status-error-text);',
+        PENDING: 'background:var(--status-warning-text);'
+    }[user.status] || 'background:var(--ink-4);';
 
     const pwdBadge = user.mustChangePassword
-        ? `<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;background:#fff7ed;color:#c2410c;border:0.5px solid rgba(194,65,12,.25)">Pwd requis</span>`
+        ? `<span style="display:inline-flex;align-items:center;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:var(--status-processing-bg);color:var(--status-processing-text);border:1px solid var(--status-processing-border)">Pwd requis</span>`
         : '';
 
     const unlockBtn = isLocked
         ? `<button onclick="unlockUser('${user.username}')"
-                   class="text-[10px] bg-red-600 hover:bg-red-700 text-white px-2 py-0.5 rounded transition">
-               🔓 Déverrouiller
+                   class="text-[10px] text-white px-2 py-0.5 transition"
+                   style="background:var(--status-error-text);border:1px solid var(--status-error-text);"
+                   onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+               Déverrouiller
            </button>`
         : '';
 
     return `
     <li class="flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 transition-colors" data-username="${user.username.toLowerCase()}" data-role="${user.role}" data-status="${user.status}">
         <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-8 h-8 rounded-full border flex items-center justify-center flex-shrink-0 text-xs font-semibold ${avatarCls}">${initials}</div>
+            <div class="w-8 h-8 border flex items-center justify-center flex-shrink-0 text-xs font-semibold" style="border-radius:50%;${avatarStyle}">${initials}</div>
             <div class="min-w-0">
                 <div class="flex items-center gap-1.5 flex-wrap">
                     <span class="text-xs font-semibold text-gray-900">${user.username}</span>
-                    <span class="text-[10px] font-medium px-1.5 py-0.5 rounded border ${roleCls}">${roleLabel}</span>
+                    <span class="text-[10px] font-bold px-1.5 py-0.5 border" style="${roleStyle}">${roleLabel}</span>
                     ${pwdBadge}
                 </div>
                 <div class="text-[10px] text-gray-400 mt-0.5 truncate">${user.email || user.countryCode}</div>
@@ -91,7 +95,7 @@ function renderUserItem(user) {
         </div>
         <div class="flex items-center gap-2 flex-shrink-0 ml-2">
             ${unlockBtn}
-            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotCls}" title="${user.status}"></span>
+            <span class="w-1.5 h-1.5 flex-shrink-0" style="border-radius:50%;${dotStyle}" title="${user.status}"></span>
         </div>
     </li>`;
 }
@@ -307,7 +311,7 @@ function renderApplicationSchema(data) {
             <td style="padding:6px 10px;border-bottom:0.5px solid #f1f5f9;white-space:nowrap">
                 <div style="display:flex;align-items:center;gap:6px">
                     ${req
-        ? `<span style="font-size:11px;color:#c45d00;font-weight:700;line-height:1">*</span>`
+        ? `<span style="font-size:11px;color:#C65B00;font-weight:700;line-height:1">*</span>`
         : `<span style="width:5px;display:inline-block"></span>`}
                     <span style="font-size:11px;font-family:monospace;color:${req ? '#92400e' : '#4b5563'};font-weight:${req ? '500' : '400'}">${f.fieldName}</span>
                 </div>
@@ -331,7 +335,7 @@ function renderApplicationSchema(data) {
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
                 <p style="font-size:10px;font-weight:500;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em">Schéma des champs</p>
                 <span style="font-size:10px;color:#9ca3af">—</span>
-                <span style="font-size:10px;color:#c45d00;font-weight:500">${mandatory.length} obligatoire${mandatory.length !== 1 ? 's' : ''}</span>
+                <span style="font-size:10px;color:#C65B00;font-weight:500">${mandatory.length} obligatoire${mandatory.length !== 1 ? 's' : ''}</span>
                 <span style="font-size:10px;color:#9ca3af">·</span>
                 <span style="font-size:10px;color:#6b7280">${optional.length} optionnel${optional.length !== 1 ? 's' : ''}</span>
             </div>
@@ -356,7 +360,7 @@ function renderApplicationSchema(data) {
                 </table>
             </div>
             <p style="font-size:9px;color:#9ca3af;margin-top:6px">
-                <span style="color:#c45d00;font-weight:700">*</span> Champ obligatoire dans le fichier CSV
+                <span style="color:#C65B00;font-weight:700">*</span> Champ obligatoire dans le fichier CSV
             </p>
         </div>`;
 }
@@ -373,7 +377,7 @@ document.getElementById('userEmail')?.addEventListener('input', e => {
     if (atIdx > 0) {
         const derived = email.slice(0, atIdx).toUpperCase();
         preview.textContent = `Identifiant : ${derived}`;
-        preview.style.color = '#e86e00';
+        preview.style.color = '#FF7900';
     } else {
         preview.textContent = '';
     }
@@ -740,7 +744,7 @@ async function secToggleLock(username, lock) {
 
 // ── Fenêtre de service ───────────────────────────────────────────────────────
 (function () {
-    const state = {enabled: false, openHour: 8, closeHour: 18, zone: 'Africa/Abidjan', adminKeepOpen: false};
+    const state = {enabled: false, openHour: 8, closeHour: 18, zone: 'GMT', adminKeepOpen: false, dirty: false};
 
     function elems() {
         return {
@@ -752,7 +756,35 @@ async function secToggleLock(username, lock) {
             saveBtn: document.getElementById('windowSaveBtn'),
             badge: document.getElementById('windowStatusBadge'),
             meta: document.getElementById('windowMeta'),
+            dirtyIndicator: document.getElementById('windowDirtyIndicator'),
         };
+    }
+
+    /**
+     * Mirrors OperatingWindow#isOpenNow() in the backend exactly (same three
+     * branches: disabled/override → open, degenerate openHour==closeHour →
+     * open, then normal vs. overnight window). Computed live from whatever is
+     * currently in the form — including unsaved edits — so the status badge
+     * never shows a stale "OUVERT" carried over from a server response that
+     * predates the admin's in-progress changes.
+     */
+    function computeOpenNow(s) {
+        if (!s.enabled) return true;
+        if (s.adminKeepOpen) return true;
+
+        let hour;
+        try {
+            const fmt = new Intl.DateTimeFormat('en-GB', {hour: 'numeric', hour12: false, timeZone: s.zone || 'GMT'});
+            hour = parseInt(fmt.format(new Date()), 10);
+            if (hour === 24) hour = 0;
+            if (Number.isNaN(hour)) throw new Error('bad zone');
+        } catch (e) {
+            hour = new Date().getUTCHours(); // invalid IANA zone — fall back to UTC, same as the backend
+        }
+
+        if (s.openHour === s.closeHour) return true; // degenerate config: always open
+        if (s.openHour < s.closeHour) return hour >= s.openHour && hour < s.closeHour;
+        return hour >= s.openHour || hour < s.closeHour; // overnight window
     }
 
     function populateHourSelect(sel, value) {
@@ -773,27 +805,35 @@ async function secToggleLock(username, lock) {
     }
 
     function paint(s) {
-        const {enabledT, keepT, openSel, closeSel, zoneInput, badge, meta} = elems();
+        const {enabledT, keepT, openSel, closeSel, zoneInput, badge, meta, dirtyIndicator} = elems();
         if (!enabledT) return;
         paintToggle(enabledT, document.getElementById('windowEnabledKnob'), s.enabled);
         paintToggle(keepT, document.getElementById('windowKeepOpenKnob'), s.adminKeepOpen);
         if (openSel) openSel.value = s.openHour;
         if (closeSel) closeSel.value = s.closeHour;
-        if (zoneInput) zoneInput.value = s.zone || 'Africa/Abidjan';
+        if (zoneInput) zoneInput.value = s.zone || 'GMT';  // 'GMT' here only covers the brief pre-fetch instant; the backend's own default is what actually applies once /operating-window responds
+
+        const openNow = computeOpenNow(s);
 
         // Status badge
         if (badge) {
+            badge.style.fontWeight = '700';
             if (!s.enabled) {
                 badge.textContent = 'Désactivée';
-                badge.className = 'text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full border border-gray-200 text-gray-400 bg-gray-50';
-            } else if (s.openNow) {
+                badge.className = 'text-[10px] tracking-widest uppercase px-2 py-0.5 border';
+                badge.style.cssText += 'background:var(--status-pending-bg);color:var(--status-pending-text);border-color:var(--status-pending-border);';
+            } else if (openNow) {
                 badge.textContent = s.adminKeepOpen ? 'Ouvert (maintenu)' : 'Ouvert';
-                badge.className = 'text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full border border-green-200 text-green-700 bg-green-50';
+                badge.className = 'text-[10px] tracking-widest uppercase px-2 py-0.5 border';
+                badge.style.cssText += 'background:var(--status-success-bg);color:var(--status-success-text);border-color:var(--status-success-border);';
             } else {
                 badge.textContent = 'Fermé';
-                badge.className = 'text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full border border-red-200 text-red-700 bg-red-50';
+                badge.className = 'text-[10px] tracking-widest uppercase px-2 py-0.5 border';
+                badge.style.cssText += 'background:var(--status-error-bg);color:var(--status-error-text);border-color:var(--status-error-border);';
             }
         }
+
+        if (dirtyIndicator) dirtyIndicator.classList.toggle('hidden', !s.dirty);
 
         if (meta) {
             meta.textContent = s.updatedBy
@@ -812,6 +852,7 @@ async function secToggleLock(username, lock) {
             }
         } catch (e) { /* keep defaults */
         }
+        state.dirty = false;
 
         const {openSel, closeSel} = elems();
         populateHourSelect(openSel, state.openHour);
@@ -834,14 +875,37 @@ async function secToggleLock(username, lock) {
         // Toggle listeners (attached once DOM is ready)
         const enabledT = document.getElementById('windowEnabledToggle');
         const keepT = document.getElementById('windowKeepOpenToggle');
+        const openSel = document.getElementById('windowOpenHour');
+        const closeSel = document.getElementById('windowCloseHour');
+        const zoneInput = document.getElementById('windowZone');
         const saveBtn = document.getElementById('windowSaveBtn');
 
         if (enabledT) enabledT.addEventListener('click', () => {
             state.enabled = !state.enabled;
+            state.dirty = true;
             paint(state);
         });
         if (keepT) keepT.addEventListener('click', () => {
             state.adminKeepOpen = !state.adminKeepOpen;
+            state.dirty = true;
+            paint(state);
+        });
+        // Hour selects and the zone field previously had no listeners at all —
+        // editing them silently changed nothing on screen until Enregistrer was
+        // clicked, including the status badge preview.
+        if (openSel) openSel.addEventListener('change', () => {
+            state.openHour = parseInt(openSel.value, 10);
+            state.dirty = true;
+            paint(state);
+        });
+        if (closeSel) closeSel.addEventListener('change', () => {
+            state.closeHour = parseInt(closeSel.value, 10);
+            state.dirty = true;
+            paint(state);
+        });
+        if (zoneInput) zoneInput.addEventListener('input', () => {
+            state.zone = zoneInput.value.trim();
+            state.dirty = true;
             paint(state);
         });
 
@@ -853,7 +917,7 @@ async function secToggleLock(username, lock) {
                     enabled: state.enabled,
                     openHour: parseInt(openSel.value, 10),
                     closeHour: parseInt(closeSel.value, 10),
-                    zone: (zoneInput && zoneInput.value.trim()) || 'Africa/Abidjan',
+                    zone: (zoneInput && zoneInput.value.trim()) || 'GMT',
                     adminKeepOpen: state.adminKeepOpen,
                 };
                 const res = await secureFetch('/api/v1/admin/operating-window', {
@@ -865,6 +929,7 @@ async function secToggleLock(username, lock) {
                 const data = await res.json();
                 if (res.ok) {
                     Object.assign(state, data);
+                    state.dirty = false;
                     paint(state);
                     showSnackbar('Fenêtre de service enregistrée', 'success');
                 } else {

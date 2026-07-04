@@ -329,7 +329,7 @@ const loadStats = async (mapping) => {
                     el.textContent = finalSum;
                     // Flash animation on change
                     el.style.transition = 'color .3s';
-                    el.style.color = '#e86e00';
+                    el.style.color = '#FF7900';
                     setTimeout(() => { el.style.color = ''; }, 600);
                 }
             }
@@ -362,33 +362,137 @@ const loadStats = async (mapping) => {
 //   red   = failure / error
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _badge = (bg, color, border) =>
-    `display:inline-flex;align-items:center;gap:4px;padding:2px 8px;` +
-    `border-radius:4px;font-size:10px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;` +
-    `background:${bg};color:${color};border:0.5px solid ${border};white-space:nowrap`;
+// Shared status-filter chips (Batches / Validated lists) — fixed set of 5:
+// Tous / En attente et Validé / En traitement / Traité et Traité avec erreurs / Échec.
+// Each chip can represent more than one underlying status.
+const STATUS_FILTER_GROUPS = [
+    {key: 'all', label: 'Tous', tone: null, statuses: null},
+    {key: 'pending_validated', label: 'En attente et Validé', tone: 'pending', statuses: ['UPLOADED', 'VALIDATED']},
+    {key: 'processing', label: 'En traitement', tone: 'processing', statuses: ['PROCESSING']},
+    {
+        key: 'processed',
+        label: 'Traité et Traité avec erreurs',
+        tone: 'success',
+        statuses: ['PROCESSED', 'PROCESSED_WITH_ERROR']
+    },
+    {
+        key: 'failed',
+        label: 'Échec',
+        tone: 'error',
+        statuses: ['PROCESSED_FAILED', 'UPLOADED_FAILED', 'VALIDATED_FAILED']
+    },
+];
+window.STATUS_FILTER_GROUPS = STATUS_FILTER_GROUPS;
 
+// Returns the list of raw status strings a given chip key represents,
+// or null for 'all' (meaning: no filtering).
+function statusesForFilterKey(key) {
+    const g = STATUS_FILTER_GROUPS.find(g => g.key === key);
+    return g ? g.statuses : null;
+}
+
+window.statusesForFilterKey = statusesForFilterKey;
+
+function renderStatusFilterChips(containerId, currentFilter, onSelect) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = STATUS_FILTER_GROUPS.map(d => {
+        const active = currentFilter === d.key;
+        const c = d.tone ? _BADGE_TOKENS[d.tone] : null;
+        let bg, color, border;
+        if (c) {
+            bg = active ? c.color : c.bg;
+            color = active ? '#fff' : c.color;
+            border = c.border;
+        } else {
+            bg = active ? '#1B1B1B' : '#fff';
+            color = active ? '#fff' : 'var(--ink-2)';
+            border = active ? '#1B1B1B' : 'var(--line)';
+        }
+        return `<span data-filter-key="${d.key}"
+                       style="padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;
+                              border:1.5px solid ${border};background:${bg};color:${color};white-space:nowrap">${d.label}</span>`;
+    }).join('');
+    el.querySelectorAll('[data-filter-key]').forEach(chip => {
+        chip.addEventListener('click', () => onSelect(chip.dataset.filterKey));
+    });
+}
+
+window.renderStatusFilterChips = renderStatusFilterChips;
+
+// Empty state for a filtered table body. If there's an active search query,
+// show "no results for «query»"; otherwise (filter chip alone yielded zero
+// rows) show the same icon + message treatment used on the Validate queue,
+// rather than a hollow "Aucun résultat pour «  »" with nothing in the quotes.
+function emptyFilterRowHTML(query, colspan, message) {
+    if (query && query.trim()) {
+        return `<tr><td colspan="${colspan}" style="padding:2rem;text-align:center;font-size:12px;color:var(--ink-3)">Aucun résultat pour « ${query} »</td></tr>`;
+    }
+    return `<tr><td colspan="${colspan}" style="padding:0">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                    padding:3rem 1rem;color:var(--ink-3);text-align:center">
+            <i data-lucide="inbox" style="width:40px;height:40px;opacity:.2;margin-bottom:.75rem"></i>
+            <p style="font-size:13px">${message || 'Aucun batch ne correspond à ce filtre'}</p>
+        </div>
+    </td></tr>`;
+}
+
+window.emptyFilterRowHTML = emptyFilterRowHTML;
+
+const _badge = (bg, color, border) =>
+    `display:inline-flex;align-items:center;gap:4px;padding:3px 9px;` +
+    `border-radius:0;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;` +
+    `background:${bg};color:${color};border:1px solid ${border};white-space:nowrap`;
+
+// Orange Design System semantic status tokens (bg / text / border)
 const _BADGE_TOKENS = {
-    gray: {bg: '#f8fafc', color: '#475569', border: 'rgba(71,85,105,.25)'},
-    blue: {bg: '#eff6ff', color: '#1d4ed8', border: 'rgba(29,78,216,.25)'},
-    green: {bg: '#f0fdf4', color: '#166534', border: 'rgba(22,101,52,.25)'},
-    amber: {bg: '#fffbeb', color: '#92400e', border: 'rgba(146,64,14,.25)'},
-    red: {bg: '#fef2f2', color: '#991b1b', border: 'rgba(153,27,27,.25)'},
-    orange: {bg: '#fff7ed', color: '#c2410c', border: 'rgba(194,65,12,.25)'},
+    pending: {
+        bg: 'var(--status-pending-bg, #F6F6F6)',
+        color: 'var(--status-pending-text, #595959)',
+        border: 'var(--status-pending-border, #E0E0E0)'
+    },
+    validated: {
+        bg: 'var(--status-validated-bg, #EAF1FE)',
+        color: 'var(--status-validated-text, #0B5ED7)',
+        border: 'var(--status-validated-border, #C3D9FB)'
+    },
+    processing: {
+        bg: 'var(--status-processing-bg, #FFF1E6)',
+        color: 'var(--status-processing-text, #C65B00)',
+        border: 'var(--status-processing-border, #FFD9B8)'
+    },
+    success: {
+        bg: 'var(--status-success-bg, #E9F7EF)',
+        color: 'var(--status-success-text, #127A3E)',
+        border: 'var(--status-success-border, #BEEAD1)'
+    },
+    warning: {
+        bg: 'var(--status-warning-bg, #FFF6E0)',
+        color: 'var(--status-warning-text, #8A5A00)',
+        border: 'var(--status-warning-border, #F3DFA0)'
+    },
+    error: {
+        bg: 'var(--status-error-bg, #FDEDEB)',
+        color: 'var(--status-error-text, #B42318)',
+        border: 'var(--status-error-border, #F5C4BB)'
+    },
 };
 
-// Tier 1 — workflow status badges (with icon)
+// Tier 1 — workflow status badges (with icon), driven by the FileBatch status enum.
+// This is the single source of truth for status styling — reused on the dashboard
+// spine legend, batches list, validate cards, and the batch detail modal.
 const getStatusBadge = (status) => {
     const map = {
-        UPLOADED: {t: 'gray', icon: 'clock', label: 'Importé', spin: false},
-        VALIDATED: {t: 'blue', icon: 'user-check', label: 'Validé', spin: false},
-        PROCESSING: {t: 'blue', icon: 'refresh-cw', label: 'En cours', spin: true},
-        PROCESSED: {t: 'green', icon: 'check-circle', label: 'Traité', spin: false},
-        PROCESSED_WITH_ERROR: {t: 'amber', icon: 'alert-triangle', label: 'Partiel', spin: false},
-        UPLOADED_FAILED: {t: 'red', icon: 'alert-circle', label: 'Échec import', spin: false},
-        VALIDATED_FAILED: {t: 'red', icon: 'x-circle', label: 'Échec sig.', spin: false},
-        PROCESSED_FAILED: {t: 'red', icon: 'x-circle', label: 'Échec', spin: false},
+        UPLOADED: {t: 'pending', icon: 'clock', label: 'En attente', spin: false},
+        VALIDATED: {t: 'validated', icon: 'clock', label: 'Validé', spin: false},
+        PROCESSING: {t: 'processing', icon: 'refresh-cw', label: 'En traitement', spin: true},
+        PROCESSED: {t: 'success', icon: 'check-circle', label: 'Traité', spin: false},
+        PROCESSED_WITH_ERROR: {t: 'warning', icon: 'check-circle', label: 'Traité avec erreurs', spin: false},
+        UPLOADED_FAILED: {t: 'error', icon: 'alert-circle', label: 'Échec import', spin: false},
+        VALIDATED_FAILED: {t: 'error', icon: 'x-circle', label: 'Échec sig.', spin: false},
+        PROCESSED_FAILED: {t: 'error', icon: 'x-circle', label: 'Échec', spin: false},
     };
-    const d = map[status] || {t: 'gray', icon: 'help-circle', label: status?.replace(/_/g, ' ') || '—', spin: false};
+    const d = map[status] || {t: 'pending', icon: 'help-circle', label: status?.replace(/_/g, ' ') || '—', spin: false};
     const c = _BADGE_TOKENS[d.t];
     return `<span style="${_badge(c.bg, c.color, c.border)}">
         <i data-lucide="${d.icon}" style="width:11px;height:11px;flex-shrink:0${d.spin ? ';animation:spin 1s linear infinite' : ''}"></i>
@@ -399,10 +503,10 @@ const getStatusBadge = (status) => {
 // Tier 2 — category labels (application type codes, no icon)
 const appBadgeHTML = (application) => {
     const map = {
-        FUNDS_TRANSFER: {t: 'orange', label: 'FT'},
-        FUNDS_TRANSFER_REVERSAL: {t: 'blue', label: 'FTR'},
+        FUNDS_TRANSFER: {t: 'processing', label: 'FT'},
+        FUNDS_TRANSFER_REVERSAL: {t: 'validated', label: 'FTR'},
     };
-    const d = map[application] || {t: 'gray', label: (application || 'N/A').slice(0, 5)};
+    const d = map[application] || {t: 'pending', label: (application || 'N/A').slice(0, 5)};
     const c = _BADGE_TOKENS[d.t];
     return `<span style="${_badge(c.bg, c.color, c.border)}" title="${application || ''}">${d.label}</span>`;
 };
@@ -476,7 +580,7 @@ const viewBatchDetails = async (batchId, modalId = "batchDetailsModal", contentI
         const nonNullKeys = allKeys.filter(k => details.some(r => r.data[k] != null && r.data[k] !== ''));
 
         const headerCells = nonNullKeys.map(k =>
-            `<th style="padding:8px 12px;white-space:nowrap;font-size:10px;font-weight:500;
+            `<th style="padding:8px 12px;white-space:nowrap;font-size:10px;font-weight:700;
                 color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;
                 text-align:left;border-bottom:0.5px solid var(--line-soft);
                 position:sticky;top:0;background:var(--canvas)">${k}</th>`
@@ -502,8 +606,8 @@ const viewBatchDetails = async (batchId, modalId = "batchDetailsModal", contentI
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
                 <div style="display:flex;gap:16px;font-size:12px">
                     <span style="color:var(--ink-3)">${total} lignes</span>
-                    ${success > 0 ? `<span style="color:#137333">✓ ${success} succès</span>` : ''}
-                    ${failed > 0 ? `<span style="color:#c5221f">✗ ${failed} échecs</span>` : ''}
+                    ${success > 0 ? `<span style="color:var(--status-success-text)">✓ ${success} succès</span>` : ''}
+                    ${failed > 0 ? `<span style="color:var(--status-error-text)">✗ ${failed} échecs</span>` : ''}
                 </div>
                 <button onclick="downloadBatchNonNull('${batchId}')"
                         style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;
@@ -516,11 +620,11 @@ const viewBatchDetails = async (batchId, modalId = "batchDetailsModal", contentI
                     <thead>
                         <tr>
                             ${headerCells}
-                            <th style="padding:8px 12px;font-size:10px;font-weight:500;color:var(--ink-3);
+                            <th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--ink-3);
                                 text-transform:uppercase;letter-spacing:.06em;text-align:left;
                                 border-bottom:0.5px solid var(--line-soft);position:sticky;top:0;
                                 background:var(--canvas);white-space:nowrap">Réf. T24</th>
-                            <th style="padding:8px 12px;font-size:10px;font-weight:500;color:var(--ink-3);
+                            <th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--ink-3);
                                 text-transform:uppercase;letter-spacing:.06em;text-align:left;
                                 border-bottom:0.5px solid var(--line-soft);position:sticky;top:0;
                                 background:var(--canvas)">Statut</th>
@@ -531,7 +635,7 @@ const viewBatchDetails = async (batchId, modalId = "batchDetailsModal", contentI
             </div>`;
         createIcons(content);
     } catch (err) {
-        content.innerHTML = `<div style="padding:2rem;text-align:center;color:#c5221f;font-size:13px">${err.message}</div>`;
+        content.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--status-error-text);font-size:13px">${err.message}</div>`;
     }
 };
 
@@ -1027,9 +1131,9 @@ body { font-family: system-ui, -apple-system, sans-serif; font-size: 11pt;
 /* ── Print-only controls ── */
 .no-print { display: flex; gap: 10px; padding: 12px 24px; background: #f1f5f9;
             border-bottom: 1px solid #e2e8f0; }
-.btn-print { padding: 8px 20px; background: #1a73e8; color: #fff; border: none;
-             font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.btn-print:hover { background: #1557b0; }
+.btn-print { padding: 8px 20px; background: #FF7900; color: #fff; border: none;
+             font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.btn-print:hover { background: #C65B00; }
 .btn-close { padding: 8px 20px; background: #fff; color: #64748b;
              border: 1px solid #cbd5e1; font-size: 13px; cursor: pointer; font-family: inherit; }
 @media print { .no-print { display: none; } }
@@ -1091,8 +1195,8 @@ body { font-family: system-ui, -apple-system, sans-serif; font-size: 11pt;
 
 /* ── All rows table ── */
 .data-table   { width: 100%; border-collapse: collapse; font-size: 9pt; margin-top: 4px; }
-.data-table th { background: #1a73e8; color: #fff; font-weight: 700; padding: 7px 10px;
-                 text-align: left; border: 1px solid #1557b0; white-space: nowrap; }
+.data-table th { background: #1B1B1B; color: #fff; font-weight: 700; padding: 7px 10px;
+                 text-align: left; border: 1px solid #1B1B1B; white-space: nowrap; }
 .data-table td { padding: 5px 8px; border: 1px solid #e2e8f0; }
 .td-center     { text-align: center; }
 .row-ok        { background: #f0fdf4; }
@@ -1186,17 +1290,6 @@ window.viewBatchSummary = viewBatchSummary;
 window.downloadExecutionReport = downloadExecutionReport;
 window._stopSummaryPoller = _stopSummaryPoller;
 
-/** Escape special XML/HTML characters — used by both batch export and reports export */
-function escXml(s) {
-    return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-}
-
-window.escXml = escXml;
-
 /** Named helper used by layout.html onclick — avoids {;} syntax that breaks Qute */
 const closeSummaryModal = () => {
     _stopSummaryPoller();
@@ -1235,64 +1328,64 @@ function buildProgressRowHTML(d) {
     const fp = total > 0 ? (failureCount / total * 100).toFixed(3) : 0;
     const isDone = pct >= 100;
     const hasFailure = failureCount > 0;
-    const accent = isDone ? (hasFailure ? '#ea4335' : '#34a853') : '#1a73e8';
+    const accent = isDone ? (hasFailure ? 'var(--status-error-text)' : 'var(--status-success-text)') : 'var(--orange)';
 
     const label = isDone
         ? (hasFailure
-            ? `<span style="color:#c5221f">✗ Terminé — ${failureCount.toLocaleString('fr-FR')} ligne${failureCount > 1 ? 's' : ''} échouée${failureCount > 1 ? 's' : ''}</span>`
-            : `<span style="color:#188038">✓ Traitement terminé</span>`)
-        : `<span style="color:#1a73e8">En cours de traitement...</span>`;
+            ? `<span style="color:var(--status-error-text)">✗ Terminé — ${failureCount.toLocaleString('fr-FR')} ligne${failureCount > 1 ? 's' : ''} échouée${failureCount > 1 ? 's' : ''}</span>`
+            : `<span style="color:var(--status-success-text)">✓ Traitement terminé</span>`)
+        : `<span style="color:var(--status-processing-text)">En cours de traitement...</span>`;
 
     const pendingSegment = pending > 0
-        ? `<div style="flex:1;background:#e8eaed;position:relative;overflow:hidden">
-               <div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(26,115,232,.18),transparent);animation:g-shimmer 1.6s ease-in-out infinite"></div>
+        ? `<div style="flex:1;background:var(--line-soft);position:relative;overflow:hidden">
+               <div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,121,0,.18),transparent);animation:g-shimmer 1.6s ease-in-out infinite"></div>
            </div>`
         : '';
 
-    return `<td colspan="4" style="padding:0 0 6px;background:#f8f9fa;border-top:none">
-        <div style="margin:0 4px;border-left:3px solid ${accent};background:#fff;
-                    box-shadow:0 1px 2px rgba(0,0,0,.06);padding:9px 16px 9px 12px;
+    return `<td colspan="4" style="padding:0 0 6px;background:var(--canvas);border-top:none">
+        <div style="margin:0 4px;border-left:3px solid ${accent};background:#fff;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+                    padding:9px 16px 9px 12px;
                     transition:border-color .4s ease">
             <div style="display:flex;justify-content:space-between;align-items:center;
-                        margin-bottom:8px;font-size:12px;font-weight:500">
+                        margin-bottom:8px;font-size:12px;font-weight:700">
                 ${label}
-                <span style="color:var(--ink-2,#111);font-size:13px;font-weight:500;
+                <span style="color:var(--ink);font-size:13px;font-weight:700;
                              font-variant-numeric:tabular-nums">
-                    ${pct}<span style="font-size:10px;font-weight:400;color:var(--ink-3,#80868b);margin-left:1px">%</span>
+                    ${pct}<span style="font-size:10px;font-weight:400;color:var(--ink-3);margin-left:1px">%</span>
                 </span>
             </div>
-            <div style="height:6px;overflow:hidden;display:flex;background:#e8eaed;margin-bottom:9px">
-                <div style="width:${sp}%;background:#34a853;transition:width .5s ease;
+            <div style="height:6px;overflow:hidden;display:flex;background:var(--line-soft);margin-bottom:9px">
+                <div style="width:${sp}%;background:var(--status-success-text);transition:width .5s ease;
                             min-width:${successCount > 0 ? '3px' : '0'}"></div>
-                <div style="width:${fp}%;background:#ea4335;transition:width .5s ease;
+                <div style="width:${fp}%;background:var(--status-error-text);transition:width .5s ease;
                             min-width:${failureCount > 0 ? '3px' : '0'}"></div>
                 ${pendingSegment}
             </div>
             <div style="display:flex;align-items:center;flex-wrap:wrap;row-gap:4px">
                 <div style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px 2px 6px;
-                            background:#e6f4ea;border-radius:99px;margin-right:7px">
-                    <span style="width:6px;height:6px;border-radius:50%;background:#34a853;flex-shrink:0"></span>
-                    <span style="font-size:10px;font-weight:500;color:#188038">
+                            background:var(--status-success-bg);border:1px solid var(--status-success-border);margin-right:7px">
+                    <span style="width:6px;height:6px;border-radius:50%;background:var(--status-success-text);flex-shrink:0"></span>
+                    <span style="font-size:10px;font-weight:700;color:var(--status-success-text)">
                         ${successCount.toLocaleString('fr-FR')} réussie${successCount !== 1 ? 's' : ''}
                     </span>
                 </div>
                 <div style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px 2px 6px;
-                            background:${failureCount > 0 ? '#fce8e6' : '#f1f3f4'};border-radius:99px;margin-right:7px">
-                    <span style="width:6px;height:6px;border-radius:50%;background:${failureCount > 0 ? '#ea4335' : '#bdc1c6'};flex-shrink:0"></span>
-                    <span style="font-size:10px;font-weight:500;color:${failureCount > 0 ? '#c5221f' : '#80868b'}">
+                            background:${failureCount > 0 ? 'var(--status-error-bg)' : 'var(--canvas)'};border:1px solid ${failureCount > 0 ? 'var(--status-error-border)' : 'var(--line)'};margin-right:7px">
+                    <span style="width:6px;height:6px;border-radius:50%;background:${failureCount > 0 ? 'var(--status-error-text)' : 'var(--ink-4)'};flex-shrink:0"></span>
+                    <span style="font-size:10px;font-weight:700;color:${failureCount > 0 ? 'var(--status-error-text)' : 'var(--ink-3)'}">
                         ${failureCount.toLocaleString('fr-FR')} échouée${failureCount !== 1 ? 's' : ''}
                     </span>
                 </div>
                 ${pending > 0 ? `
                 <div style="display:inline-flex;align-items:center;gap:4px;padding:2px 9px 2px 6px;
-                            background:#e8f0fe;border-radius:99px">
-                    <span style="width:6px;height:6px;border-radius:50%;background:#4285f4;flex-shrink:0;
+                            background:var(--status-processing-bg);border:1px solid var(--status-processing-border)">
+                    <span style="width:6px;height:6px;border-radius:50%;background:var(--status-processing-text);flex-shrink:0;
                                  animation:g-pulse 1.2s ease-in-out infinite"></span>
-                    <span style="font-size:10px;font-weight:500;color:#1967d2">
+                    <span style="font-size:10px;font-weight:700;color:var(--status-processing-text)">
                         ${pending.toLocaleString('fr-FR')} en attente
                     </span>
                 </div>` : ''}
-                <span style="margin-left:auto;font-size:10px;color:#80868b;white-space:nowrap;
+                <span style="margin-left:auto;font-size:10px;color:var(--ink-3);white-space:nowrap;
                              font-variant-numeric:tabular-nums">
                     ${done.toLocaleString('fr-FR')} / ${total.toLocaleString('fr-FR')} lignes
                 </span>

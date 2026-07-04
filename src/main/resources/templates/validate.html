@@ -10,54 +10,41 @@
 {/aside}
 
 {#default}
-    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:24px" id="validatePage">
+    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:20px" id="validatePage">
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-
-            <!-- Validés -->
-            <div style="position:relative;overflow:hidden;border:0.5px solid #e5e7eb;background:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
-                <svg style="position:absolute;right:-10px;top:-10px;opacity:.06;pointer-events:none" width="100"
-                     height="100" viewBox="0 0 100 100">
-                    <circle cx="80" cy="20" r="40" fill="#059669"/>
-                    <circle cx="60" cy="60" r="25" fill="#059669"/>
-                </svg>
-                <div>
-                    <p style="font-size:12px;color:#6b7280;margin-bottom:4px">Validés</p>
-                    <p style="font-size:26px;font-weight:300;color:#059669;line-height:1;font-variant-numeric:tabular-nums"
-                       id="validatedCount">0</p>
+        <div class="page-header">
+            <div>
+                <h2 class="page-title">Validation</h2>
+                <p class="page-subtitle">Contrôle à quatre yeux des lots en attente d'envoi vers T24</p>
             </div>
-                <i data-lucide="circle-check-big"
-                   style="width:32px;height:32px;color:#059669;opacity:.35;flex-shrink:0"></i>
-            </div>
-
-            <!-- Traités -->
-            <div style="position:relative;overflow:hidden;border:0.5px solid #e5e7eb;background:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
-                <svg style="position:absolute;right:-10px;top:-10px;opacity:.06;pointer-events:none" width="100"
-                     height="100" viewBox="0 0 100 100">
-                    <circle cx="80" cy="20" r="40" fill="#e86e00"/>
-                    <circle cx="60" cy="60" r="25" fill="#e86e00"/>
-                </svg>
-                <div>
-                    <p style="font-size:12px;color:#6b7280;margin-bottom:4px">Traités</p>
-                    <p style="font-size:26px;font-weight:300;color:#e86e00;line-height:1;font-variant-numeric:tabular-nums"
-                       id="processedCount">0</p>
-            </div>
-                <i data-lucide="play-circle" style="width:32px;height:32px;color:#e86e00;opacity:.35;flex-shrink:0"></i>
         </div>
 
-    </div>
-
-        <div class="bg-white rounded-md shadow-xs border border-gray-200 p-8">
-            <div class="">
-            <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-3">
-                <i class="w-5 h-5 text-orange-600" data-lucide="list"></i>
-                Batches à Valider
-            </h3>
+        <div class="panel" id="lastValidatedStrip" style="border-left:3px solid var(--ink-4);">
+            <div class="panel-body" style="padding:.85rem 1.35rem;">
+                <div class="flex items-center justify-between flex-wrap" style="gap:.75rem;">
+                    <div class="flex items-center" style="gap:.65rem;min-width:0;">
+                        <i data-lucide="history" style="width:15px;height:15px;color:var(--ink-3);flex-shrink:0;"></i>
+                        <span style="font-size:.68rem;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;">Dernier lot validé</span>
+                        <span id="lastValidatedFilename"
+                              style="font-size:.8rem;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Chargement…</span>
+                    </div>
+                    <div class="flex items-center" style="gap:.65rem;flex-shrink:0;">
+                        <span id="lastValidatedTime" style="font-size:.72rem;color:var(--ink-3);"></span>
+                        <span id="lastValidatedBadge"></span>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="divide-y divide-gray-200 p-4" id="uploadedBatchesContainer"></div>
-        <div class="text-center text-sm text-gray-500 mt-4 p-4" id="uploadedPaginationInfo"></div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <h3><i data-lucide="list"></i>Batches à Valider</h3>
+                <div id="validateSearchAnchor"></div>
+            </div>
+            <div id="uploadedBatchesContainer"></div>
+            <div class="text-center p-4" style="font-size:.78rem;color:var(--ink-3);" id="uploadedPaginationInfo"></div>
+        </div>
     </div>
-</div>
 {/default}
 
 {#script}
@@ -67,47 +54,52 @@
     <div class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60"
          id="validateConfirmModal"
          onclick="if(event.target===this)cancelValidation()">
-        <div class="bg-white w-full max-w-sm mx-4 shadow-xl" style="border-top:3px solid var(--orange);">
+        <div class="bg-white w-full mx-4"
+             style="max-width:460px;border-top:4px solid var(--orange);box-shadow:0 24px 60px rgba(0,0,0,.3);">
 
             <!-- Header -->
-            <div class="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="shield-check" class="w-4 h-4 text-orange-600"></i>
-                    <h3 class="text-sm font-semibold text-gray-900">Valider le lot</h3>
-                </div>
-                <button class="p-1 hover:bg-gray-100 text-gray-400 transition"
-                        onclick="cancelValidation()" aria-label="Fermer">
-                    <i data-lucide="x" class="w-4 h-4"></i>
-                </button>
+            <div class="px-5 py-3.5 flex items-center gap-2.5" style="border-bottom:1px solid var(--line-soft);">
+                <i data-lucide="shield-alert" class="w-5 h-5" style="color:var(--orange)"></i>
+                <h3 style="font-size:.92rem;font-weight:700;color:var(--ink);">Confirmer l'envoi vers T24</h3>
             </div>
 
             <!-- Body -->
-            <div class="px-5 py-4 space-y-3">
-                <p class="text-xs text-gray-500 leading-relaxed">
-                    Ce lot sera envoyé pour traitement dans T24. Cette action est irréversible.
+            <div class="px-5 py-4">
+                <p style="font-size:.78rem;color:var(--ink-2);line-height:1.5;margin-bottom:1rem;">
+                    Cette action est irréversible. Le lot sera transmis au système T24 pour traitement immédiat.
                 </p>
 
-                <!-- Key info — minimal, scannable -->
-                <div style="border-left:3px solid var(--orange);padding-left:12px;" class="space-y-1.5">
-                    <p class="text-xs font-semibold text-gray-800 italic" id="confirmFilename">—</p>
-                    <p class="text-[10px] text-gray-500 uppercase tracking-wide" id="confirmApp">—</p>
-                    <div class="flex items-center justify-between pt-0.5">
-                        <span class="text-[10px] text-gray-400 font-mono" id="confirmBatchId">—</span>
-                        <span class="text-xs font-semibold text-orange-700" id="confirmRecords">—</span>
+                <!-- Key info -->
+                <div style="background:var(--canvas);border-left:3px solid var(--orange);padding:14px 16px;margin-bottom:1.1rem;">
+                    <div style="font-size:.8rem;font-weight:700;color:var(--ink);" id="confirmFilename">—</div>
+                    <div style="font-size:.7rem;color:var(--ink-3);margin-top:3px;">
+                        <span id="confirmApp">—</span> &middot; déposé par <span id="confirmUploadedBy">—</span>
+                    </div>
+                    <div class="flex items-center justify-between" style="margin-top:10px;">
+                        <span style="font-size:.68rem;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;">Enregistrements</span>
+                        <span style="font-size:1.25rem;font-weight:700;color:var(--orange);font-variant-numeric:tabular-nums;"
+                              id="confirmRecords">—</span>
+                    </div>
                 </div>
-                    <p class="text-[10px] text-gray-400" id="confirmUploadedAt">—</p>
+
+                <!-- Threshold-gated typed confirmation — shown only when records > 500 -->
+                <div class="hidden" id="confirmTypedWrap">
+                    <label style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);display:block;margin-bottom:6px;">
+                        Tapez VALIDER pour confirmer ce lot volumineux
+                    </label>
+                    <input type="text" id="confirmTypedInput" class="form-input" autocomplete="off"
+                           placeholder="VALIDER" oninput="onConfirmTypedInput()"/>
                 </div>
             </div>
 
             <!-- Footer -->
-        <div class="px-5 py-3 border-t border-gray-100 flex gap-2 justify-end">
-            <button class="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition"
-                    onclick="cancelValidation()">Annuler
+            <div class="px-5 py-3 flex gap-2 justify-end" style="border-top:1px solid var(--line-soft);">
+                <button class="btn-flux" onclick="cancelValidation()">Annuler
             </button>
-            <button class="px-4 py-2 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 transition flex items-center gap-1.5"
+                <button class="btn-flux btn-flux-primary"
                     id="confirmValidateBtn" onclick="confirmValidation()">
                 <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
-                <span id="confirmValidateBtnText">Valider</span>
+                    <span id="confirmValidateBtnText">Valider et envoyer</span>
             </button>
         </div>
     </div>

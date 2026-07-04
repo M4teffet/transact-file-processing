@@ -33,8 +33,7 @@ class AdminDashboard {
             statTotal:             document.getElementById('stat-total-batches'),
             statPending:           document.getElementById('stat-pending'),
             statProcessed:         document.getElementById('stat-validated'),
-            detailUploaded:        document.getElementById('detail-uploaded'),
-            detailValidated:       document.getElementById('detail-validated'),
+            detailPending: document.getElementById('detail-pending'),
             detailProcessing:      document.getElementById('detail-processing'),
             detailProcessed:       document.getElementById('detail-processed'),
             detailErrors:          document.getElementById('detail-errors'),
@@ -78,17 +77,19 @@ class AdminDashboard {
             const total     = Object.values(counts).reduce((a, b) => a + (b || 0), 0);
             const pending   = (counts.UPLOADED || 0) + (counts.VALIDATED || 0);
             const processed = (counts.PROCESSED || 0) + (counts.PROCESSED_WITH_ERROR || 0);
+            // Failures only — PROCESSED_WITH_ERROR is a partial success, it belongs
+            // with "processed" above (matching the Batches/Validated filter chips),
+            // not double-counted in here as well.
             const errors    = (counts.UPLOADED_FAILED || 0) + (counts.VALIDATED_FAILED || 0)
-                            + (counts.PROCESSED_FAILED || 0) + (counts.PROCESSED_WITH_ERROR || 0);
+                + (counts.PROCESSED_FAILED || 0);
 
             this.animateNumber(this.elements.statTotal,     total);
             this.animateNumber(this.elements.statPending,   pending);
             this.animateNumber(this.elements.statProcessed, processed);
 
-            this.elements.detailUploaded.textContent   = counts.UPLOADED    || 0;
-            this.elements.detailValidated.textContent  = counts.VALIDATED   || 0;
+            this.elements.detailPending.textContent = pending;
             this.elements.detailProcessing.textContent = counts.PROCESSING  || 0;
-            this.elements.detailProcessed.textContent  = counts.PROCESSED   || 0;
+            this.elements.detailProcessed.textContent = processed;
             this.elements.detailErrors.textContent     = errors;
         } catch (err) {
             console.error('Erreur stats:', err);
@@ -140,11 +141,11 @@ class AdminDashboard {
                     <div class="flex-1 min-w-0 mr-4">
                         <div class="flex items-center gap-2 mb-1">
                             <span id="feat-badge-${feature.configKey}"
-                                  style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;
-                                         font-size:10px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;
+                                  style="display:inline-flex;align-items:center;padding:3px 8px;
+                                         font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
                                          ${enabled
-                    ? 'background:#f0fdf4;color:#166534;border:0.5px solid rgba(22,101,52,.25)'
-                    : 'background:#f8fafc;color:#475569;border:0.5px solid rgba(71,85,105,.25)'}">
+                    ? 'background:var(--status-success-bg);color:var(--status-success-text);border:1px solid var(--status-success-border)'
+                    : 'background:var(--status-pending-bg);color:var(--status-pending-text);border:1px solid var(--status-pending-border)'}">
                                 ${enabled ? 'Actif' : 'Inactif'}
                             </span>
                             <h4 class="font-semibold text-gray-900 text-sm">${feature.configKey}</h4>
@@ -371,12 +372,12 @@ class AdminDashboard {
         usersTableWrapper?.classList.remove('hidden');
 
         const statusBadge = s => {
-            const m = { ACTIVE:'bg-green-100 text-green-800', PENDING:'bg-yellow-100 text-yellow-800', LOCKED:'bg-red-100 text-red-800' };
-            return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${m[s]||'bg-gray-100 text-gray-600'}">${s||'ACTIVE'}</span>`;
+            const m = {ACTIVE: 'success', PENDING: 'processing', LOCKED: 'error'};
+            return propertyBadge(s || 'ACTIVE', m[s] || 'pending');
         };
         const roleBadge = r => {
-            const m = { ADMIN:'bg-purple-100 text-purple-800', INPUTTER:'bg-blue-100 text-blue-800', AUTHORISER:'bg-teal-100 text-teal-800' };
-            return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${m[r]||'bg-gray-100 text-gray-600'}">${r||'—'}</span>`;
+            const m = {ADMIN: 'processing', INPUTTER: 'pending', AUTHORISER: 'validated'};
+            return propertyBadge(r || '—', m[r] || 'pending');
         };
 
         if (usersTbody) {
@@ -443,9 +444,14 @@ class AdminDashboard {
         const bg   = this.elements.autoRefreshBg;
         const knob = this.elements.autoRefreshKnob;
         const ind  = this.elements.autoRefreshIndicator;
-        if (bg)   { bg.style.background = isOn ? '#e86e00' : '#d1d5db'; }
+        if (bg) {
+            bg.style.background = isOn ? '#FF7900' : '#d1d5db';
+        }
         if (knob) { knob.style.transform = isOn ? 'translateX(14px)' : 'translateX(0)'; }
-        if (ind)  { ind.textContent = isOn ? 'ON' : 'OFF'; ind.style.color = isOn ? '#e86e00' : '#6b7280'; }
+        if (ind) {
+            ind.textContent = isOn ? 'ON' : 'OFF';
+            ind.style.color = isOn ? '#FF7900' : '#6b7280';
+        }
     }
 
     startAutoRefresh() {

@@ -7,8 +7,26 @@ if (!token) {
     document.getElementById('resetForm').style.display = 'none';
 }
 
+// The checklist text/visibility must reflect whatever the admin actually
+// configured in Paramètres → Sécurité, not a hardcoded assumption baked
+// into the HTML — otherwise the label can say "10" while the real rule
+// (enforced by checkStrength below, and by the server) requires something else.
+function applyPasswordPolicyLabels(p) {
+    const lengthEl = document.getElementById('r-length');
+    if (lengthEl) lengthEl.textContent = `Au moins ${p.minLength} caractères`;
+    const upperEl = document.getElementById('r-upper');
+    if (upperEl) upperEl.style.display = p.requireUppercase ? '' : 'none';
+    const digitEl = document.getElementById('r-digit');
+    if (digitEl) digitEl.style.display = p.requireDigit ? '' : 'none';
+    const specialEl = document.getElementById('r-special');
+    if (specialEl) specialEl.style.display = p.requireSpecial ? '' : 'none';
+}
+
+applyPasswordPolicyLabels(policy);
+
 fetch('/api/v1/auth/password-policy').then(r => r.json()).then(p => {
     policy = p;
+    applyPasswordPolicyLabels(p);
 }).catch(() => {
 });
 

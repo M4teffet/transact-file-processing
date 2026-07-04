@@ -57,22 +57,22 @@
                 </div>
             </div>
         </div>
-        <div class="stats-card" style="border-top-color:#d97706;">
+        <div class="stats-card" style="border-top-color:var(--status-processing-text);">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="stats-label">En Attente</p>
-                    <p class="stats-value" id="stat-pending" style="color:#d97706;">0</p>
+                    <p class="stats-value" id="stat-pending" style="color:var(--status-processing-text);">0</p>
                 </div>
                 <div class="stats-icon">
                     <i class="w-5 h-5" data-lucide="clock"></i>
                 </div>
             </div>
         </div>
-        <div class="stats-card" style="border-top-color:#0f9d58;">
+        <div class="stats-card" style="border-top-color:#127A3E;">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="stats-label">Traité</p>
-                    <p class="stats-value" id="stat-validated" style="color:#0f9d58;">0</p>
+                    <p class="stats-value" id="stat-validated" style="color:#127A3E;">0</p>
                 </div>
                 <div class="stats-icon">
                     <i class="w-5 h-5" data-lucide="check-circle"></i>
@@ -81,7 +81,8 @@
         </div>
     </div>
 
-    <!-- Répartition des statuts — spine proportionnelle -->
+    <!-- Répartition des statuts — spine proportionnelle, matches the Batches/
+         Validated filter-chip groups exactly (same 4 buckets, same colors) -->
     <div class="panel">
         <div class="panel-head">
             <h3><i data-lucide="activity"></i> Répartition des statuts</h3>
@@ -89,50 +90,43 @@
         <div class="panel-body">
             <div class="flex overflow-hidden" id="statusSpine"
                  style="height:34px;border:1.5px solid var(--ink);margin-bottom:1rem;">
-                <div id="spine-uploaded"
-                     style="background:var(--orange);flex:0;min-width:0;border-right:1.5px solid var(--ink);transition:flex .4s;"
-                     title="Uploadés"></div>
-                <div id="spine-validated"
-                     style="background:#d97706;flex:0;min-width:0;border-right:1.5px solid var(--ink);transition:flex .4s;"
-                     title="En validation"></div>
+                <div id="spine-pending"
+                     style="background:var(--status-pending-text);flex:0;min-width:0;border-right:1.5px solid var(--ink);transition:flex .4s;"
+                     title="En attente et Validé"></div>
                 <div id="spine-processing"
-                     style="background:#2563eb;flex:0;min-width:0;border-right:1.5px solid var(--ink);transition:flex .4s;"
+                     style="background:var(--status-processing-text);flex:0;min-width:0;border-right:1.5px solid var(--ink);transition:flex .4s;"
                      title="En traitement"></div>
                 <div id="spine-processed"
-                     style="background:#0f9d58;flex:1;min-width:0;border-right:1.5px solid var(--ink);transition:flex .4s;"
-                     title="Traité OK"></div>
-                <div id="spine-errors" style="background:#dc2626;flex:0;min-width:0;transition:flex .4s;"
-                     title="Erreurs"></div>
+                     style="background:var(--status-success-text);flex:1;min-width:0;border-right:1.5px solid var(--ink);transition:flex .4s;"
+                     title="Traité et Traité avec erreurs"></div>
+                <div id="spine-errors"
+                     style="background:var(--status-error-text);flex:0;min-width:0;transition:flex .4s;"
+                     title="Échec"></div>
             </div>
             <div class="flex flex-wrap" style="gap:1.5rem;">
                 <div class="flex items-center" style="gap:.5rem;">
-                    <span style="width:9px;height:9px;background:var(--orange);flex-shrink:0;"></span>
-                    <span class="tnum" id="detail-uploaded" style="font-size:1.05rem;font-weight:500;color:var(--ink);">0</span>
-                    <span style="font-size:.72rem;color:var(--ink-3);">Uploadés</span>
+                    <span style="width:9px;height:9px;background:var(--status-pending-text);flex-shrink:0;"></span>
+                    <span class="tnum" id="detail-pending"
+                          style="font-size:1.05rem;font-weight:700;color:var(--ink);">0</span>
+                    <span style="font-size:.72rem;color:var(--ink-3);">En attente et Validé</span>
                 </div>
                 <div class="flex items-center" style="gap:.5rem;">
-                    <span style="width:9px;height:9px;background:#d97706;flex-shrink:0;"></span>
-                    <span class="tnum" id="detail-validated"
-                          style="font-size:1.05rem;font-weight:500;color:var(--ink);">0</span>
-                    <span style="font-size:.72rem;color:var(--ink-3);">En validation</span>
-                </div>
-                <div class="flex items-center" style="gap:.5rem;">
-                    <span style="width:9px;height:9px;background:#2563eb;flex-shrink:0;"></span>
+                    <span style="width:9px;height:9px;background:var(--status-processing-text);flex-shrink:0;"></span>
                     <span class="tnum" id="detail-processing"
-                          style="font-size:1.05rem;font-weight:500;color:var(--ink);">0</span>
+                          style="font-size:1.05rem;font-weight:700;color:var(--ink);">0</span>
                     <span style="font-size:.72rem;color:var(--ink-3);">En traitement</span>
                 </div>
                 <div class="flex items-center" style="gap:.5rem;">
-                    <span style="width:9px;height:9px;background:#0f9d58;flex-shrink:0;"></span>
+                    <span style="width:9px;height:9px;background:var(--status-success-text);flex-shrink:0;"></span>
                     <span class="tnum" id="detail-processed"
-                          style="font-size:1.05rem;font-weight:500;color:var(--ink);">0</span>
-                    <span style="font-size:.72rem;color:var(--ink-3);">Traité OK</span>
+                          style="font-size:1.05rem;font-weight:700;color:var(--ink);">0</span>
+                    <span style="font-size:.72rem;color:var(--ink-3);">Traité et Traité avec erreurs</span>
                 </div>
                 <div class="flex items-center" style="gap:.5rem;">
-                    <span style="width:9px;height:9px;background:#dc2626;flex-shrink:0;"></span>
+                    <span style="width:9px;height:9px;background:var(--status-error-text);flex-shrink:0;"></span>
                     <span class="tnum" id="detail-errors"
-                          style="font-size:1.05rem;font-weight:500;color:var(--ink);">0</span>
-                    <span style="font-size:.72rem;color:var(--ink-3);">Erreurs</span>
+                          style="font-size:1.05rem;font-weight:700;color:var(--ink);">0</span>
+                    <span style="font-size:.72rem;color:var(--ink-3);">Échec</span>
                 </div>
             </div>
         </div>
@@ -156,7 +150,7 @@
             <div class="space-y-4" id="featuresList"></div>
 
             <div class="hidden mt-4 p-4 text-red-700 text-sm" id="featuresError"
-                 style="background:#fff0f0;border:1.5px solid #f5a0a0;">
+                 style="background:var(--status-error-bg);border:1.5px solid var(--status-error-border);color:var(--status-error-text);">
                 Impossible de charger les fonctionnalités. Réessayez plus tard.
             </div>
         </div>
@@ -230,7 +224,7 @@
             </div>
 
             <div class="hidden mt-4 p-4 text-red-700 text-sm" id="processingLogsError"
-                 style="background:#fff0f0;border:1.5px solid #f5a0a0;">
+                 style="background:var(--status-error-bg);border:1.5px solid var(--status-error-border);color:var(--status-error-text);">
                 Impossible de charger les logs de traitement.
             </div>
 
@@ -252,11 +246,10 @@
     // Status spine — segment widths follow the legend counts set by admin.js
     (function () {
         var map = {
-            'detail-uploaded':   'spine-uploaded',
-            'detail-validated':  'spine-validated',
+            'detail-pending': 'spine-pending',
             'detail-processing': 'spine-processing',
-            'detail-processed':  'spine-processed',
-            'detail-errors':     'spine-errors'
+            'detail-processed': 'spine-processed',
+            'detail-errors': 'spine-errors'
         };
         function updateSpine() {
             var total = 0, counts = {};
@@ -297,18 +290,26 @@
 
                 var label, color, bg, border;
                 if (!d.enabled) {
-                    label = 'Désactivée'; color = '#8a93a3'; bg = '#f8f9fa'; border = '#e2e8f0';
+                    label = 'Désactivée';
+                    color = 'var(--status-pending-text)';
+                    bg = 'var(--status-pending-bg)';
+                    border = 'var(--status-pending-border)';
                 } else if (d.openNow) {
                     label = d.adminKeepOpen ? 'Ouvert (maintenu)' : 'Ouvert';
-                    color = '#0f9d58'; bg = '#f0fdf4'; border = '#bbf7d0';
+                    color = 'var(--status-success-text)';
+                    bg = 'var(--status-success-bg)';
+                    border = 'var(--status-success-border)';
                 } else {
-                    label = 'Fermé'; color = '#dc2626'; bg = '#fef2f2'; border = '#fecaca';
+                    label = 'Fermé';
+                    color = 'var(--status-error-text)';
+                    bg = 'var(--status-error-bg)';
+                    border = 'var(--status-error-border)';
                 }
 
                 statusEl.innerHTML =
-                    '<span style="display:inline-block;padding:2px 10px;font-size:.68rem;font-weight:600;' +
-                    'letter-spacing:.12em;text-transform:uppercase;border-radius:999px;' +
-                    'background:' + bg + ';border:1.5px solid ' + border + ';color:' + color + ';">' +
+                    '<span style="display:inline-block;padding:3px 10px;font-size:.68rem;font-weight:700;' +
+                    'letter-spacing:.08em;text-transform:uppercase;' +
+                    'background:' + bg + ';border:1px solid ' + border + ';color:' + color + ';">' +
                     label + '</span>' +
                     (!d.enabled ? '' :
                         '<span style="font-size:.75rem;color:var(--ink-3);margin-left:.5rem;">' +

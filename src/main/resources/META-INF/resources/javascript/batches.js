@@ -79,16 +79,26 @@ const loadUploadedBatches = async () => {
 // ── Table ─────────────────────────────────────────────────────────────────────
 
 let batchSearchQuery = '';
+let batchStatusFilter = 'all';
 
 const _filterBatches = (list, q) => {
-    if (!q || !q.trim()) return list;
+    const groupStatuses = statusesForFilterKey(batchStatusFilter);
+    let out = groupStatuses ? list.filter(b => groupStatuses.includes(b.status)) : list;
+    if (!q || !q.trim()) return out;
     const lq = q.toLowerCase().trim();
-    return list.filter(b =>
+    return out.filter(b =>
         (b.originalFilename || '').toLowerCase().includes(lq) ||
         (b.batchId || '').toLowerCase().includes(lq) ||
         (b.application || '').toLowerCase().includes(lq) ||
         (b.status || '').toLowerCase().includes(lq)
     );
+};
+
+const _ensureBatchStatusChips = () => {
+    renderStatusFilterChips('batchStatusChips', batchStatusFilter, (key) => {
+        batchStatusFilter = key;
+        renderUploadedBatches();
+    });
 };
 
 const _ensureBatchSearch = () => {
@@ -125,7 +135,7 @@ const _renderBatchTbody = () => {
     const BTN = `padding:5px;background:none;border:none;cursor:pointer;color:var(--ink-3,#80868b);display:inline-flex;align-items:center;justify-content:center`;
     const filtered = _filterBatches(uploadedBatches, batchSearchQuery);
     if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="4" style="padding:2rem;text-align:center;font-size:12px;color:var(--ink-3,#80868b)">Aucun résultat pour « ${batchSearchQuery} »</td></tr>`;
+        tbody.innerHTML = emptyFilterRowHTML(batchSearchQuery, 4);
     } else {
         tbody.innerHTML = filtered.map(b => renderBatchRow(b, TD, BTN)).join('');
     }
@@ -146,8 +156,9 @@ const renderUploadedBatches = () => {
     }
 
     _ensureBatchSearch();
+    _ensureBatchStatusChips();
 
-    const TH = `padding:10px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3,#80868b);text-transform:uppercase;letter-spacing:.07em`;
+    const TH = `padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em`;
     const TD = `padding:11px 16px;border-bottom:0.5px solid var(--line-soft,#f0f1f3)`;
     const BTN = `padding:5px;background:none;border:none;cursor:pointer;color:var(--ink-3,#80868b);display:inline-flex;align-items:center;justify-content:center`;
     const filtered = _filterBatches(uploadedBatches, batchSearchQuery);
@@ -166,7 +177,7 @@ const renderUploadedBatches = () => {
                 <tbody id="batchTbody">
                     ${filtered.length
         ? filtered.map(b => renderBatchRow(b, TD, BTN)).join('')
-        : `<tr><td colspan="4" style="padding:2rem;text-align:center;font-size:12px;color:var(--ink-3,#80868b)">Aucun résultat pour « ${batchSearchQuery} »</td></tr>`}
+        : emptyFilterRowHTML(batchSearchQuery, 4)}
                 </tbody>
             </table>
         </div>`;
@@ -188,7 +199,7 @@ const renderBatchRow = (b, TD, BTN) => {
 
     return `<tr class="hover:bg-gray-50 transition-colors" data-batch-id="${b.batchId}">
         <td style="${TD}">
-            <div style="font-size:12px;font-weight:500;color:var(--ink-1,#202124);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px" title="${filename}">${short}</div>
+            <div style="font-size:12px;font-weight:700;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px" title="${filename}">${short}</div>
             <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
                 ${appBadgeHTML(b.application)}
                 <span style="font-size:10px;color:var(--ink-3,#80868b);font-family:monospace">${b.batchId}</span>
@@ -203,7 +214,7 @@ const renderBatchRow = (b, TD, BTN) => {
         <td style="${TD};white-space:nowrap">
             <div style="display:flex;align-items:center;gap:2px">
                 <button onclick="viewBatchDetails('${b.batchId}')" title="Voir les données"
-                        style="${BTN}" onmouseover="this.style.color='#1967d2'" onmouseout="this.style.color='var(--ink-3,#80868b)'">
+                        style="${BTN}" onmouseover="this.style.color='var(--orange)'" onmouseout="this.style.color='var(--ink-3,#80868b)'">
                     <i data-lucide="eye" style="width:15px;height:15px"></i>
                 </button>
                 ${b.status !== 'UPLOADED' ? `

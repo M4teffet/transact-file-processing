@@ -5,54 +5,140 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>{#insert title}FLUX Orange Bank{/insert}</title>
     <link href="/css/tailwind.css" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400&display=swap"
-          rel="stylesheet">
     <script src="/javascript/vendor/lucide.min.js"></script>
     <link href="/images/favicon.ico" rel="shortcut icon"/>
     <style>
         /* ════════════════════════════════════════════════════
-           FLUX design system — dark chrome / white surfaces
+           FLUX — Orange Design System (Boosted) token set
+           Brand orange #FF7900 · Helvetica Neue · flat, rectangular
            ════════════════════════════════════════════════════ */
         :root{
-            --ink:#000000; --ink-2:#1a1a1a; --ink-3:#4b5563;
-            --chrome:#0a0a0a; --chrome-line:#1f1f1f; --chrome-text:#9aa3af;
-            --canvas:#eceef1; --surface:#ffffff;
-            --line:#c8cdd5; --line-soft:#e3e6ea;
-            --orange:#e86e00; --orange-deep:#c45d00;
+            --orange: #FF7900;
+            --orange-deep: #C65B00;
+            --ink: #1B1B1B;
+            --ink-2: #595959;
+            --ink-3: #767676;
+            --ink-4: #B4B4B4;
+            --chrome: #0a0a0a;
+            --chrome-line: #1f1f1f;
+            --chrome-text: #9aa3af;
+            --chrome-section: #555e6d;
+            --canvas: #F6F6F6;
+            --surface: #ffffff;
+            --line: #E8E8E8;
+            --line-soft: #F0F0F0;
+            /* semantic status colors: bg / text / border */
+            --status-pending-bg: #F6F6F6;
+            --status-pending-text: #595959;
+            --status-pending-border: #E0E0E0;
+            --status-validated-bg: #EAF1FE;
+            --status-validated-text: #0B5ED7;
+            --status-validated-border: #C3D9FB;
+            --status-processing-bg: #FFF1E6;
+            --status-processing-text: #C65B00;
+            --status-processing-border: #FFD9B8;
+            --status-success-bg: #E9F7EF;
+            --status-success-text: #127A3E;
+            --status-success-border: #BEEAD1;
+            --status-warning-bg: #FFF6E0;
+            --status-warning-text: #8A5A00;
+            --status-warning-border: #F3DFA0;
+            --status-error-bg: #FDEDEB;
+            --status-error-text: #B42318;
+            --status-error-border: #F5C4BB;
         }
         html { font-size: 0.92rem; }
 
         body {
-            font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
-            font-weight: 300;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-weight: 400;
             color: var(--ink-2);
         }
 
         .mono {
-            font-family: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', monospace;
+            font-family: ui-monospace, 'JetBrains Mono', 'Cascadia Code', monospace;
         }
         .tnum { font-variant-numeric: tabular-nums; }
 
         /* ── Global re-skin of Tailwind utilities (applies to every page) ── */
         .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-sm { border-radius: 0 !important; }
         .bg-gray-100 { background-color: var(--canvas) !important; }
-        .bg-gray-50  { background-color: #f4f6f9 !important; }
+
+        .bg-gray-50 {
+            background-color: var(--canvas) !important;
+        }
         .border-gray-200 { border-color: var(--line) !important; }
-        .border-gray-300 { border-color: #b0b7c3 !important; }
+
+        .border-gray-300 {
+            border-color: var(--ink-4) !important;
+        }
         .divide-gray-200 > * + * { border-color: var(--line-soft) !important; }
         .text-gray-900 { color: var(--ink) !important; }
         .text-gray-700, .text-gray-800 { color: var(--ink-2) !important; }
         .text-gray-600, .text-gray-500 { color: var(--ink-3) !important; }
-        .font-bold     { font-weight: 600 !important; }
-        .font-semibold { font-weight: 500 !important; }
+
+        .font-bold {
+            font-weight: 700 !important;
+        }
+
+        .font-semibold {
+            font-weight: 700 !important;
+        }
         .font-medium   { font-weight: 400 !important; }
-        .shadow-sm, .shadow-xs { box-shadow: none !important; }
+
+        .shadow-sm, .shadow-xs, .shadow, .shadow-md, .shadow-lg {
+            box-shadow: none !important;
+        }
         .shadow-xl { box-shadow: 0 24px 48px rgba(0,0,0,.35) !important; }
-        h1, h2, h3 { letter-spacing: -.01em; }
+
+        h1, h2, h3 {
+            font-weight: 700;
+            letter-spacing: -.01em;
+        }
         /* Decorative pattern backgrounds removed — clean surfaces only */
         div[style*="pattern-2k"] { display: none !important; }
+
+        /* ── Tailwind's default orange-* scale (#ea580c etc.) doesn't match the
+           Orange brand hue (#FF7900) — remap the shades used across the app. ── */
+        .bg-orange-500, .bg-orange-600 {
+            background-color: var(--orange) !important;
+        }
+
+        .hover\:bg-orange-700:hover, .hover\:bg-orange-600:hover {
+            background-color: var(--orange-deep) !important;
+        }
+
+        .hover\:bg-orange-50:hover {
+            background-color: var(--status-processing-bg) !important;
+        }
+
+        .bg-orange-50 {
+            background-color: var(--status-processing-bg) !important;
+        }
+
+        .text-orange-500, .text-orange-600, .text-orange-700, .text-orange-800 {
+            color: var(--orange) !important;
+        }
+
+        .hover\:text-orange-600:hover, .hover\:text-orange-700:hover {
+            color: var(--orange-deep) !important;
+        }
+
+        .border-orange-200, .border-orange-400, .border-orange-500 {
+            border-color: var(--orange) !important;
+        }
+
+        .hover\:border-orange-500:hover {
+            border-color: var(--orange) !important;
+        }
+
+        .focus\:ring-orange-500:focus {
+            --tw-ring-color: rgba(255, 121, 0, .35) !important;
+        }
+
+        .focus\:border-orange-500:focus {
+            border-color: var(--orange) !important;
+        }
 
         /* ── Snackbar ── */
         #snackbar-container {
@@ -96,13 +182,48 @@
             transition: border-color .2s;
         }
         .stats-card:hover { border-color: var(--ink); }
-        .stats-icon { width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--ink-3); background: #f4f6f9; }
-        .stats-label { font-size: 0.62rem; font-weight: 500; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.16em; margin-bottom: 0.35rem; }
-        .stats-value { font-size: 2rem; font-weight: 300; color: var(--ink); line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-        .card-green  { border-top-color: #0f9d58; }
+
+        .stats-icon {
+            width: 2.1rem;
+            height: 2.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: var(--ink-3);
+            background: var(--canvas);
+        }
+
+        .stats-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--ink-3);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.4rem;
+        }
+
+        .stats-value {
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: var(--ink);
+            line-height: 1;
+            letter-spacing: -.01em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .card-green {
+            border-top-color: #127A3E;
+        }
         .card-orange { border-top-color: var(--orange); }
-        .card-red    { border-top-color: #dc2626; }
-        .card-blue   { border-top-color: #2563eb; }
+
+        .card-red {
+            border-top-color: #B42318;
+        }
+
+        .card-blue {
+            border-top-color: #0B5ED7;
+        }
 
         /* ── Panels (shared) ── */
         .panel { background: var(--surface); border: 1px solid var(--line); }
@@ -112,7 +233,9 @@
             flex-wrap: wrap; gap: .75rem;
         }
         .panel-head h3 {
-            font-size: .78rem; font-weight: 500; letter-spacing: .12em;
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .08em;
             text-transform: uppercase; color: var(--ink);
             display: flex; align-items: center; gap: .55rem;
         }
@@ -121,33 +244,45 @@
 
         /* ── Dark chrome nav (sidebars) ── */
         .nav-section {
-            font-size: .6rem; letter-spacing: .18em; text-transform: uppercase;
-            color: #555e6d; padding: .4rem .65rem; margin-top: .6rem;
+            font-size: .6rem;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--chrome-section);
+            padding: .4rem .65rem;
+            margin-top: .6rem;
         }
         .nav-item {
             display: flex; align-items: center; gap: 0.65rem;
-            padding: 0.55rem 0.65rem; font-size: 0.86rem; font-weight: 300;
+            padding: 0.6rem 0.65rem;
+            font-size: 0.86rem;
+            font-weight: 400;
             transition: color .15s, background .15s; cursor: pointer;
             text-decoration: none; color: var(--chrome-text);
-            border-left: 2px solid transparent;
+            border-left: 3px solid transparent;
         }
         .nav-item:hover { color: #fff; background: rgba(255,255,255,.04); }
         .nav-item-active {
             color: #fff; border-left-color: var(--orange);
-            background: rgba(232,110,0,.10); font-weight: 400;
+            background: rgba(255, 121, 0, .10);
+            font-weight: 700;
         }
 
         /* ── Form inputs ── */
         .form-input, .form-select {
-            width: 100%; padding: 0.45rem 0.7rem;
-            border: 1.5px solid var(--line); border-radius: 0;
-            font-size: 0.88rem; font-weight: 300; background: var(--surface);
+            width: 100%;
+            padding: 0.55rem 0.7rem;
+            border: 1.5px solid var(--ink-4);
+            border-radius: 0;
+            font-size: 0.88rem;
+            font-weight: 400;
+            background: var(--surface);
             color: var(--ink); outline: none;
             transition: border-color 0.15s, box-shadow 0.15s;
         }
         .form-input:focus, .form-select:focus {
             border-color: var(--orange);
-            box-shadow: 0 0 0 3px rgba(232,110,0,0.15);
+            box-shadow: 0 0 0 3px rgba(255, 121, 0, 0.15);
         }
 
         /* ── Page header ── */
@@ -155,17 +290,32 @@
             display: flex; flex-direction: column; justify-content: space-between;
             align-items: flex-start; gap: 0.75rem;
             padding-bottom: 1.1rem; margin-bottom: 1.5rem;
-            border-bottom: 2px solid var(--ink);
+            border-bottom: 1px solid var(--line);
         }
         @media (min-width: 640px) { .page-header { flex-direction: row; align-items: flex-end; } }
-        .page-title    { font-size: 1.45rem; font-weight: 500; color: var(--ink); letter-spacing: -.015em; }
-        .page-subtitle { font-size: 0.8rem; color: var(--ink-3); margin-top: 0.2rem; font-weight: 300; }
+
+        .page-title {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: -.01em;
+        }
+
+        .page-subtitle {
+            font-size: 0.8rem;
+            color: var(--ink-3);
+            margin-top: 0.2rem;
+            font-weight: 400;
+        }
 
         /* ── Buttons ── */
         .btn-flux {
             display: inline-flex; align-items: center; gap: .45rem;
-            font-family: inherit; font-size: .8rem; font-weight: 400;
-            cursor: pointer; padding: .5rem .9rem;
+            font-family: inherit;
+            font-size: .8rem;
+            font-weight: 700;
+            cursor: pointer;
+            padding: .6rem .95rem;
             border: 1.5px solid var(--ink); background: var(--surface);
             color: var(--ink); transition: all .15s;
         }
@@ -173,83 +323,14 @@
         .btn-flux-primary { background: var(--orange); border-color: var(--orange); color: #fff; }
         .btn-flux-primary:hover { background: var(--orange-deep); border-color: var(--orange-deep); color: #fff; }
 
-        .btn-flux-danger {
-            background: #fef2f2;
-            border-color: rgba(153, 27, 27, .3);
-            color: #991b1b;
-        }
-
-        .btn-flux-danger:hover {
-            background: #fee2e2;
-            border-color: #991b1b;
-            color: #7f1d1d;
-        }
-
-        .btn-flux-sm {
-            padding: .3rem .65rem;
-            font-size: .75rem;
-        }
-
-        /* ── Shared admin card / form design system ─────────────────────── */
-        .flux-card {
-            background: var(--surface);
-            border: 0.5px solid var(--line);
-            overflow: hidden;
-        }
-
-        .flux-card-header {
-            padding: 11px 16px;
-            border-bottom: 0.5px solid var(--line);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .flux-card-title {
-            font-size: .8rem;
-            font-weight: 500;
-            color: var(--ink-2);
-        }
-
-        .flux-card-body {
-            padding: 16px 20px;
-        }
-
-        .flux-label {
-            display: block;
-            margin-bottom: .3rem;
-            font-size: .7rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: .07em;
-            color: var(--ink-3);
-        }
-
-        .flux-input, .flux-select {
-            font-family: inherit;
-            font-size: .8rem;
-            color: var(--ink-2);
-            padding: .45rem .75rem;
-            border: 0.5px solid var(--line);
-            background: var(--surface);
-            outline: none;
-            width: 100%;
-            transition: border-color .15s;
-        }
-
-        .flux-input:focus, .flux-select:focus {
-            border-color: var(--orange);
-        }
-
-        .flux-input::placeholder {
-            color: var(--ink-3);
-        }
-
         /* ── Terminal log panel ── */
         .terminal {
-            background: var(--chrome); color: #c9d1d9;
-            font-family: 'JetBrains Mono', ui-monospace, monospace;
-            font-size: .74rem; font-weight: 300; line-height: 1.85;
+            background: var(--ink);
+            color: #E8E8E8;
+            font-family: ui-monospace, 'JetBrains Mono', monospace;
+            font-size: .74rem;
+            font-weight: 400;
+            line-height: 1.85;
         }
         .terminal .lvl-info  { color: #58a6ff; }
         .terminal .lvl-warn  { color: #d29922; }
@@ -348,26 +429,27 @@
 <div class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60"
      id="deleteConfirmationModal"
      onclick="if(event.target===this)cancelDelete()">
-    <div class="bg-white w-full max-w-sm mx-4 shadow-xl" style="border-top:3px solid #dc2626;">
-        <div class="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+    <div class="bg-white w-full mx-4"
+         style="max-width:420px;border-top:4px solid var(--status-error-text);box-shadow:0 24px 60px rgba(0,0,0,.3);">
+        <div class="px-5 py-3.5 flex items-center justify-between" style="border-bottom:1px solid var(--line-soft);">
             <div class="flex items-center gap-2">
-                <i data-lucide="trash-2" class="w-4 h-4 text-red-600"></i>
-                <h3 class="text-sm font-semibold text-gray-900">Supprimer le lot</h3>
+                <i data-lucide="trash-2" class="w-4 h-4" style="color:var(--status-error-text);"></i>
+                <h3 style="font-size:.92rem;font-weight:700;color:var(--ink);">Supprimer le lot</h3>
             </div>
-            <button class="p-1 hover:bg-gray-100 text-gray-400 transition" onclick="cancelDelete()" aria-label="Fermer">
+            <button style="padding:4px;color:var(--ink-3);" onclick="cancelDelete()" aria-label="Fermer">
                 <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
         <div class="px-5 py-4">
-            <p class="text-xs text-gray-500 leading-relaxed">
+            <p style="font-size:.8rem;color:var(--ink-2);line-height:1.5;">
                 Ce lot sera définitivement supprimé. Cette action est irréversible.
             </p>
         </div>
-        <div class="px-5 py-3 border-t border-gray-100 flex gap-2 justify-end">
-            <button class="px-4 py-2 text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition"
-                    onclick="cancelDelete()">Annuler
+        <div class="px-5 py-3 flex gap-2 justify-end" style="border-top:1px solid var(--line-soft);">
+            <button class="btn-flux" onclick="cancelDelete()">Annuler
             </button>
-            <button class="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition flex items-center gap-1.5"
+            <button class="btn-flux"
+                    style="background:var(--status-error-text);border-color:var(--status-error-text);color:#fff;"
                     onclick="confirmDelete()">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Supprimer
             </button>

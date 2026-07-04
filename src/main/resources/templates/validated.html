@@ -13,53 +13,51 @@
 
 {#default}
 
-    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:24px" id="validatedPage">
+    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:20px" id="validatedPage">
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="page-header">
+            <div>
+                <h2 class="page-title">Batches Validés</h2>
+                <p class="page-subtitle">Lots validés et en cours de traitement vers T24</p>
+            </div>
+        </div>
 
-            <!-- Validés -->
-            <div style="position:relative;overflow:hidden;border:0.5px solid #e5e7eb;background:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
-                <svg style="position:absolute;right:-10px;top:-10px;opacity:.06;pointer-events:none" width="100"
-                     height="100" viewBox="0 0 100 100">
-                    <circle cx="80" cy="20" r="40" fill="#059669"/>
-                    <circle cx="60" cy="60" r="25" fill="#059669"/>
-                </svg>
-                <div>
-                    <p style="font-size:12px;color:#6b7280;margin-bottom:4px">Validés</p>
-                    <p style="font-size:26px;font-weight:300;color:#059669;line-height:1;font-variant-numeric:tabular-nums"
-                       id="validatedCount">0</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="stats-card card-green">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="stats-label">Validés</div>
+                        <div class="stats-value" id="validatedCount" style="color:#127A3E">0</div>
+                    </div>
+                    <div class="stats-icon"><i data-lucide="circle-check-big"
+                                               style="width:18px;height:18px;color:#127A3E"></i></div>
                 </div>
-                <i data-lucide="circle-check-big"
-                   style="width:32px;height:32px;color:#059669;opacity:.35;flex-shrink:0"></i>
             </div>
 
-            <!-- Traités -->
-            <div style="position:relative;overflow:hidden;border:0.5px solid #e5e7eb;background:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
-                <svg style="position:absolute;right:-10px;top:-10px;opacity:.06;pointer-events:none" width="100"
-                     height="100" viewBox="0 0 100 100">
-                    <circle cx="80" cy="20" r="40" fill="#e86e00"/>
-                    <circle cx="60" cy="60" r="25" fill="#e86e00"/>
-                </svg>
-                <div>
-                    <p style="font-size:12px;color:#6b7280;margin-bottom:4px">Traités</p>
-                    <p style="font-size:26px;font-weight:300;color:#e86e00;line-height:1;font-variant-numeric:tabular-nums"
-                       id="processedCount">0</p>
+            <div class="stats-card card-orange">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="stats-label">Traités</div>
+                        <div class="stats-value" id="processedCount" style="color:var(--orange)">0</div>
+                    </div>
+                    <div class="stats-icon"><i data-lucide="play-circle"
+                                               style="width:18px;height:18px;color:var(--orange)"></i></div>
+                </div>
             </div>
-                <i data-lucide="play-circle" style="width:32px;height:32px;color:#e86e00;opacity:.35;flex-shrink:0"></i>
         </div>
 
-    </div>
+        <div class="flex flex-wrap" id="validatedStatusChips" style="gap:8px"></div>
 
-        <div class="bg-white rounded-md shadow-xs border border-gray-200 p-8">
-            <div class="flex items-center gap-3">
-                <i class="w-5 h-5 text-orange-600" data-lucide="list"></i>
-                <h3 class="text-sm font-semibold text-gray-700">Batches Validés</h3>
-                <div id="validatedSearchAnchor" style="margin-left:auto"></div>
+        <div class="panel">
+            <div class="panel-head">
+                <h3><i data-lucide="list"></i>Batches Validés</h3>
+                <div id="validatedSearchAnchor"></div>
+            </div>
+            <div id="validatedBatchesContainer"></div>
+            <div class="text-center p-4" style="font-size:.78rem;color:var(--ink-3);"
+                 id="validatedPaginationInfo"></div>
         </div>
-        <div class="divide-y divide-gray-200 p-4" id="validatedBatchesContainer"></div>
-        <div class="text-center text-sm text-gray-500 mt-4 p-4" id="validatedPaginationInfo"></div>
     </div>
-</div>
 {/default}
 
 {#script}

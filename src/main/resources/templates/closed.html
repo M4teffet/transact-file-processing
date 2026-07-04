@@ -4,60 +4,102 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Service fermé - Orange Bank</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link href="/images/favicon.ico" rel="shortcut icon"/>
+    <script src="/javascript/vendor/lucide.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { font-size: .92rem; }
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-weight: 300;
-            background: linear-gradient(150deg, #061d34 0%, #000 60%, #1a0800 100%);
+            font-family: 'Helvetica Neue', Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
+            font-weight: 400;
+            background: #0a0a0a;
             min-height: 100vh; display: flex; align-items: center;
-            justify-content: center; padding: 1rem; color: #0a0a0a;
+            justify-content: center;
+            padding: 1rem;
+            color: #1B1B1B;
         }
         .card {
-            background: #ffffff; border: 1px solid #c8cdd5;
-            box-shadow: 0 24px 48px rgba(0,0,0,.35), 0 8px 16px rgba(0,0,0,.2);
-            width: 100%; max-width: 30rem; padding: 2.75rem 2.25rem;
-            position: relative; overflow: hidden; text-align: center;
+            background: #ffffff;
+            border-top: 4px solid #FF7900;
+            width: 100%;
+            max-width: 26rem;
+            padding: 2.5rem 2.25rem;
+            text-align: center;
         }
-        .card::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
-            background: #e86e00;
+
+        .icon-circle {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #FFF1E6;
+            color: #C65B00;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
         }
         .code {
-            font-size: .62rem; letter-spacing: .2em; text-transform: uppercase;
-            color: #e86e00; font-weight: 500; margin-bottom: .75rem;
+            font-size: .62rem;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: #FF7900;
+            font-weight: 700;
+            margin-bottom: .5rem;
         }
         h1 {
-            font-size: 1.45rem; font-weight: 500; color: #000;
-            letter-spacing: -.015em; margin-bottom: .6rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1B1B1B;
+            letter-spacing: -.01em;
+            margin-bottom: .6rem;
         }
-        p { font-size: .87rem; color: #4b5563; line-height: 1.6; }
+
+        p {
+            font-size: .82rem;
+            color: #767676;
+            line-height: 1.6;
+        }
         .hours {
-            background: #f4f6f9; border: 1.5px solid #b0b7c3;
+            background: #F6F6F6;
+            border: 1px solid #E0E0E0;
             padding: 1rem; margin: 1.5rem 0;
-            font-size: 1.05rem; font-weight: 500; color: #000;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #1B1B1B;
             font-variant-numeric: tabular-nums;
         }
         .hours small {
-            display: block; font-size: .68rem; font-weight: 400;
-            letter-spacing: .14em; text-transform: uppercase;
-            color: #4b5563; margin-bottom: .35rem;
+            display: block;
+            font-size: .65rem;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: #767676;
+            margin-bottom: .35rem;
         }
         .btn {
             display: inline-flex; align-items: center; gap: .45rem;
-            margin-top: 1.25rem; padding: .65rem 1.5rem;
-            background: none; color: #1a1a1a; text-decoration: none;
-            border: 1.5px solid #b0b7c3;
-            font-weight: 400; font-size: .85rem; transition: all .15s;
+            margin-top: 1.25rem;
+            padding: .65rem 1.4rem;
+            background: #fff;
+            color: #1B1B1B;
+            text-decoration: none;
+            border: 1.5px solid #E0E0E0;
+            font-weight: 700;
+            font-size: .82rem;
+            transition: all .15s;
         }
-        .btn:hover { border-color: #000; background: #f0f2f5; }
+
+        .btn:hover {
+            border-color: #767676;
+            background: #F6F6F6;
+        }
         .footer {
             margin-top: 2rem; padding-top: 1.25rem;
-            border-top: 1px solid #e5e7eb;
-            font-size: .72rem; font-weight: 300; color: #6b7280;
+            border-top: 1px solid #F0F0F0;
+            font-size: .7rem;
+            font-weight: 400;
+            color: #B4B4B4;
         }
         @media (prefers-reduced-motion: reduce) {
             * { transition: none !important; animation: none !important; }
@@ -66,10 +108,10 @@
 </head>
 <body>
 <div class="card" role="main">
+    <div class="icon-circle"><i data-lucide="clock" style="width:26px;height:26px;"></i></div>
     <p class="code">Hors plage de service</p>
-    <h1>Service fermé</h1>
-    <p>L'application FLUX est actuellement fermée. Les opérations de traitement
-        de fichiers ne sont accessibles que pendant les heures de service.</p>
+    <h1>Fenêtre de service fermée</h1>
+    <p>Les imports et validations sont suspendus en dehors des horaires de service.</p>
 
     <div class="hours">
         <small>Heures d'ouverture</small>
@@ -83,5 +125,6 @@
 
     <div class="footer">&copy; 2025 Orange Bank. Tous droits réservés.</div>
 </div>
+<script>if (window.lucide) lucide.createIcons();</script>
 </body>
 </html>

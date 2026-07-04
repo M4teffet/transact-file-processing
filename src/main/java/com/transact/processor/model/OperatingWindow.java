@@ -33,8 +33,12 @@ public class OperatingWindow extends PanacheMongoEntity {
     /** Service closes at this hour (0-23), exclusive. */
     public int closeHour = 18;
 
-    /** IANA zone for evaluating the hours. */
-    public String zone = "Africa/Abidjan";
+    /**
+     * IANA zone for evaluating the hours. Defaults to GMT; this default lives
+     * here (backend) as the single source of truth — the frontend never
+     * hardcodes its own default and always reflects whatever this returns.
+     */
+    public String zone = "GMT";
 
     /** Admin override: keep the app open past closing until switched off. */
     public boolean adminKeepOpen = false;

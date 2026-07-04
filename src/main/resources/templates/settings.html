@@ -6,13 +6,13 @@
 {/aside}
 
 {#default}
-    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:20px">
+    <div class="max-w-6xl mx-auto pb-10">
 
     <!-- Page header -->
-        <div class="page-header">
+        <div class="flex justify-between items-end pb-4 mb-6" style="border-bottom:2px solid var(--ink);">
         <div>
             <h2 class="page-title">Paramètres</h2>
-            <p class="page-subtitle">Référentiels, utilisateurs et configuration</p>
+            <p class="text-xs text-gray-500 mt-1">Référentiels, utilisateurs et configuration</p>
         </div>
     </div>
 
@@ -102,7 +102,7 @@
                             </div>
                         </div>
 
-                        <button class="btn-flux btn-flux-primary" style="width:100%;justify-content:center"
+                        <button class="w-full py-2 px-4 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
                                 id="createUserBtn"
                                 type="submit">
                             <i class="w-3.5 h-3.5" data-lucide="user-plus"></i>
@@ -168,7 +168,7 @@
                                        placeholder="CI2250001" required>
                             </div>
                         </div>
-                        <button class="btn-flux btn-flux-primary" style="width:100%;justify-content:center"
+                        <button class="w-full py-2 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
                                 type="submit">
                             <i class="w-3.5 h-3.5" data-lucide="plus"></i> Ajouter le pays
                         </button>
@@ -205,7 +205,7 @@
                                        placeholder="Ex: Finance" required>
                             </div>
                         </div>
-                        <button class="btn-flux btn-flux-primary" style="width:100%;justify-content:center"
+                        <button class="w-full py-2 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
                                 type="submit">
                             <i class="w-3.5 h-3.5" data-lucide="plus"></i> Créer le département
                         </button>
@@ -294,7 +294,7 @@
                     <div class="bg-orange-50 border border-orange-200 rounded-md p-3 text-xs text-orange-800">
                         <strong>Aperçu :</strong> <span id="pol-preview">Chargement...</span>
                     </div>
-                    <button class="btn-flux btn-flux-primary" style="width:100%;justify-content:center"
+                    <button class="w-full py-2 px-4 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
                             id="savePolicyBtn">
                         <i class="w-3.5 h-3.5" data-lucide="save"></i> Enregistrer la politique
                     </button>
@@ -312,7 +312,7 @@
                         <i class="w-4 h-4 text-orange-600" data-lucide="lock"></i>
                         <span class="text-sm font-semibold text-gray-800">Gestion des accès</span>
                     </div>
-                    <button class="btn-flux btn-flux-sm"
+                    <button class="p-1 text-gray-400 hover:text-orange-600 transition"
                             onclick="loadSecurityUserList()" title="Rafraîchir">
                         <i class="w-3.5 h-3.5" data-lucide="refresh-cw"></i>
                     </button>
@@ -352,10 +352,10 @@
                             </p>
                         </div>
                         <button aria-checked="false"
-                                class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors bg-gray-300"
+                                class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded transition-colors bg-gray-300"
                                 id="windowEnabledToggle"
                                 role="switch" type="button">
-                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform translate-x-0.5"
+                            <span class="inline-block h-5 w-5 transform rounded-sm bg-white shadow-sm transition-transform translate-x-0.5"
                                   id="windowEnabledKnob"></span>
                         </button>
                     </div>
@@ -384,9 +384,10 @@
                             Fuseau horaire
                         </label>
                         <input class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition" id="windowZone"
-                               placeholder="Africa/Abidjan"
+                               placeholder="GMT"
                                type="text">
-                        <p class="text-[11px] text-gray-400 mt-0.5">Format IANA — ex: Africa/Abidjan, Europe/Paris</p>
+                        <p class="text-[11px] text-gray-400 mt-0.5">Format IANA — ex: GMT, Europe/Paris,
+                            Africa/Abidjan</p>
                     </div>
 
                     <!-- Keep-open override -->
@@ -398,15 +399,20 @@
                             </p>
                         </div>
                         <button aria-checked="false"
-                                class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors bg-gray-300"
+                                class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded transition-colors bg-gray-300"
                                 id="windowKeepOpenToggle"
                                 role="switch" type="button">
-                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform translate-x-0.5"
+                            <span class="inline-block h-5 w-5 transform rounded-sm bg-white shadow-sm transition-transform translate-x-0.5"
                                   id="windowKeepOpenKnob"></span>
                         </button>
                     </div>
 
-                    <button class="btn-flux btn-flux-primary" style="width:100%;justify-content:center"
+                    <p class="hidden text-[11px] font-semibold text-center flex items-center justify-center gap-1"
+                       id="windowDirtyIndicator" style="color:var(--status-warning-text, #b45309)">
+                        <i class="w-3 h-3" data-lucide="alert-triangle"></i> Modifications non enregistrées
+                    </p>
+
+                    <button class="w-full py-2 px-4 rounded-md text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 transition flex items-center justify-center gap-1.5"
                             id="windowSaveBtn"
                             type="button">
                         <i class="w-3.5 h-3.5" data-lucide="save"></i> Enregistrer
@@ -443,7 +449,7 @@
                     </div>
                     <p class="text-[11px] text-gray-400">
                         Les heures sont évaluées dans le fuseau horaire configuré ci-contre.
-                        Par défaut : <code>Africa/Abidjan</code> (UTC+0, pas de changement d'heure).
+                        Par défaut : <code>GMT</code> (UTC+0, pas de changement d'heure).
                     </p>
                 </div>
             </div>
@@ -456,11 +462,22 @@
     .settings-tab {
         display: inline-flex; align-items: center; gap: 5px;
         padding: 8px 16px; font-size: .85rem; font-weight: 400;
-        color: #6b7280; border: none; background: none; cursor: pointer;
+        color: var(--ink-3);
+        border: none;
+        background: none;
+        cursor: pointer;
         border-bottom: 2px solid transparent; transition: all .15s; white-space: nowrap;
     }
-    .settings-tab:hover { color: #111827; }
-    .settings-tab.active { color: #e86e00; border-bottom-color: #e86e00; font-weight: 500; }
+
+    .settings-tab:hover {
+        color: var(--ink);
+    }
+
+    .settings-tab.active {
+        color: var(--orange);
+        border-bottom-color: var(--orange);
+        font-weight: 700;
+    }
 </style>
 {/default}
 

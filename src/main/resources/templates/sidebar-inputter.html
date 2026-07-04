@@ -8,7 +8,7 @@
             <span class="flex items-center justify-center flex-shrink-0 text-white font-semibold"
                   style="width:26px;height:26px;background:var(--orange);font-size:.75rem;">OB</span>
             <span>
-                <b class="text-white block" style="font-weight:500;font-size:.92rem;letter-spacing:.06em;">FLUX</b>
+                <b class="text-white block" style="font-weight:700;font-size:.92rem;letter-spacing:.06em;">FLUX</b>
                 <span class="block uppercase" style="color:var(--chrome-text);font-size:.62rem;letter-spacing:.14em;">Orange Bank</span>
             </span>
         </a>
@@ -16,26 +16,11 @@
 
     <nav class="flex-1 px-3 py-4">
         <div class="nav-section">Opérations</div>
-        {#if activePage == 'upload'}
-        <a class="nav-item nav-item-active" href="/upload">
-            {#else}
-            <a class="nav-item" href="/upload">
-                {/if}
-                <i class="w-4 h-4 flex-shrink-0" data-lucide="cloud-upload"></i> Upload
-            </a>
+            {#navitem href = "/upload" icon = "cloud-upload" label = "Upload" page = activePage matchPage = "upload"/}
+            {#navitem href = "/batches" icon = "list-checks" label = "Mes Batches" page = activePage matchPage = "batches"/}
 
-            {#if activePage == 'batches'}
-            <a class="nav-item nav-item-active" href="/batches">
-                {#else}
-                <a class="nav-item" href="/batches">
-                    {/if}
-                    <i class="w-4 h-4 flex-shrink-0" data-lucide="list-checks"></i> Mes Batches
-                </a>
-
-                <div class="nav-section">Aide</div>
-                <a class="nav-item" href="#">
-                    <i class="w-4 h-4 flex-shrink-0" data-lucide="help-circle"></i> Support
-                </a>
+        <div class="nav-section">Aide</div>
+            {#navitem href = "#" icon = "help-circle" label = "Support" page = activePage matchPage = "__none__"/}
     </nav>
 
     <div id="op-window-badge" style="display:none;align-items:center;gap:8px;
