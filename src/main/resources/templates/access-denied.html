@@ -6,21 +6,22 @@
     <title>Accès Non Autorisé - Orange Bank</title>
     <link href="/images/favicon.ico" rel="shortcut icon"/>
     <script src="/javascript/vendor/lucide.min.js"></script>
+    <link href="/css/flux-tokens.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { font-size: .92rem; }
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, -apple-system, BlinkMacSystemFont, sans-serif;
             font-weight: 400;
-            background: #0a0a0a;
+            background: var(--chrome);
             min-height: 100vh; display: flex; align-items: center;
             justify-content: center;
             padding: 1rem;
-            color: #1B1B1B;
+            color: var(--ink);
         }
         .card {
             background: #ffffff;
-            border-top: 4px solid #B42318;
+            border-top: 3px solid var(--status-error-text);
             width: 100%;
             max-width: 26rem;
             padding: 2.5rem 2.25rem;
@@ -32,7 +33,7 @@
             height: 56px;
             border-radius: 50%;
             background: #FDEDEB;
-            color: #B42318;
+            color: var(--status-error-text);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -42,21 +43,21 @@
             font-size: .62rem;
             letter-spacing: .12em;
             text-transform: uppercase;
-            color: #B42318;
+            color: var(--status-error-text);
             font-weight: 700;
             margin-bottom: .5rem;
         }
         h1 {
             font-size: 1.2rem;
             font-weight: 700;
-            color: #1B1B1B;
+            color: var(--ink);
             letter-spacing: -.01em;
             margin-bottom: .6rem;
         }
 
         p {
             font-size: .82rem;
-            color: #767676;
+            color: var(--ink-3);
             line-height: 1.6;
         }
         .warning {
@@ -71,10 +72,10 @@
             display: inline-flex; align-items: center; gap: .45rem;
             margin-top: 1.5rem;
             padding: .65rem 1.4rem;
-            background: #FF7900;
+            background: var(--orange);
             color: #fff;
             text-decoration: none;
-            border: 1.5px solid #FF7900;
+            border: 1.5px solid var(--orange);
             font-weight: 700;
             font-size: .82rem;
             transition: background .15s, border-color .15s;

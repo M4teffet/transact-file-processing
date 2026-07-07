@@ -113,7 +113,7 @@ const _ensureBatchSearch = () => {
                 <input id="batchSearchInput" type="text"
                        placeholder="Rechercher…"
                        style="width:240px;padding:5px 10px 5px 28px;font-size:12px;
-                              border:0.5px solid var(--line,#e0e0e0);
+                              border:1px solid var(--line,#e0e0e0);
                               background:var(--color-background-primary,#fff);
                               color:var(--ink-2,#5f6368);outline:none;box-sizing:border-box"/>
             </div>
@@ -131,7 +131,7 @@ const _ensureBatchSearch = () => {
 const _renderBatchTbody = () => {
     const tbody = document.getElementById('batchTbody');
     if (!tbody) return;
-    const TD = `padding:11px 16px;border-bottom:0.5px solid var(--line-soft,#f0f1f3)`;
+    const TD = `padding:11px 16px;border-bottom:1px solid var(--line-soft,#f0f1f3)`;
     const BTN = `padding:5px;background:none;border:none;cursor:pointer;color:var(--ink-3,#80868b);display:inline-flex;align-items:center;justify-content:center`;
     const filtered = _filterBatches(uploadedBatches, batchSearchQuery);
     if (!filtered.length) {
@@ -146,11 +146,7 @@ const renderUploadedBatches = () => {
     if (!container) return;
 
     if (!uploadedBatches.length) {
-        container.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-12 text-gray-500">
-                <i data-lucide="inbox" class="w-12 h-12 mb-3 opacity-20"></i>
-                <p class="text-sm">Aucun batch trouvé pour le moment.</p>
-            </div>`;
+        container.innerHTML = emptyState('Aucun lot trouvé pour le moment.', {icon: 'inbox'});
         createIcons(container);
         return;
     }
@@ -158,20 +154,19 @@ const renderUploadedBatches = () => {
     _ensureBatchSearch();
     _ensureBatchStatusChips();
 
-    const TH = `padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em`;
-    const TD = `padding:11px 16px;border-bottom:0.5px solid var(--line-soft,#f0f1f3)`;
+    const TD = `padding:11px 16px;border-bottom:1px solid var(--line-soft,#f0f1f3)`;
     const BTN = `padding:5px;background:none;border:none;cursor:pointer;color:var(--ink-3,#80868b);display:inline-flex;align-items:center;justify-content:center`;
     const filtered = _filterBatches(uploadedBatches, batchSearchQuery);
 
     container.innerHTML = `
         <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse">
+            <table class="data-table">
                 <thead>
-                    <tr style="border-bottom:0.5px solid var(--line,#e0e0e0)">
-                        <th style="${TH}">Lot</th>
-                        <th style="${TH}">Date d'import</th>
-                        <th style="${TH}">Statut</th>
-                        <th style="${TH}"></th>
+                    <tr>
+                        <th>Lot</th>
+                        <th>Date d'import</th>
+                        <th>Statut</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody id="batchTbody">

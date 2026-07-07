@@ -1,0 +1,74 @@
+/* ═══════════════════════════════════════════════════════════════════
+   FLUX — Brand tokens (single source of the palette)
+   Imported by BOTH shells: the app (layout.html) and auth (auth.css).
+   Previously the palette lived twice — as CSS vars in layout.html and as
+   raw hex literals in auth.css — so a brand change meant editing two
+   files and the two sides drifted. This is now the only place hues live.
+
+   Load order: this file first, then flux-harmonization.css (which adds
+   the scale/spacing/component tokens and references these hues).
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+    /* ── Brand ── */
+    --orange: #FF7900;
+    --orange-deep: #C65B00;
+
+    /* ── Ink ramp ── */
+    --ink: #1B1B1B;
+    --ink-2: #595959;
+    --ink-3: #767676;
+    --ink-4: #B4B4B4;
+
+    /* ── Chrome (dark sidebar / topbar / auth brand panel) ── */
+    --chrome: #0a0a0a;
+    --chrome-line: #1f1f1f;
+    --chrome-text: #9aa3af;
+    --chrome-section: #555e6d;
+
+    /* ── Surfaces ── */
+    --canvas: #F6F6F6;
+    --surface: #ffffff;
+    --line: #E8E8E8;
+    --line-soft: #F0F0F0;
+
+    /* ── Semantic status: bg / text / border ── */
+    --status-pending-bg: #F6F6F6;
+    --status-pending-text: #595959;
+    --status-pending-border: #E0E0E0;
+    --status-validated-bg: #EAF1FE;
+    --status-validated-text: #0B5ED7;
+    --status-validated-border: #C3D9FB;
+    --status-processing-bg: #FFF1E6;
+    --status-processing-text: #C65B00;
+    --status-processing-border: #FFD9B8;
+    --status-success-bg: #E9F7EF;
+    --status-success-text: #127A3E;
+    --status-success-border: #BEEAD1;
+    --status-warning-bg: #FFF6E0;
+    --status-warning-text: #8A5A00;
+    --status-warning-border: #F3DFA0;
+    --status-error-bg: #FDEDEB;
+    --status-error-text: #B42318;
+    --status-error-border: #F5C4BB;
+
+    /* ── Status hues in chrome context (lighter, for the dark panel) ── */
+    --chrome-ok: #2EA25C;
+    --chrome-ok-line: rgba(46, 162, 92, .35);
+    --chrome-ok-bg: rgba(46, 162, 92, .12);
+    --chrome-ok-text: #6FCE96;
+    --chrome-alert: #D6493C;
+    --chrome-alert-line: rgba(214, 73, 60, .35);
+    --chrome-alert-bg: rgba(214, 73, 60, .12);
+    --chrome-alert-text: #E8887D;
+}
+
+/* Motion guard — the app shell had this; auth did not. Now both do. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+        scroll-behavior: auto !important;
+    }
+}

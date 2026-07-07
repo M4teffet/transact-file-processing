@@ -23,6 +23,20 @@ const ITEMS_PER_PAGE = 20;
 document.addEventListener('DOMContentLoaded', () => {
     initializeDates();
     loadInitialData();
+
+    // The date range is applied server-side when fetching (/batches/export),
+    // so changing either date must re-fetch — otherwise the pickers appear inert.
+    const reloadOnDateChange = () => {
+        const from = document.getElementById('startDate').value;
+        const to = document.getElementById('endDate').value;
+        if (from && to && from > to) {
+            showSnackbar('La date de début doit précéder la date de fin', 'error');
+            return;
+        }
+        loadBatchData();
+    };
+    document.getElementById('startDate').addEventListener('change', reloadOnDateChange);
+    document.getElementById('endDate').addEventListener('change', reloadOnDateChange);
 });
 
 function initializeDates() {
@@ -87,7 +101,7 @@ async function loadBatchData() {
         applyFilters(false);
     } catch (err) {
         console.error('Erreur chargement batchs:', err);
-        showSnackbar('Erreur lors du chargement des batchs', 'error');
+        showSnackbar('Erreur lors du chargement des lots', 'error');
     }
 }
 
@@ -172,35 +186,34 @@ function updateSummaryKpis() {
     const processed = filteredBatches.filter(b => b.status === 'PROCESSED').length;
     const partial = filteredBatches.filter(b => b.status === 'PROCESSED_WITH_ERROR').length;
     const failed = filteredBatches.filter(b => b.status === 'PROCESSED_FAILED').length;
+    // Everything not yet in a terminal processed/failed state → "en attente/traitement".
+    const processing = filteredBatches.filter(b => b.status === 'PROCESSING').length;
+    const pending = total - processed - partial - failed - processing;
     const totalRecs = filteredBatches.reduce((s, b) => s + (b.totalRecords || 0), 0);
     const totalFailed = filteredBatches.reduce((s, b) => s + (b.failureCount || 0), 0);
 
-    const c = document.getElementById('reportKpis');
-    if (!c) return;
-    c.innerHTML = [
-        {label: 'Total batchs', value: total, style: 'background:var(--canvas);color:var(--ink);'},
-        {
-            label: 'Traités OK',
-            value: processed,
-            style: 'background:var(--status-success-bg);color:var(--status-success-text);'
-        },
-        {
-            label: 'Partiels',
-            value: partial,
-            style: 'background:var(--status-warning-bg);color:var(--status-warning-text);'
-        },
-        {label: 'Échecs', value: failed, style: 'background:var(--status-error-bg);color:var(--status-error-text);'},
-        {label: 'Total enregistrements', value: totalRecs, style: 'background:var(--canvas);color:var(--ink);'},
-        {
-            label: 'Lignes échouées',
-            value: totalFailed,
-            style: 'background:var(--status-error-bg);color:var(--status-error-text);'
-        },
-    ].map(k => `
-        <div class="p-3 text-center transition-all" style="border:1px solid var(--line);${k.style}">
-            <p class="text-[10px] font-bold uppercase tracking-wider mb-1" style="color:var(--ink-3)">${k.label}</p>
-            <p class="text-xl font-bold">${k.value.toLocaleString()}</p>
-        </div>`).join('');
+    // Proportional spine — same component as the dashboard, but driven by real
+    // proportions so each segment's width reflects its share of the total.
+    // "processed" groups full + partial successes (matching the dashboard buckets).
+    const setFlex = (id, n) => {
+        const el = document.getElementById(id);
+        if (el) el.style.flex = String(n);
+    };
+    setFlex('rspine-pending', Math.max(pending, 0));
+    setFlex('rspine-processing', processing);
+    setFlex('rspine-processed', processed + partial);
+    setFlex('rspine-errors', failed);
+
+    const setNum = (id, n) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = n.toLocaleString('fr-FR');
+    };
+    setNum('rdetail-processed', processed);
+    setNum('rdetail-partial', partial);
+    setNum('rdetail-errors', failed);
+    setNum('rdetail-total', total);
+    setNum('rdetail-records', totalRecs);
+    setNum('rdetail-failedrows', totalFailed);
 }
 
 // ── Table rendering ───────────────────────────────────────────────────────────
@@ -211,68 +224,54 @@ function renderBatchTable() {
     const page = filteredBatches.slice(start, start + ITEMS_PER_PAGE);
 
     if (!page.length) {
-        tbody.innerHTML = `<tr><td colspan="14" class="px-4 py-12 text-center text-gray-500">
-            <div class="flex flex-col items-center gap-3">
-                <i data-lucide="inbox" class="w-12 h-12 text-gray-300"></i>
-                <span>Aucun batch trouvé</span>
-            </div></td></tr>`;
+        tbody.innerHTML = emptyStateRow(14, 'Aucun lot trouvé', {icon: 'inbox'});
+        if (typeof createIcons === 'function') createIcons(tbody);
         updatePaginationControls();
         if (typeof lucide !== 'undefined') createIcons(tbody);
         return;
     }
 
+    // Cell padding, borders and alignment come from .data-table / .tcol-center.
+    const countChip = (n, tone) => n > 0
+        ? `<span class="badge badge-${tone}">${n.toLocaleString()}</span>`
+        : '<span style="color:var(--ink-4);">0</span>';
+
     tbody.innerHTML = page.map(b => `
         <tr class="table-row">
-            <td class="px-4 py-3"><span class="font-mono text-xs font-semibold text-gray-900">${b.batchId || '-'}</span></td>
-            <td class="px-4 py-3">${b.application || '-'}</td>
-            <td class="px-4 py-3 text-center">${getStatusBadge(b.status)}</td>
-            <td class="px-4 py-3">
+            <td><span class="mono" style="font-size:var(--text-xs);font-weight:700;color:var(--ink);">${b.batchId || '—'}</span></td>
+            <td>${b.application || '—'}</td>
+            <td class="tcol-center">${getStatusBadge(b.status)}</td>
+            <td>
                 <div class="flex items-center gap-2">
-                    <div class="w-7 h-7 flex items-center justify-center font-bold text-xs" style="border-radius:50%;background:var(--status-processing-bg);color:var(--orange);">
-                        ${(b.uploadedBy || 'S')[0].toUpperCase()}
-                    </div>
-                    <span class="text-sm font-medium text-gray-900">${b.uploadedBy || '—'}</span>
+                    <span class="cell-initial" style="background:var(--status-processing-bg);color:var(--orange);">${(b.uploadedBy || 'S')[0].toUpperCase()}</span>
+                    <span style="font-size:var(--text-sm);color:var(--ink);">${b.uploadedBy || '—'}</span>
                 </div>
             </td>
-            <td class="px-4 py-3">
+            <td>
                 ${b.validatedBy
         ? `<div class="flex items-center gap-2">
-                           <div class="w-7 h-7 flex items-center justify-center font-bold text-xs" style="border-radius:50%;background:var(--status-success-bg);color:var(--status-success-text);">${b.validatedBy[0].toUpperCase()}</div>
-                           <span class="text-sm font-medium text-gray-900">${b.validatedBy}</span>
+                           <span class="cell-initial" style="background:var(--status-success-bg);color:var(--status-success-text);">${b.validatedBy[0].toUpperCase()}</span>
+                           <span style="font-size:var(--text-sm);color:var(--ink);">${b.validatedBy}</span>
                        </div>`
-        : '<span class="text-gray-400 text-sm">—</span>'}
+        : '<span style="color:var(--ink-4);font-size:var(--text-sm);">—</span>'}
             </td>
-            <td class="px-4 py-3 text-center">
+            <td class="tcol-center">
                 ${b.country
-        ? `<div class="flex items-center justify-center gap-1">${getCountryFlag(b.country)}<span class="text-xs font-medium">${b.country}</span></div>`
-        : '-'}
+        ? `<div class="flex items-center justify-center gap-1">${getCountryFlag(b.country)}<span style="font-size:var(--text-xs);">${b.country}</span></div>`
+        : '—'}
             </td>
-            <td class="px-4 py-3 text-center">
-                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-700">${b.department || '-'}</span>
-            </td>
-            <td class="px-4 py-3 text-center font-semibold text-gray-900">${(b.totalRecords || 0).toLocaleString()}</td>
-            <td class="px-4 py-3 text-center">
-                ${b.successCount > 0
-        ? `<span style="display:inline-flex;align-items:center;padding:3px 9px;font-size:11px;font-weight:700;background:var(--status-success-bg);color:var(--status-success-text);border:1px solid var(--status-success-border);">${b.successCount.toLocaleString()}</span>`
-        : '<span class="text-gray-400">0</span>'}
-            </td>
-            <td class="px-4 py-3 text-center">
-                ${b.failureCount > 0
-        ? `<span style="display:inline-flex;align-items:center;padding:3px 9px;font-size:11px;font-weight:700;background:var(--status-error-bg);color:var(--status-error-text);border:1px solid var(--status-error-border);">${b.failureCount.toLocaleString()}</span>`
-        : '<span class="text-gray-400">0</span>'}
-            </td>
-            <td class="px-4 py-3 text-center">
-                ${b.errorCount > 0
-        ? `<span style="display:inline-flex;align-items:center;padding:3px 9px;font-size:11px;font-weight:700;background:var(--status-error-bg);color:var(--status-error-text);border:1px solid var(--status-error-border);">${b.errorCount}</span>`
-        : '<span class="text-gray-400">0</span>'}
-            </td>
-            <td class="px-4 py-3 text-center text-xs text-gray-600">${b.uploadedAt ? new Date(b.uploadedAt).toLocaleString('fr-FR') : '-'}</td>
-            <td class="px-4 py-3 text-center text-xs text-gray-600">${b.validatedAt ? new Date(b.validatedAt).toLocaleString('fr-FR') : '-'}</td>
-            <td class="px-4 py-3 text-center">
-                <button type="button"
-                    class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold text-gray-700 border border-gray-300 hover:border-orange-500 hover:text-orange-600 transition-colors"
+            <td class="tcol-center"><span class="badge badge-pending">${b.department || '—'}</span></td>
+            <td class="tcol-center" style="font-weight:700;color:var(--ink);">${(b.totalRecords || 0).toLocaleString()}</td>
+            <td class="tcol-center">${countChip(b.successCount, 'success')}</td>
+            <td class="tcol-center">${countChip(b.failureCount, 'error')}</td>
+            <td class="tcol-center">${countChip(b.errorCount, 'error')}</td>
+            <td class="tcol-center" style="font-size:var(--text-xs);color:var(--ink-2);">${b.uploadedAt ? new Date(b.uploadedAt).toLocaleString('fr-FR') : '—'}</td>
+            <td class="tcol-center" style="font-size:var(--text-xs);color:var(--ink-2);">${b.validatedAt ? new Date(b.validatedAt).toLocaleString('fr-FR') : '—'}</td>
+            <td class="tcol-center">
+                <button type="button" class="btn-flux"
+                    style="padding:var(--sp-1) var(--sp-2);font-size:var(--text-xs);"
                     onclick="downloadOriginalFile('${b.batchId}', '${(b.originalFilename || '').replace(/'/g, "\\'")}')">
-                    <i data-lucide="download" class="w-3.5 h-3.5"></i>CSV
+                    <i data-lucide="download"></i>CSV
                 </button>
             </td>
         </tr>`).join('');
@@ -282,17 +281,24 @@ function renderBatchTable() {
 }
 
 function updatePaginationControls() {
-    const total = Math.ceil(filteredBatches.length / ITEMS_PER_PAGE);
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    const end = Math.min(start + ITEMS_PER_PAGE, filteredBatches.length);
-    document.getElementById('showingFrom').textContent = filteredBatches.length > 0 ? start + 1 : 0;
-    document.getElementById('showingTo').textContent = end;
-    document.getElementById('totalItems').textContent = filteredBatches.length;
-    document.getElementById('currentPage').textContent = currentPage;
-    document.getElementById('totalPages').textContent = total || 1;
-    document.getElementById('prevPageBtn').disabled = currentPage === 1;
-    document.getElementById('nextPageBtn').disabled = currentPage >= total;
+    const total = Math.ceil(filteredBatches.length / ITEMS_PER_PAGE) || 1;
+    renderPagination('reportsPagination', {
+        page: currentPage,
+        totalPages: total,
+        totalItems: filteredBatches.length,
+        itemLabel: 'lots',
+        pageSize: ITEMS_PER_PAGE,
+        onGo: 'reportsGoToPage'
+    });
 }
+
+window.reportsGoToPage = (page) => {
+    const total = Math.ceil(filteredBatches.length / ITEMS_PER_PAGE) || 1;
+    if (page < 1 || page > total) return;
+    currentPage = page;
+    renderBatchTable();
+    window.scrollTo({top: 0, behavior: 'smooth'});
+};
 
 function previousPage() {
     if (currentPage > 1) {
@@ -355,31 +361,33 @@ function exportTableToCSV() {
         'Pays', 'Département', 'Records', 'Réussies', 'Échouées', 'Erreurs validation',
         'Date Upload', 'Date Validation'
     ];
+    const dash = '—';
     const rows = filteredBatches.map(b => [
-        b.batchId || '',
-        b.application || '',
-        b.status || '',
-        b.uploadedBy || '',
-        b.validatedBy || '',
-        b.country || '',
-        b.department || '',
+        b.batchId || dash,
+        b.application || dash,
+        statusLabel(b.status),
+        b.uploadedBy || dash,
+        b.validatedBy || dash,
+        b.country || dash,
+        b.department || dash,
         b.totalRecords || 0,
         b.successCount || 0,
         b.failureCount || 0,
         b.errorCount || 0,
-        b.uploadedAt ? new Date(b.uploadedAt).toLocaleString('fr-FR') : '',
-        b.validatedAt ? new Date(b.validatedAt).toLocaleString('fr-FR') : ''
+        b.uploadedAt ? new Date(b.uploadedAt).toLocaleString('fr-FR') : dash,
+        b.validatedAt ? new Date(b.validatedAt).toLocaleString('fr-FR') : dash
     ]);
 
     const csv = [headers, ...rows].map(r =>
         r.map(c => {
             const s = String(c);
-            return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+            return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
         }).join(',')
-    ).join('\n');
+    ).join('\r\n');
 
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8;'}));
+    // Prepend UTF-8 BOM so Excel reads the accented French headers correctly.
+    link.href = URL.createObjectURL(new Blob(['\ufeff' + csv], {type: 'text/csv;charset=utf-8;'}));
     link.download = `rapport_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     showSnackbar('Export CSV réussi !', 'success');
@@ -389,90 +397,115 @@ function exportTableToCSV() {
 function exportToPDF() {
     const {jsPDF} = window.jspdf;
     const doc = new jsPDF('l', 'mm', 'a4');
+    const W = doc.internal.pageSize.width, H = doc.internal.pageSize.height;
 
-    doc.setFontSize(18);
-    doc.setTextColor(255, 121, 0);
-    doc.text('RAPPORT DÉTAILLÉ DES BATCHS', 14, 18);
+    // House palette as RGB (mirrors flux-tokens.css)
+    const ORANGE = [255, 121, 0], INK = [27, 27, 27], INK3 = [118, 118, 118],
+        CHROME = [10, 10, 10], CANVAS = [246, 246, 246], LINE = [232, 232, 232];
 
+    // ── Title band: dark chrome with the 3px orange accent, like the app header ──
+    doc.setFillColor(...CHROME);
+    doc.rect(0, 0, W, 20, 'F');
+    doc.setFillColor(...ORANGE);
+    doc.rect(0, 0, W, 1.1, 'F'); // signature accent stripe (≈3px)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.setTextColor(255, 255, 255);
+    doc.text('RAPPORT DÉTAILLÉ DES LOTS', 14, 13);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(154, 163, 175); // --chrome-text
+    doc.text('Orange Bank', W - 14 - doc.getTextWidth('Orange Bank'), 13);
+
+    // ── Meta line ──
+    doc.setTextColor(...INK3);
     doc.setFontSize(9);
-    doc.setTextColor(80);
     const from = document.getElementById('startDate').value;
     const to = document.getElementById('endDate').value;
-    doc.text(`Période : ${from} au ${to}`, 14, 25);
+    const periode = (from || to) ? `Période : ${from || '…'} au ${to || '…'}` : 'Période : toutes dates';
+    doc.text(periode, 14, 28);
 
     const activeF = [];
     if (document.getElementById('countryFilter').value) activeF.push(`Pays: ${document.getElementById('countryFilter').value}`);
     if (document.getElementById('departmentFilter').value) activeF.push(`Département: ${document.getElementById('departmentFilter').value}`);
-    if (document.getElementById('statusFilter').value) activeF.push(`Statut: ${document.getElementById('statusFilter').value}`);
-    if (activeF.length) doc.text(`Filtres : ${activeF.join(' | ')}`, 14, 30);
+    if (document.getElementById('statusFilter').value) activeF.push(`Statut: ${statusLabel(document.getElementById('statusFilter').value)}`);
+    if (activeF.length) doc.text(`Filtres : ${activeF.join('  |  ')}`, 14, 33);
 
-    const yStats = activeF.length ? 36 : 31;
+    const yStats = activeF.length ? 39 : 34;
     const processed = filteredBatches.filter(b => b.status === 'PROCESSED').length;
     const totalRecs = filteredBatches.reduce((s, b) => s + (b.totalRecords || 0), 0);
+    doc.setTextColor(...INK);
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
-    doc.setTextColor(0);
-    doc.text(`Total : ${filteredBatches.length}  |  Traités OK : ${processed}  |  Total lignes : ${totalRecs.toLocaleString()}`, 14, yStats);
-
-    doc.setDrawColor(255, 121, 0);
-    doc.setLineWidth(0.4);
-    doc.line(14, yStats + 3, 283, yStats + 3);
+    doc.text(`Total : ${filteredBatches.length}     Traités OK : ${processed}     Total lignes : ${totalRecs.toLocaleString('fr-FR')}`, 14, yStats);
+    doc.setFont('helvetica', 'normal');
 
     doc.autoTable({
-        head: [['Batch ID', 'Application', 'Statut', 'Initiateur', 'Validateur', 'Pays', 'Dept', 'Records', 'OK', 'KO', 'Err.', 'Upload', 'Validation']],
+        head: [['Lot ID', 'Application', 'Statut', 'Initiateur', 'Validateur', 'Pays', 'Dépt', 'Records', 'OK', 'KO', 'Err.', 'Import', 'Validation']],
         body: filteredBatches.map(b => [
-            (b.batchId || '-').substring(0, 18),
-            (b.application || '-').substring(0, 14),
-            b.status || '-',
+            (b.batchId || '—').substring(0, 18),
+            (b.application || '—').substring(0, 14),
+            statusLabel(b.status),
             (b.uploadedBy || '—').substring(0, 12),
-            (b.validatedBy || '-').substring(0, 12),
-            b.country || '-',
-            b.department || '-',
-            (b.totalRecords || 0).toString(),
+            (b.validatedBy || '—').substring(0, 12),
+            b.country || '—',
+            b.department || '—',
+            (b.totalRecords || 0).toLocaleString('fr-FR'),
             (b.successCount || 0).toString(),
             (b.failureCount || 0).toString(),
             (b.errorCount || 0).toString(),
-            b.uploadedAt ? new Date(b.uploadedAt).toLocaleDateString('fr-FR') : '-',
-            b.validatedAt ? new Date(b.validatedAt).toLocaleDateString('fr-FR') : '-'
+            b.uploadedAt ? new Date(b.uploadedAt).toLocaleDateString('fr-FR') : '—',
+            b.validatedAt ? new Date(b.validatedAt).toLocaleDateString('fr-FR') : '—'
         ]),
-        startY: yStats + 6,
-        styles: {fontSize: 7, cellPadding: 1.5},
-        headStyles: {fillColor: [255, 121, 0], textColor: 255, fontStyle: 'bold', halign: 'center'},
-        columnStyles: {
-            0: {cellWidth: 22, fontSize: 6},
-            1: {cellWidth: 18},
-            2: {cellWidth: 22, halign: 'center'},
-            3: {cellWidth: 17}, 4: {cellWidth: 17},
-            5: {cellWidth: 10, halign: 'center'},
-            6: {cellWidth: 12, halign: 'center'},
-            7: {cellWidth: 14, halign: 'right'},
-            8: {cellWidth: 10, halign: 'right'},
-            9: {cellWidth: 10, halign: 'right'},
-            10: {cellWidth: 10, halign: 'center'},
-            11: {cellWidth: 18, fontSize: 6},
-            12: {cellWidth: 18, fontSize: 6}
+        startY: yStats + 5,
+        margin: {left: 14, right: 14},
+        theme: 'grid',
+        styles: {fontSize: 7, cellPadding: 1.6, textColor: INK, lineColor: LINE, lineWidth: 0.1, overflow: 'linebreak'},
+        // Header: ink on canvas with an orange top rule — not orange-on-orange.
+        headStyles: {
+            fillColor: CANVAS,
+            textColor: INK,
+            fontStyle: 'bold',
+            halign: 'center',
+            lineColor: LINE,
+            lineWidth: 0.1
         },
-        alternateRowStyles: {fillColor: [248, 248, 248]},
-        didDrawPage: data => {
-            const pg = doc.internal.getCurrentPageInfo().pageNumber;
-            doc.setFontSize(7);
-            doc.setTextColor(140);
-            doc.text(`Page ${pg}`, 14, doc.internal.pageSize.height - 8);
+        // Alignment only — let autoTable size columns to the page so long
+        // French labels (e.g. "Traité avec erreurs") never clip or overflow.
+        columnStyles: {
+            0: {fontStyle: 'bold'},
+            5: {halign: 'center'}, 6: {halign: 'center'},
+            7: {halign: 'right'}, 8: {halign: 'right'},
+            9: {halign: 'right'}, 10: {halign: 'right'},
+            11: {halign: 'center'}, 12: {halign: 'center'}
+        },
+        alternateRowStyles: {fillColor: [250, 250, 250]},
+        // Orange accent rule directly under the header row.
+        didDrawCell: (data) => {
+            if (data.section === 'head' && data.column.index === 0 && data.row.index === 0) {
+                doc.setFillColor(...ORANGE);
+                doc.rect(data.cursor.x, data.cell.y + data.cell.height - 0.4, W - 28, 0.4, 'F');
+            }
         }
     });
 
+    // ── Footer on every page ──
     const pages = doc.internal.getNumberOfPages();
+    const gen = `Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`;
     for (let i = 1; i <= pages; i++) {
         doc.setPage(i);
+        doc.setDrawColor(...LINE);
+        doc.setLineWidth(0.1);
+        doc.line(14, H - 11, W - 14, H - 11);
         doc.setFontSize(7);
-        doc.setTextColor(150);
-        doc.text('Orange Bank — Rapport Confidentiel', 14, doc.internal.pageSize.height - 8);
-        const gen = `Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`;
-        doc.text(gen, doc.internal.pageSize.width - 14 - doc.getTextWidth(gen), doc.internal.pageSize.height - 8);
+        doc.setTextColor(...INK3);
+        doc.text('Orange Bank — Rapport confidentiel', 14, H - 7);
         const pgTxt = `Page ${i} / ${pages}`;
-        doc.text(pgTxt, (doc.internal.pageSize.width - doc.getTextWidth(pgTxt)) / 2, doc.internal.pageSize.height - 8);
+        doc.text(pgTxt, (W - doc.getTextWidth(pgTxt)) / 2, H - 7);
+        doc.text(gen, W - 14 - doc.getTextWidth(gen), H - 7);
     }
 
-    doc.save(`rapport_${from}_${to}.pdf`);
+    doc.save(`rapport_${from || 'tout'}_${to || 'tout'}.pdf`);
     showSnackbar('Export PDF réussi !', 'success');
 }
 

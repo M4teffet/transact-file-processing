@@ -700,8 +700,16 @@ public class BatchResource {
     @Path("/recent-batches")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getRecentBatches() {
+        // Only surface batches that still have processing logs available — a batch
+        // whose logs have been purged (or never produced any) should not appear in
+        // the logs dropdown. We scan a wider recent window and keep the first 10
+        // that have at least one ProcessingLogEntry.
         List<RecentBatchDTO> list = FileBatch.<FileBatch>findAll(Sort.descending("uploadTimestamp"))
-                .page(Page.of(0, 10)).stream().map(batch -> new RecentBatchDTO(batch.id.toHexString(), batch.status, batch.uploadTimestamp)).toList();
+                .page(Page.of(0, 50)).stream()
+                .filter(batch -> ProcessingLogEntry.count("batchId", batch.id) > 0)
+                .limit(10)
+                .map(batch -> new RecentBatchDTO(batch.id.toHexString(), batch.status, batch.uploadTimestamp))
+                .toList();
         return Response.ok(list).build();
     }
 

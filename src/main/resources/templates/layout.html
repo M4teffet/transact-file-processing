@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>{#insert title}FLUX Orange Bank{/insert}</title>
+    <link href="/css/flux-tokens.css" rel="stylesheet">
     <link href="/css/tailwind.css" rel="stylesheet">
     <script src="/javascript/vendor/lucide.min.js"></script>
     <link href="/images/favicon.ico" rel="shortcut icon"/>
@@ -12,41 +13,7 @@
            FLUX — Orange Design System (Boosted) token set
            Brand orange #FF7900 · Helvetica Neue · flat, rectangular
            ════════════════════════════════════════════════════ */
-        :root{
-            --orange: #FF7900;
-            --orange-deep: #C65B00;
-            --ink: #1B1B1B;
-            --ink-2: #595959;
-            --ink-3: #767676;
-            --ink-4: #B4B4B4;
-            --chrome: #0a0a0a;
-            --chrome-line: #1f1f1f;
-            --chrome-text: #9aa3af;
-            --chrome-section: #555e6d;
-            --canvas: #F6F6F6;
-            --surface: #ffffff;
-            --line: #E8E8E8;
-            --line-soft: #F0F0F0;
-            /* semantic status colors: bg / text / border */
-            --status-pending-bg: #F6F6F6;
-            --status-pending-text: #595959;
-            --status-pending-border: #E0E0E0;
-            --status-validated-bg: #EAF1FE;
-            --status-validated-text: #0B5ED7;
-            --status-validated-border: #C3D9FB;
-            --status-processing-bg: #FFF1E6;
-            --status-processing-text: #C65B00;
-            --status-processing-border: #FFD9B8;
-            --status-success-bg: #E9F7EF;
-            --status-success-text: #127A3E;
-            --status-success-border: #BEEAD1;
-            --status-warning-bg: #FFF6E0;
-            --status-warning-text: #8A5A00;
-            --status-warning-border: #F3DFA0;
-            --status-error-bg: #FDEDEB;
-            --status-error-text: #B42318;
-            --status-error-border: #F5C4BB;
-        }
+        /* Palette moved to flux-tokens.css (loaded above). */
         html { font-size: 0.92rem; }
 
         body {
@@ -153,7 +120,9 @@
             border: 1px solid var(--chrome-line);
             box-shadow: 0 8px 24px rgba(0,0,0,.4);
             display: flex; align-items: center; gap: 0;
-            font-size: .85rem; font-weight: 300; line-height: 1.25rem;
+            font-size: .8rem;
+            font-weight: 400;
+            line-height: 1.25rem;
             overflow: hidden; opacity: 0; transform: translateY(8px);
             transition: opacity .2s cubic-bezier(0,0,.2,1), transform .2s cubic-bezier(0,0,.2,1);
         }
@@ -350,6 +319,9 @@
             *, *::before, *::after { transition: none !important; animation: none !important; }
         }
     </style>
+    <!-- Harmonization layer: closed type scale, stroke grammar, 4px grid.
+         Loaded after the base styles so its token overrides win the cascade. -->
+    <link href="/css/flux-harmonization.css" rel="stylesheet">
     {#insert head}{/insert}
 </head>
 
@@ -370,7 +342,7 @@
                         id="sidebar-toggle">
                     <i class="w-4 h-4" data-lucide="menu"></i>
                 </button>
-                <span style="color:var(--chrome-text);font-size:.8rem;font-weight:300;">
+                <span style="color:var(--chrome-text);font-size:.8rem;font-weight:400;">
                     <b style="color:#fff;font-weight:400;">FLUX</b>
                     <span style="margin:0 .4rem;color:#555e6d;">/</span>Orange Bank
                 </span>
@@ -430,7 +402,7 @@
      id="deleteConfirmationModal"
      onclick="if(event.target===this)cancelDelete()">
     <div class="bg-white w-full mx-4"
-         style="max-width:420px;border-top:4px solid var(--status-error-text);box-shadow:0 24px 60px rgba(0,0,0,.3);">
+         style="max-width:420px;border-top:3px solid var(--status-error-text);box-shadow:0 24px 60px rgba(0,0,0,.3);">
         <div class="px-5 py-3.5 flex items-center justify-between" style="border-bottom:1px solid var(--line-soft);">
             <div class="flex items-center gap-2">
                 <i data-lucide="trash-2" class="w-4 h-4" style="color:var(--status-error-text);"></i>
@@ -497,6 +469,7 @@
 
 <div id="snackbar-container"></div>
 <script src="/javascript/shared.js"></script>
+<script src="/javascript/a11y.js"></script>
 {#insert script}{/insert}
 <script>
     // Start the operating window badge on every page

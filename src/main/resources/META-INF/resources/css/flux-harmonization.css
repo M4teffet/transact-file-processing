@@ -1,0 +1,483 @@
+/* ═══════════════════════════════════════════════════════════════════
+   FLUX — Harmonization layer (proportion & rhythm pass)
+   Drop this into layout.html's <style> block, directly after :root,
+   or link it after tailwind.css. It adds no new aesthetics — it names
+   the system the app already uses and closes the drift.
+
+   Rules of the system (write these in the README):
+   1. Type: 8 closed stops. No other font-size is ever written.
+   2. Weight: 400 or 700. Nothing else.
+   3. Strokes: 1px passive · 1.5px interactive · 3px accent. Never 4px.
+   4. Space: multiples of 4px only.
+   5. Shape: rectangles. Circles are reserved for live-status dots
+      and the user avatar — never for controls.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+    /* ── Type scale (closed set — effective px shown at .92rem root) ──
+       Migration map from current sizes:
+         .6 .62 .65           → --text-2xs
+         .68 .7 .72 .74 .75   → --text-xs
+         .78 .8 .82           → --text-sm
+         .85 .86 .875 .88 .92 → --text-base
+         1.05 1.125           → --text-md
+         1.2 1.25 1.3         → --text-lg
+         1.4 1.45 1.5         → --text-xl
+         1.6 1.875 1.9        → --text-2xl                              */
+    --text-2xs: .62rem; /* ~9px  — nav sections, kickers            */
+    --text-xs: .72rem; /* ~11px — badges, metadata, panel titles   */
+    --text-sm: .8rem; /* ~12px — buttons, secondary body          */
+    --text-base: .88rem; /* ~13px — inputs, nav items, primary body  */
+    --text-md: 1.05rem; /* ~15px — emphasized inline figures        */
+    --text-lg: 1.25rem; /* ~18px — modal & auth titles              */
+    --text-xl: 1.45rem; /* ~21px — page titles                      */
+    --text-2xl: 1.9rem; /* ~28px — stat values, auth hero           */
+
+    /* ── Tracking (3 jobs, 3 values — collapses .04/.06/.08/.1/.12/.14) */
+    --track-display: -.01em; /* titles, stat values                    */
+    --track-caps: .06em; /* uppercase at --text-xs and up          */
+    --track-micro: .12em; /* uppercase at --text-2xs (roles, ©)     */
+
+    /* ── Stroke grammar ── */
+    --hairline: 1px; /* passive: dividers, panel & badge borders     */
+    --stroke: 1.5px; /* interactive: inputs, buttons, chips, spine   */
+    --accent: 3px; /* signature bar: card tops, modal tops,        */
+    /* nav-item left. (Delete modal: 4px → 3px)     */
+
+    /* ── Spacing — 4px grid ── */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+    --sp-8: 32px;
+    --sp-12: 48px;
+
+    --section-gap: var(--sp-6);
+    /* one rhythm for every page:
+                                      dashboard space-y-8 (29px) and
+                                      upload gap:20px both become 24px  */
+    --panel-pad-x: var(--sp-5); /* was 1.35rem ≈ 19.9px → 20px       */
+    --panel-pad-y: var(--sp-5);
+    --panel-head-y: var(--sp-3); /* was .85rem ≈ 12.5px → 12px        */
+
+    /* ── Status hues in chrome context — the dark sidebar needs lighter
+       variants of --status-success-text (#127A3E) / --status-error-text
+       (#B42318); same hue families, raised for contrast on #0a0a0a.     */
+    --chrome-ok: #2EA25C;
+    --chrome-ok-line: rgba(46, 162, 92, .35);
+    --chrome-ok-bg: rgba(46, 162, 92, .12);
+    --chrome-ok-text: #6FCE96;
+    --chrome-alert: #D6493C;
+    --chrome-alert-line: rgba(214, 73, 60, .35);
+    --chrome-alert-bg: rgba(214, 73, 60, .12);
+    --chrome-alert-text: #E8887D;
+
+    /* ── Icon scale (closes 3/3.5/4/5 Tailwind drift + 15px one-offs) */
+    --icon-sm: 14px; /* inline with --text-xs/--text-sm              */
+    --icon-md: 16px; /* buttons, nav, panel heads                    */
+    --icon-lg: 20px; /* stats tiles                                  */
+}
+
+/* ═══ Reusable patterns — replaces the recurring inline styles ═══ */
+
+/* Uppercase micro-label — currently retyped inline ~14 times
+   (stats-label, "Dernier batch", field-group headers, toggle label…) */
+.micro-label {
+    font-size: var(--text-2xs);
+    font-weight: 700;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: var(--track-micro);
+}
+
+/* Status badge — one shape, six semantics. Replaces the string-built
+   badge in dashboard.html's window-status script and ad-hoc spans.   */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: 3px var(--sp-2);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    white-space: nowrap;
+    border: var(--hairline) solid;
+}
+
+.badge svg, .badge i {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+}
+
+.badge-pending {
+    background: var(--status-pending-bg);
+    color: var(--status-pending-text);
+    border-color: var(--status-pending-border);
+}
+
+.badge-validated {
+    background: var(--status-validated-bg);
+    color: var(--status-validated-text);
+    border-color: var(--status-validated-border);
+}
+
+.badge-processing {
+    background: var(--status-processing-bg);
+    color: var(--status-processing-text);
+    border-color: var(--status-processing-border);
+}
+
+.badge-success {
+    background: var(--status-success-bg);
+    color: var(--status-success-text);
+    border-color: var(--status-success-border);
+}
+
+.badge-warning {
+    background: var(--status-warning-bg);
+    color: var(--status-warning-text);
+    border-color: var(--status-warning-border);
+}
+
+.badge-error {
+    background: var(--status-error-bg);
+    color: var(--status-error-text);
+    border-color: var(--status-error-border);
+}
+
+/* Inline alert — same semantics as badges, body-size. Replaces the
+   repeated style="background:var(--status-error-bg);border:1.5px…"
+   blocks. Alerts are passive surfaces → hairline, not stroke.        */
+.alert {
+    padding: var(--sp-3) var(--sp-4);
+    font-size: var(--text-sm);
+    border: var(--hairline) solid;
+    line-height: 1.5;
+}
+
+.alert-error {
+    background: var(--status-error-bg);
+    color: var(--status-error-text);
+    border-color: var(--status-error-border);
+}
+
+.alert-info {
+    background: var(--status-validated-bg);
+    color: var(--status-validated-text);
+    border-color: var(--status-validated-border);
+}
+
+.alert-warning {
+    background: var(--status-warning-bg);
+    color: var(--status-warning-text);
+    border-color: var(--status-warning-border);
+}
+
+.alert-success {
+    background: var(--status-success-bg);
+    color: var(--status-success-text);
+    border-color: var(--status-success-border);
+}
+
+.alert-processing {
+    background: var(--status-processing-bg);
+    color: var(--status-processing-text);
+    border-color: var(--status-processing-border);
+}
+
+/* Form label — the block label above every input (settings, reports) */
+.form-label {
+    display: block;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    color: var(--ink-2);
+    margin-bottom: var(--sp-1);
+}
+
+/* Compact input variant — toolbars and in-panel search fields */
+.form-input-sm, .form-select-sm {
+    padding: .4rem .65rem;
+    font-size: var(--text-sm);
+}
+
+/* Full-width button variant (form submit rows) */
+.btn-block {
+    width: 100%;
+    justify-content: center;
+}
+
+/* Active-filter chip on Rapports — was emitted by reports.js with no
+   CSS definition at all (rendered as bare text). */
+.filter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: 3px var(--sp-2);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    background: var(--status-processing-bg);
+    color: var(--status-processing-text);
+    border: var(--hairline) solid var(--status-processing-border);
+    white-space: nowrap;
+}
+
+.filter-badge svg, .filter-badge i {
+    width: 12px;
+    height: 12px;
+}
+
+/* Square icon-button — replaces the onmouseover/onmouseout inline JS
+   on #refreshLogsBtn with a proper :hover.                            */
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-2);
+    border: var(--stroke) solid var(--line);
+    color: var(--ink-3);
+    background: var(--surface);
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+}
+
+.icon-btn:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+}
+
+.icon-btn svg, .icon-btn i {
+    width: var(--icon-md);
+    height: var(--icon-md);
+}
+
+/* Icon tile (the 34px square on upload's field-config header) */
+.icon-tile {
+    width: var(--sp-8);
+    height: var(--sp-8); /* 32px, on-grid */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--status-processing-bg);
+    color: var(--status-processing-text);
+}
+
+.icon-tile svg, .icon-tile i {
+    width: var(--icon-md);
+    height: var(--icon-md);
+}
+
+/* ═══ Overrides — align existing components to the tokens ═══ */
+
+/* Panels: paddings land on the 4px grid (visually ~identical) */
+.panel-head {
+    padding: var(--panel-head-y) var(--panel-pad-x);
+}
+
+.panel-body {
+    padding: var(--panel-pad-y) var(--panel-pad-x);
+}
+
+.panel-head h3 {
+    font-size: var(--text-xs);
+    letter-spacing: var(--track-caps);
+}
+
+/* Stats cards: label joins the micro-label stop (.65 → .62),
+   padding joins the grid (1.15/1.35rem → 16/20px)              */
+.stats-card {
+    padding: var(--sp-4) var(--sp-5);
+    border-top-width: var(--accent);
+}
+
+.stats-label {
+    font-size: var(--text-2xs);
+    letter-spacing: var(--track-micro);
+}
+
+.stats-value {
+    font-size: var(--text-2xl);
+    letter-spacing: var(--track-display);
+}
+
+.stats-icon {
+    width: 36px;
+    height: 36px;
+}
+
+/* 2.1rem → grid */
+.stats-icon svg, .stats-icon i {
+    width: var(--icon-lg);
+    height: var(--icon-lg);
+}
+
+/* Nav: sizes join the scale (.6 → .62 section, .86 → .88 item) */
+.nav-section {
+    font-size: var(--text-2xs);
+    letter-spacing: var(--track-micro);
+}
+
+.nav-item {
+    font-size: var(--text-base);
+    border-left-width: var(--accent);
+}
+
+/* Page header */
+.page-title {
+    font-size: var(--text-xl);
+    letter-spacing: var(--track-display);
+}
+
+.page-subtitle {
+    font-size: var(--text-sm);
+}
+
+/* Buttons & inputs: interactive → --stroke (already 1.5, now named) */
+.btn-flux {
+    font-size: var(--text-sm);
+    border-width: var(--stroke);
+}
+
+.form-input, .form-select {
+    font-size: var(--text-base);
+    border-width: var(--stroke);
+}
+
+/* Snackbar: closes the only weight-300 leak; sizes join the scale */
+.snackbar-item {
+    font-weight: 400;
+    font-size: var(--text-sm);
+}
+
+.snackbar-action {
+    font-size: var(--text-xs);
+    letter-spacing: var(--track-caps);
+}
+
+/* Terminal: .74 → .72 */
+.terminal {
+    font-size: var(--text-xs);
+}
+
+/* ═══ Data table — one definition for every list view ═══
+   Replaces the per-file `const TH`/`const TD` inline-style strings in
+   batches.js, validated-script.js, reports.js and the detail table in
+   shared.js. Header cells are the micro-label; rows use the hairline. */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    padding: var(--sp-3) var(--sp-4);
+    text-align: left;
+    font-size: var(--text-2xs);
+    font-weight: 700;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: var(--track-caps);
+    white-space: nowrap;
+    background: var(--canvas);
+    border-bottom: var(--hairline) solid var(--line);
+}
+
+.data-table td {
+    padding: var(--sp-3) var(--sp-4);
+    border-bottom: var(--hairline) solid var(--line-soft);
+    vertical-align: middle;
+}
+
+.data-table th.tcol-center, .data-table td.tcol-center {
+    text-align: center;
+}
+
+.data-table tbody tr:hover, .data-table tr.table-row:hover {
+    background: var(--canvas);
+}
+
+/* Sticky header variant for scroll-boxed tables (batch detail modal) */
+.data-table--sticky th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* Data-cell initials — square, NOT the circular identity avatar.
+   The sidebar avatar stays round (identity); these are data glyphs, so
+   they follow the rectangle law. */
+.cell-initial {
+    width: var(--sp-6);
+    height: var(--sp-6);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-2xs);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* ═══ Accessibility — visible keyboard focus everywhere ═══
+   Keyboard users get a clear orange focus ring; mouse users don't see
+   it (:focus-visible). Nothing changes for existing pointer flows. */
+:focus-visible {
+    outline: var(--stroke) solid var(--orange);
+    outline-offset: 2px;
+}
+
+/* ═══ Template edits applied alongside this file (for reference):
+   layout.html    — layer linked after the inline <style>; delete-modal
+                    accent 4px → 3px; weight-300 leaks (snackbar,
+                    topbar brand) → 400.
+   dashboard.html — section rhythm → var(--section-gap); auto-refresh
+                    toggle squared; window-status script emits
+                    .badge classes; refresh-logs button → .icon-btn;
+                    error blocks → .alert.alert-error.
+   upload.html    — section rhythm → var(--section-gap); uppercase
+                    labels → .micro-label; CSV-header strip → .alert.
+   admin.js       — JS-rendered feature toggles squared.
+   Remaining pages adopt tokens opportunistically via the migration
+   map above whenever a file is touched.
+   ═══ */
+
+/* ═══ Empty & loading states — one consistent treatment everywhere ═══
+   Use via the shared.js helpers emptyState()/loadingState(), or the classes
+   directly. Replaces the scattered ad-hoc "Chargement…" / "Aucun…" markup
+   that previously used mixed grays (text-gray-400) and paddings. */
+.state-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: var(--ink-3);
+    font-size: var(--text-sm);
+}
+
+.state-block svg,
+.state-block i {
+    color: var(--ink-4);
+}
+
+.state-block .state-spin {
+    width: 18px;
+    height: 18px;
+    animation: spin 1s linear infinite;
+    color: var(--orange);
+}
+
+/* Compact variant for inline/list contexts */
+.state-block.state-compact {
+    padding: 1.25rem 1rem;
+    font-size: var(--text-xs);
+}
+
+/* When used inside a table, the caller wraps it in a full-width cell */
+td > .state-block {
+    width: 100%;
+}

@@ -154,8 +154,8 @@ class AdminDashboard {
                         <p class="text-[10px] text-gray-400 mt-1">Mis à jour : ${feature.lastUpdated ? new Date(feature.lastUpdated).toLocaleString('fr-FR') : '—'}</p>
                     </div>
                     <button data-key="${feature.configKey}" data-enabled="${enabled}" aria-pressed="${enabled}"
-                            class="feature-toggle-btn relative inline-flex h-7 w-14 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-1 ${enabled ? 'bg-orange-600' : 'bg-gray-300'}">
-                        <span class="absolute left-0.5 h-6 w-6 transform rounded-full bg-white shadow transition-transform duration-200 ${enabled ? 'translate-x-7' : ''}"></span>
+                            class="feature-toggle-btn relative inline-flex h-7 w-14 flex-shrink-0 items-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-1 ${enabled ? 'bg-orange-600' : 'bg-gray-300'}">
+                        <span class="absolute left-0.5 h-6 w-6 transform bg-white transition-transform duration-200 ${enabled ? 'translate-x-7' : ''}"></span>
                     </button>
                 `;
                 this.elements.featuresList.appendChild(item);
@@ -187,7 +187,8 @@ class AdminDashboard {
 
                         if (badge) {
                             badge.textContent = newState ? 'Actif' : 'Inactif';
-                            badge.style.cssText = `display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;${newState ? 'background:#f0fdf4;color:#166534;border:0.5px solid rgba(22,101,52,.25)' : 'background:#f8fafc;color:#475569;border:0.5px solid rgba(71,85,105,.25)'}`;
+                            badge.className = `badge ${newState ? 'badge-success' : 'badge-pending'}`;
+                            badge.style.cssText = '';
                         }
 
                         showSnackbar(`${key} ${newState ? 'activé' : 'désactivé'}`, 'success');
@@ -317,7 +318,8 @@ class AdminDashboard {
             const time = log.timestamp ? new Date(log.timestamp).toLocaleString('fr-FR') : '';
             rows.push([esc(time), esc(log.level), esc(log.message)].join(','));
         });
-        const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        // UTF-8 BOM + CRLF so Excel renders accented French correctly.
+        const blob = new Blob(['\ufeff' + rows.join('\r\n')], {type: 'text/csv;charset=utf-8;'});
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = `logs_${new Date().toISOString().slice(0,10)}.csv`;

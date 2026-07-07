@@ -25,19 +25,27 @@ public class LoginResource {
 
     private static final String AUTH_COOKIE_NAME = "AuthToken";
 
+    @jakarta.ws.rs.core.Context
+    jakarta.ws.rs.core.HttpHeaders httpHeaders;
+    @ConfigProperty(name = "mp.jwt.expire-seconds", defaultValue = "1800")
+    long tokenExpirySeconds;
+
     @Inject
     PasswordService passwordService;
     @Inject
     EmailService emailService;
-
-    @ConfigProperty(name = "mp.jwt.expire-seconds", defaultValue = "3600")
-    long tokenExpirySeconds;
-
-    @ConfigProperty(name = "app.otp.expiry-seconds", defaultValue = "300")
+    @ConfigProperty(name = "app.otp.expiry-seconds", defaultValue = "120")
     int otpExpirySeconds;
-
-    @ConfigProperty(name = "app.login.max-failed-attempts", defaultValue = "5")
+    @ConfigProperty(name = "app.login.max-failed-attempts", defaultValue = "3")
     int maxFailedAttempts;
+
+    /**
+     * True when the external request arrived over HTTPS (via a proxy/tunnel).
+     */
+    private boolean isHttps() {
+        String proto = httpHeaders != null ? httpHeaders.getHeaderString("X-Forwarded-Proto") : null;
+        return proto != null && proto.trim().equalsIgnoreCase("https");
+    }
 
     // ── POST /api/login ───────────────────────────────────────────────────────
 
@@ -102,8 +110,10 @@ public class LoginResource {
     @Path("/logout")
     @NoCache
     public Response logout() {
+        boolean https = isHttps();
         NewCookie cleared = new NewCookie.Builder(AUTH_COOKIE_NAME)
-                .value("").path("/").maxAge(0).secure(false).httpOnly(true).build();
+                .value("").path("/").maxAge(0).secure(https).httpOnly(true)
+                .sameSite(https ? NewCookie.SameSite.NONE : NewCookie.SameSite.LAX).build();
 
         return Response.ok(Map.of("message", "Déconnexion réussie"))
                 .cookie(cleared)
@@ -131,10 +141,11 @@ public class LoginResource {
                 .expiresAt(java.time.Instant.now().plusSeconds(tokenExpirySeconds))
                 .sign();
 
+        boolean https = isHttps();
         NewCookie authCookie = new NewCookie.Builder(AUTH_COOKIE_NAME)
                 .value(token).path("/").maxAge((int) tokenExpirySeconds)
-                .secure(false).httpOnly(true)
-                .sameSite(NewCookie.SameSite.STRICT)
+                .secure(https).httpOnly(true)
+                .sameSite(https ? NewCookie.SameSite.NONE : NewCookie.SameSite.LAX)
                 .build();
 
         return Response.ok(Map.of(

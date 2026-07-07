@@ -38,7 +38,6 @@ const Auth = {
     }
 };
 
-
 // ========================================
 // COUNTRY FLAG UTILITIES - NO 404 ERRORS
 // ========================================
@@ -102,7 +101,6 @@ function addCountryFlagToFooter() {
     console.log(`✅ Drapeau affiché : ${name} (${countryCode})`);
 }
 
-
 /**
  * CACHED FETCH
  *
@@ -120,6 +118,103 @@ function addCountryFlagToFooter() {
  * @param {number} ttlMs  — cache lifetime in milliseconds (default 10 min)
  * @returns {Promise<any|null>} parsed JSON or null on error
  */
+/**
+ * Shared pagination renderer — single source of truth for pagination UI so
+ * every list (reports, audit, …) looks and behaves identically.
+ *
+ * Emits the reports-style bar: an "Affichage de X à Y sur Z <label>" summary
+ * on the left, and  Précédent · Page N sur M · Suivant  on the right, using
+ * the .btn-flux button class.
+ *
+ * @param {HTMLElement|string} target   container element or its id
+ * @param {object} opts
+ *   page        {number} current page, 1-based
+ *   totalPages  {number} total number of pages
+ *   totalItems  {number} total item count (for the summary)
+ *   itemLabel   {string} plural noun, e.g. "lots", "événements"
+ *   pageSize    {number} items per page (to compute the X–Y range)
+ *   onGo        {string} name of a global fn taking a 1-based page number
+ */
+const renderPagination = (target, opts) => {
+    const el = typeof target === 'string' ? document.getElementById(target) : target;
+    if (!el) return;
+
+    const {page = 1, totalPages = 1, totalItems = 0, itemLabel = '', pageSize = 0, onGo} = opts;
+
+    if (totalPages <= 1 && totalItems <= pageSize) {
+        el.innerHTML = '';
+        return;
+    }
+
+    const from = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+    const to = Math.min(page * pageSize, totalItems);
+    const summary = pageSize
+        ? `Affichage de <span class="tnum">${from.toLocaleString('fr-FR')}</span> à <span class="tnum">${to.toLocaleString('fr-FR')}</span> sur <span class="tnum">${totalItems.toLocaleString('fr-FR')}</span> ${itemLabel}`
+        : `<span class="tnum">${totalItems.toLocaleString('fr-FR')}</span> ${itemLabel}`;
+
+    el.innerHTML = `
+        <div class="p-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+            <div style="font-size:var(--text-sm);color:var(--ink-3);">${summary}</div>
+            <div class="flex items-center gap-2">
+                <button class="btn-flux disabled:opacity-50 disabled:cursor-not-allowed"
+                        onclick="${onGo}(${page - 1})" ${page <= 1 ? 'disabled' : ''}
+                        style="padding:.4rem .7rem;font-size:.72rem;">Précédent</button>
+                <span style="font-size:var(--text-sm);color:var(--ink-3);">
+                    Page <span class="tnum">${page}</span> sur <span class="tnum">${totalPages}</span>
+                </span>
+                <button class="btn-flux disabled:opacity-50 disabled:cursor-not-allowed"
+                        onclick="${onGo}(${page + 1})" ${page >= totalPages ? 'disabled' : ''}
+                        style="padding:.4rem .7rem;font-size:.72rem;">Suivant</button>
+            </div>
+        </div>`;
+};
+window.renderPagination = renderPagination;
+
+/**
+ * Consistent empty & loading states. Replaces the scattered, differently-styled
+ * "Chargement…" / "Aucun…" snippets across pages with one look (see the
+ * .state-block classes in flux-harmonization.css).
+ *
+ *   emptyState('Aucun lot trouvé')                  → block
+ *   emptyState('Aucun lot', {icon:'inbox'})         → block with a Lucide icon
+ *   loadingState('Chargement des lots…')            → block with spinner
+ *   emptyStateRow(colspan, 'Aucun lot')             → <tr><td colspan=…> variant
+ *   loadingStateRow(colspan, 'Chargement…')         → table loading row
+ */
+const loadingState = (message = 'Chargement…', opts = {}) => {
+    const cls = opts.compact ? 'state-block state-compact' : 'state-block';
+    return `<div class="${cls}">
+        <svg class="state-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"/>
+            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <span>${escapeHtmlShared(message)}</span>
+    </div>`;
+};
+
+const emptyState = (message = 'Aucune donnée', opts = {}) => {
+    const cls = opts.compact ? 'state-block state-compact' : 'state-block';
+    const icon = opts.icon
+        ? `<i data-lucide="${opts.icon}" style="width:22px;height:22px"></i>`
+        : '';
+    return `<div class="${cls}">${icon}<span>${escapeHtmlShared(message)}</span></div>`;
+};
+
+const loadingStateRow = (colspan, message = 'Chargement…') =>
+    `<tr><td colspan="${colspan}" style="padding:0">${loadingState(message)}</td></tr>`;
+
+const emptyStateRow = (colspan, message = 'Aucune donnée', opts = {}) =>
+    `<tr><td colspan="${colspan}" style="padding:0">${emptyState(message, opts)}</td></tr>`;
+
+// Minimal HTML escaper for the message text (defensive; messages are usually static).
+const escapeHtmlShared = (v) => String(v ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+window.loadingState = loadingState;
+window.emptyState = emptyState;
+window.loadingStateRow = loadingStateRow;
+window.emptyStateRow = emptyStateRow;
+
 const fetchCached = async (url, ttlMs = 10 * 60 * 1000) => {
     const key = 'fc:' + url;
     const now = Date.now();
@@ -162,7 +257,6 @@ const bustCache = (url) => {
     } catch (_) {
     }
 };
-
 
 /**
 // SNACKBAR (UPDATED)
@@ -230,7 +324,6 @@ const showSnackbar = (msg, type = "info", actionLabel, actionFn) => {
     });
 };
 
-
 /**
  * GLOBAL SECURITY WRAPPER
  * Intercepts 401 (session expired) to force a clean logout and login redirect.
@@ -287,7 +380,6 @@ const secureFetch = async (url, options = {}) => {
     }
 };
 
-
 /**
  * LOAD STATS
  */
@@ -339,16 +431,15 @@ const loadStats = async (mapping) => {
     }
 };
 
-
 // -----------------------------
 // STATUS BADGES
 // -----------------------------
 // ─────────────────────────────────────────────────────────────────────────────
 // BADGE SYSTEM — unified across the whole application
 //
-// Three tiers, all share the same base shape:
-//   4px radius · font-size 10px · font-weight 500 · letter-spacing .05em · uppercase
-//   0.5px border matching the tint (gives definition on white without heavy fill)
+// Three tiers, all rendered with the .badge / .badge-* classes defined in
+// flux-harmonization.css (rectangular, hairline border, uppercase micro type).
+// Tones map 1:1 to the semantic --status-* token families.
 //
 // Tier 1 — Workflow status  (batch processing state, has a Lucide icon)
 // Tier 2 — Category label   (FT / FTR — no icon, technical code style)
@@ -426,25 +517,16 @@ window.renderStatusFilterChips = renderStatusFilterChips;
 // rather than a hollow "Aucun résultat pour «  »" with nothing in the quotes.
 function emptyFilterRowHTML(query, colspan, message) {
     if (query && query.trim()) {
-        return `<tr><td colspan="${colspan}" style="padding:2rem;text-align:center;font-size:12px;color:var(--ink-3)">Aucun résultat pour « ${query} »</td></tr>`;
+        return emptyStateRow(colspan, `Aucun résultat pour « ${query} »`, {compact: true});
     }
-    return `<tr><td colspan="${colspan}" style="padding:0">
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-                    padding:3rem 1rem;color:var(--ink-3);text-align:center">
-            <i data-lucide="inbox" style="width:40px;height:40px;opacity:.2;margin-bottom:.75rem"></i>
-            <p style="font-size:13px">${message || 'Aucun batch ne correspond à ce filtre'}</p>
-        </div>
-    </td></tr>`;
+    return emptyStateRow(colspan, message || 'Aucun lot ne correspond à ce filtre', {icon: 'inbox'});
 }
 
 window.emptyFilterRowHTML = emptyFilterRowHTML;
 
-const _badge = (bg, color, border) =>
-    `display:inline-flex;align-items:center;gap:4px;padding:3px 9px;` +
-    `border-radius:0;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;` +
-    `background:${bg};color:${color};border:1px solid ${border};white-space:nowrap`;
-
-// Orange Design System semantic status tokens (bg / text / border)
+// Orange Design System semantic status tokens (bg / text / border).
+// Badges themselves are styled by .badge classes; these tokens remain for
+// the status filter chips, which derive active/inactive fills from them.
 const _BADGE_TOKENS = {
     pending: {
         bg: 'var(--status-pending-bg, #F6F6F6)',
@@ -480,22 +562,32 @@ const _BADGE_TOKENS = {
 
 // Tier 1 — workflow status badges (with icon), driven by the FileBatch status enum.
 // This is the single source of truth for status styling — reused on the dashboard
-// spine legend, batches list, validate cards, and the batch detail modal.
+// spine legend, batches list, validate cards, the batch detail modal, AND the
+// CSV / PDF exports (via statusLabel), so every surface speaks the same French.
+const STATUS_META = {
+    UPLOADED: {t: 'pending', icon: 'clock', label: 'En attente', spin: false},
+    VALIDATED: {t: 'validated', icon: 'clock', label: 'Validé', spin: false},
+    PROCESSING: {t: 'processing', icon: 'refresh-cw', label: 'En traitement', spin: true},
+    PROCESSED: {t: 'success', icon: 'check-circle', label: 'Traité', spin: false},
+    PROCESSED_WITH_ERROR: {t: 'warning', icon: 'check-circle', label: 'Traité avec erreurs', spin: false},
+    UPLOADED_FAILED: {t: 'error', icon: 'alert-circle', label: 'Échec import', spin: false},
+    VALIDATED_FAILED: {t: 'error', icon: 'x-circle', label: 'Échec sig.', spin: false},
+    PROCESSED_FAILED: {t: 'error', icon: 'x-circle', label: 'Échec', spin: false},
+};
+
+// Plain French label for a status enum — used by exports where no HTML/icon fits.
+const statusLabel = (status) => (STATUS_META[status] || {}).label || (status ? status.replace(/_/g, ' ') : '—');
+window.statusLabel = statusLabel;
+
 const getStatusBadge = (status) => {
-    const map = {
-        UPLOADED: {t: 'pending', icon: 'clock', label: 'En attente', spin: false},
-        VALIDATED: {t: 'validated', icon: 'clock', label: 'Validé', spin: false},
-        PROCESSING: {t: 'processing', icon: 'refresh-cw', label: 'En traitement', spin: true},
-        PROCESSED: {t: 'success', icon: 'check-circle', label: 'Traité', spin: false},
-        PROCESSED_WITH_ERROR: {t: 'warning', icon: 'check-circle', label: 'Traité avec erreurs', spin: false},
-        UPLOADED_FAILED: {t: 'error', icon: 'alert-circle', label: 'Échec import', spin: false},
-        VALIDATED_FAILED: {t: 'error', icon: 'x-circle', label: 'Échec sig.', spin: false},
-        PROCESSED_FAILED: {t: 'error', icon: 'x-circle', label: 'Échec', spin: false},
+    const d = STATUS_META[status] || {
+        t: 'pending',
+        icon: 'help-circle',
+        label: status?.replace(/_/g, ' ') || '—',
+        spin: false
     };
-    const d = map[status] || {t: 'pending', icon: 'help-circle', label: status?.replace(/_/g, ' ') || '—', spin: false};
-    const c = _BADGE_TOKENS[d.t];
-    return `<span style="${_badge(c.bg, c.color, c.border)}">
-        <i data-lucide="${d.icon}" style="width:11px;height:11px;flex-shrink:0${d.spin ? ';animation:spin 1s linear infinite' : ''}"></i>
+    return `<span class="badge badge-${d.t}">
+        <i data-lucide="${d.icon}"${d.spin ? ' style="animation:spin 1s linear infinite"' : ''}></i>
         ${d.label}
     </span>`;
 };
@@ -507,14 +599,13 @@ const appBadgeHTML = (application) => {
         FUNDS_TRANSFER_REVERSAL: {t: 'validated', label: 'FTR'},
     };
     const d = map[application] || {t: 'pending', label: (application || 'N/A').slice(0, 5)};
-    const c = _BADGE_TOKENS[d.t];
-    return `<span style="${_badge(c.bg, c.color, c.border)}" title="${application || ''}">${d.label}</span>`;
+    return `<span class="badge badge-${d.t}" title="${application || ''}">${d.label}</span>`;
 };
 
 // Tier 3 — property labels (REQUIS, ACTIF, INACTIF — exported for reuse)
 const propertyBadge = (label, tone) => {
-    const c = _BADGE_TOKENS[tone] || _BADGE_TOKENS.gray;
-    return `<span style="${_badge(c.bg, c.color, c.border)}">${label}</span>`;
+    const t = ['pending', 'validated', 'processing', 'success', 'warning', 'error'].includes(tone) ? tone : 'pending';
+    return `<span class="badge badge-${t}">${label}</span>`;
 };
 window.propertyBadge = propertyBadge;
 
@@ -540,15 +631,14 @@ const tableSkeleton = (rows = 5, cols = 4) => {
     const bar = (w) => `<div style="height:10px;width:${w}%;background:var(--line-soft,#e9eaec);border-radius:2px;animation:sk-pulse 1.2s ease-in-out infinite alternate"></div>`;
     const widths = [[70, 35, 25, 20], [80, 40, 28, 22], [65, 30, 20, 18], [75, 38, 22, 20], [68, 33, 24, 19]];
     return `<table style="min-width:100%;border-collapse:collapse">
-        <thead><tr style="border-bottom:0.5px solid var(--line-soft,#e9eaec)">${
+        <thead><tr style="border-bottom:1px solid var(--line-soft,#e9eaec)">${
         Array(cols).fill('').map(() => `<th style="padding:10px 16px;text-align:left">${bar(50)}</th>`).join('')
     }</tr></thead>
-        <tbody>${Array(rows).fill('').map((_, ri) => `<tr style="border-bottom:0.5px solid var(--line-soft,#e9eaec)">${
+        <tbody>${Array(rows).fill('').map((_, ri) => `<tr style="border-bottom:1px solid var(--line-soft,#e9eaec)">${
         (widths[ri] || widths[0]).slice(0, cols).map(w => `<td style="padding:13px 16px">${bar(w)}</td>`).join('')
     }</tr>`).join('')}</tbody>
     </table>`;
 };
-
 
 // -----------------------------
 // VIEW BATCH DETAILS
@@ -582,7 +672,7 @@ const viewBatchDetails = async (batchId, modalId = "batchDetailsModal", contentI
         const headerCells = nonNullKeys.map(k =>
             `<th style="padding:8px 12px;white-space:nowrap;font-size:10px;font-weight:700;
                 color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;
-                text-align:left;border-bottom:0.5px solid var(--line-soft);
+                text-align:left;border-bottom:1px solid var(--line-soft);
                 position:sticky;top:0;background:var(--canvas)">${k}</th>`
         ).join('');
 
@@ -592,13 +682,13 @@ const viewBatchDetails = async (batchId, modalId = "batchDetailsModal", contentI
             const rowBg = isFailed ? '#fff8f8' : isOdd ? '#fafafa' : '#ffffff';
             const dataCells = nonNullKeys.map(k =>
                 `<td style="padding:7px 12px;font-size:11px;color:var(--ink-2);
-                    border-bottom:0.5px solid var(--line-soft);white-space:nowrap;
+                    border-bottom:1px solid var(--line-soft);white-space:nowrap;
                     max-width:180px;overflow:hidden;text-overflow:ellipsis"
                     title="${String(r.data?.[k] ?? '')}">${r.data?.[k] ?? ''}</td>`
             ).join('');
-            const statusCell = `<td style="padding:7px 12px;border-bottom:0.5px solid var(--line-soft)">${getStatusBadge(r.status)}</td>`;
+            const statusCell = `<td style="padding:7px 12px;border-bottom:1px solid var(--line-soft)">${getStatusBadge(r.status)}</td>`;
             const refCell = `<td style="padding:7px 12px;font-size:10px;color:var(--ink-3);
-                font-family:monospace;border-bottom:0.5px solid var(--line-soft)">${r.t24Reference || '—'}</td>`;
+                font-family:monospace;border-bottom:1px solid var(--line-soft)">${r.t24Reference || '—'}</td>`;
             return `<tr style="background:${rowBg}">${dataCells}${refCell}${statusCell}</tr>`;
         }).join('');
 
@@ -615,18 +705,18 @@ const viewBatchDetails = async (batchId, modalId = "batchDetailsModal", contentI
                     <i data-lucide="download" style="width:13px;height:13px"></i>CSV complet
                 </button>
             </div>
-            <div style="overflow:auto;max-height:460px;border:0.5px solid var(--line)">
+            <div style="overflow:auto;max-height:460px;border:1px solid var(--line)">
                 <table style="min-width:100%;border-collapse:collapse">
                     <thead>
                         <tr>
                             ${headerCells}
                             <th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--ink-3);
                                 text-transform:uppercase;letter-spacing:.06em;text-align:left;
-                                border-bottom:0.5px solid var(--line-soft);position:sticky;top:0;
+                                border-bottom:1px solid var(--line-soft);position:sticky;top:0;
                                 background:var(--canvas);white-space:nowrap">Réf. T24</th>
                             <th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--ink-3);
                                 text-transform:uppercase;letter-spacing:.06em;text-align:left;
-                                border-bottom:0.5px solid var(--line-soft);position:sticky;top:0;
+                                border-bottom:1px solid var(--line-soft);position:sticky;top:0;
                                 background:var(--canvas)">Statut</th>
                         </tr>
                     </thead>
@@ -639,10 +729,12 @@ const viewBatchDetails = async (batchId, modalId = "batchDetailsModal", contentI
     }
 };
 
-
-// -----------------------------
-// DOWNLOAD CSV (FIXED ESCAPING)
-// -----------------------------
+// ---------------------------------------------------------------
+// DOWNLOAD BATCH AS CSV
+// Adds two leading columns — Statut (SUCCÈS / ÉCHEC) and Erreur —
+// and sorts failed rows to the top, so the uploader can open the file,
+// filter Statut = ÉCHEC, read why each row failed, fix them, re-upload.
+// ---------------------------------------------------------------
 const downloadBatchNonNull = async (batchId) => {
     try {
         const res = await secureFetch(`${API_BASE}/batches/${batchId}`);
@@ -653,21 +745,33 @@ const downloadBatchNonNull = async (batchId) => {
 
         if (!details?.length) return showSnackbar("Aucune donnée à télécharger", "error");
 
+        // CSV quoting for any field with a comma, quote or newline.
+        const q = (v) => {
+            const s = (v ?? "").toString();
+            return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        };
+
+        // Original data columns, dropping the ones that are empty everywhere.
         const keys = Object.keys(details[0].data);
-        const nonNullKeys = keys.filter(k => details.some(r => r.data[k] != null && r.data[k] !== ""));
+        const dataKeys = keys.filter(k => details.some(r => r.data[k] != null && r.data[k] !== ""));
 
+        // Failed rows first so they're at the top of the file.
+        const rows = [...details].sort((a, b) =>
+            (a.status === 'FAILED' ? 0 : 1) - (b.status === 'FAILED' ? 0 : 1));
+
+        const header = ['Statut', 'Erreur', 'Réf. T24', ...dataKeys];
         const csvLines = [
-            nonNullKeys.join(","),
-            ...details.map(r => nonNullKeys.map(k => {
-                let val = (r.data[k] ?? "").toString();
-                if (val.includes('"') || val.includes(',') || val.includes('\n')) {
-                    val = '"' + val.replace(/"/g, '""') + '"';
-                }
-                return val;
-            }).join(","))
-        ].join("\n");
+            header.map(q).join(","),
+            ...rows.map(r => [
+                r.status === 'FAILED' ? 'ÉCHEC' : 'SUCCÈS',
+                r.status === 'FAILED' ? (r.errorMessage || 'Erreur non précisée') : '',
+                r.t24Reference || '',
+                ...dataKeys.map(k => r.data?.[k] ?? '')
+            ].map(q).join(","))
+        ].join("\r\n");
 
-        const blob = new Blob([csvLines], { type: "text/csv;charset=utf-8;" });
+        // UTF-8 BOM so Excel reads accented column names/values correctly.
+        const blob = new Blob(['\ufeff' + csvLines], {type: "text/csv;charset=utf-8;"});
         const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = blobUrl;
@@ -677,12 +781,14 @@ const downloadBatchNonNull = async (batchId) => {
         document.body.removeChild(a);
         URL.revokeObjectURL(blobUrl);
 
-        showSnackbar("Téléchargement lancé !", "success");
+        const nbFailed = details.filter(r => r.status === 'FAILED').length;
+        showSnackbar(nbFailed
+            ? `CSV téléchargé — ${nbFailed} ligne${nbFailed > 1 ? 's' : ''} en échec en haut du fichier`
+            : "CSV téléchargé", "success");
     } catch (err) {
         showSnackbar("Erreur: " + err.message, "error");
     }
 };
-
 
 // -----------------------------
 // MODALS & LOGOUT
@@ -707,7 +813,6 @@ const logoutUser = async () => {
     }
 };
 
-
 // -----------------------------
 // INITIALIZATION
 // -----------------------------
@@ -722,7 +827,6 @@ function initShared() {
 }
 
 document.addEventListener("DOMContentLoaded", initShared);
-
 
 // -----------------------------
 // GLOBAL EXPORTS
@@ -810,16 +914,16 @@ const pollWindowStatus = () => {
             badge.style.display = 'inline-flex';
 
             if (d.openNow) {
-                dot.style.background = '#34a853';
-                badge.style.borderColor = 'rgba(52,168,83,.35)';
-                badge.style.background = 'rgba(52,168,83,.12)';
-                label.style.color = '#5db870';
+                dot.style.background = 'var(--chrome-ok, #2EA25C)';
+                badge.style.borderColor = 'var(--chrome-ok-line, rgba(46,162,92,.35))';
+                badge.style.background = 'var(--chrome-ok-bg, rgba(46,162,92,.12))';
+                label.style.color = 'var(--chrome-ok-text, #6FCE96)';
                 label.textContent = 'Système ouvert';
             } else {
-                dot.style.background = '#ea4335';
-                badge.style.borderColor = 'rgba(234,67,53,.35)';
-                badge.style.background = 'rgba(234,67,53,.12)';
-                label.style.color = '#e57368';
+                dot.style.background = 'var(--chrome-alert, #D6493C)';
+                badge.style.borderColor = 'var(--chrome-alert-line, rgba(214,73,60,.35))';
+                badge.style.background = 'var(--chrome-alert-bg, rgba(214,73,60,.12))';
+                label.style.color = 'var(--chrome-alert-text, #E8887D)';
                 label.textContent = d.enabled
                     ? `Fermé — ouvre à ${String(d.openHour).padStart(2, '0')}h00`
                     : 'Système fermé';
@@ -985,9 +1089,9 @@ const _renderSummaryHTML = (batch, batchId) => {
             </div>
 
             <div class="flex gap-3 pt-2">
-                <button onclick="downloadExecutionReport('${batchId}')"
+                <button onclick="downloadBatchNonNull('${batchId}')"
                         class="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 text-sm font-bold text-gray-700 hover:bg-gray-50 transition">
-                    <i data-lucide="printer" class="w-4 h-4"></i>Exporter / Imprimer
+                    <i data-lucide="download" class="w-4 h-4"></i>Télécharger le CSV
                 </button>
                 <button onclick="closeSummaryModal()"
                         class="px-6 py-2.5 bg-gray-900 text-white text-sm font-bold hover:bg-black transition">
@@ -1027,267 +1131,7 @@ const viewBatchSummary = async (batchId) => {
     }
 };
 
-const downloadExecutionReport = async (batchId) => {
-    try {
-        const res = await secureFetch(`${API_BASE}/batches/${batchId}`);
-        if (!res) return;
-        if (!res.ok) throw new Error("Impossible de récupérer les données du lot.");
-        const batch = await res.json();
-        const records = batch.details || [];
-
-        const success = batch.successCount ?? records.filter(r => r.status === 'SUCCESS').length;
-        const failure = batch.failureCount ?? records.filter(r => r.status === 'FAILED').length;
-        const total = batch.totalRecords || records.length;
-        const now = new Date().toLocaleString('fr-FR');
-
-        // ── Financial volume ───────────────────────────────────────────────────
-        let volSection = '';
-        if (batch.application === 'FUNDS_TRANSFER') {
-            const vol = records.reduce((s, r) => {
-                return s + (parseFloat(r.data?.['DEBIT.AMOUNT'] || r.data?.['CREDIT.AMOUNT']) || 0);
-            }, 0);
-            if (vol > 0) {
-                volSection = `
-                <div class="vol-block">
-                    <div class="vol-label">VOLUME FINANCIER</div>
-                    <div class="vol-amount">${vol.toLocaleString('fr-FR', {style: 'currency', currency: 'XOF'})}</div>
-                </div>`;
-            }
-        }
-
-        // ── Anomaly journal ────────────────────────────────────────────────────
-        const failed = records.filter(r => r.status === 'FAILED');
-        let journalSection = '';
-        if (!failed.length && !records.length) {
-            journalSection = `<div class="empty-msg">Aucun résultat disponible.</div>`;
-        } else if (!failed.length) {
-            journalSection = `<div class="success-msg">✓ Toutes les transactions ont été traitées avec succès.</div>`;
-        } else {
-            const rows = failed.map(r => {
-                let err = r.errorMessage || '—';
-                try {
-                    const p = JSON.parse(err);
-                    if (p.error?.errorDetails?.[0]?.message) err = p.error.errorDetails[0].message;
-                } catch (_) {
-                }
-                return `<tr><td class="err-line">${r.lineNumber}</td>
-                            <td class="err-ref">${escXml(r.t24Reference || 'N/A')}</td>
-                            <td class="err-msg">${escXml(err)}</td></tr>`;
-            }).join('');
-            journalSection = `
-                <table class="err-table">
-                    <thead><tr>
-                        <th>Ligne</th><th>Réf. T24</th><th>Message d'erreur</th>
-                    </tr></thead>
-                    <tbody>${rows}</tbody>
-                </table>`;
-        }
-
-        // ── All rows table ─────────────────────────────────────────────────────
-        const fieldSet = new Set();
-        records.forEach(r => r.data && Object.keys(r.data).forEach(k => fieldSet.add(k)));
-        const dynFields = Array.from(fieldSet).sort();
-
-        const allRowsHtml = records.length ? `
-            <h2 class="section-title" style="margin-top:28px">Détail des transactions</h2>
-            <table class="data-table">
-                <thead><tr>
-                    <th>#</th><th>Statut</th><th>Réf. T24</th>
-                    ${dynFields.map(f => `<th>${escXml(f)}</th>`).join('')}
-                </tr></thead>
-                <tbody>
-                ${records.map(r => {
-            let err = r.errorMessage || '';
-            try {
-                const p = JSON.parse(err);
-                err = p.error?.errorDetails?.[0]?.message || err;
-            } catch (_) {
-            }
-            const cls = r.status === 'SUCCESS' ? 'row-ok' : r.status === 'FAILED' ? 'row-err' : '';
-            return `<tr class="${cls}">
-                        <td class="td-center">${r.lineNumber}</td>
-                        <td class="td-status td-status-${r.status === 'SUCCESS' ? 'ok' : r.status === 'FAILED' ? 'err' : 'pend'}">
-                            ${r.status === 'SUCCESS' ? '✓ Succès' : r.status === 'FAILED' ? '✗ Échec' : r.status}
-                        </td>
-                        <td>${escXml(r.t24Reference || '')}</td>
-                        ${dynFields.map(f => `<td>${escXml(String(r.data?.[f] ?? ''))}</td>`).join('')}
-                    </tr>`;
-        }).join('')}
-                </tbody>
-            </table>` : '';
-
-        // ── Build full HTML page ───────────────────────────────────────────────
-        const filename = batch.originalFilename || batchId;
-        const html = `<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>Rapport — ${escXml(filename)}</title>
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: system-ui, -apple-system, sans-serif; font-size: 11pt;
-       color: #1e293b; background: #fff; padding: 0; }
-
-/* ── Print-only controls ── */
-.no-print { display: flex; gap: 10px; padding: 12px 24px; background: #f1f5f9;
-            border-bottom: 1px solid #e2e8f0; }
-.btn-print { padding: 8px 20px; background: #FF7900; color: #fff; border: none;
-             font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
-.btn-print:hover { background: #C65B00; }
-.btn-close { padding: 8px 20px; background: #fff; color: #64748b;
-             border: 1px solid #cbd5e1; font-size: 13px; cursor: pointer; font-family: inherit; }
-@media print { .no-print { display: none; } }
-
-/* ── Page ── */
-.page { max-width: 900px; margin: 0 auto; padding: 28px 32px; }
-
-/* ── Header ── */
-.report-header { background: #0f172a; color: #fff; padding: 20px 28px;
-                 margin: 0 0 20px; }
-.report-title  { font-size: 16pt; font-weight: 700; }
-.report-sub    { font-size: 10pt; color: #94a3b8; margin-top: 4px; }
-
-/* ── Metadata ── */
-.meta-grid { display: grid; grid-template-columns: 140px 1fr; gap: 0;
-             border: 1px solid #e2e8f0; margin-bottom: 20px; font-size: 10.5pt; }
-.meta-label { background: #f8fafc; font-weight: 600; color: #475569;
-              padding: 7px 12px; border-bottom: 1px solid #e2e8f0; }
-.meta-value { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; color: #1e293b; }
-.meta-mono  { font-family: monospace; font-size: 10pt; }
-
-/* ── KPI cards ── */
-.kpi-row   { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-.kpi-card  { padding: 16px 20px; border: 1px solid #e2e8f0; }
-.kpi-label { font-size: 9pt; font-weight: 700; text-transform: uppercase;
-             letter-spacing: .08em; color: #64748b; margin-bottom: 6px; }
-.kpi-val   { font-size: 26pt; font-weight: 800; line-height: 1; }
-.kpi-total { background: #f8fafc; }
-.kpi-total .kpi-val { color: #1e293b; }
-.kpi-ok    { background: #f0fdf4; border-color: #bbf7d0; }
-.kpi-ok    .kpi-label { color: #166534; }
-.kpi-ok    .kpi-val   { color: #15803d; }
-.kpi-err   { background: #fef2f2; border-color: #fecaca; }
-.kpi-err   .kpi-label { color: #991b1b; }
-.kpi-err   .kpi-val   { color: #dc2626; }
-
-/* ── Volume ── */
-.vol-block  { background: #312e81; color: #fff; padding: 20px 24px; margin-bottom: 20px; }
-.vol-label  { font-size: 9pt; font-weight: 700; text-transform: uppercase;
-              letter-spacing: .1em; color: #c7d2fe; margin-bottom: 6px; }
-.vol-amount { font-size: 22pt; font-weight: 800; }
-
-/* ── Section titles ── */
-.section-title { font-size: 11pt; font-weight: 700; color: #334155;
-                 margin-bottom: 10px; padding-bottom: 6px;
-                 border-bottom: 2px solid #e2e8f0; }
-
-/* ── Anomaly journal / success ── */
-.success-msg { background: #f0fdf4; color: #166534; padding: 14px 18px;
-               border-left: 4px solid #22c55e; font-style: italic; font-size: 10.5pt; }
-.empty-msg   { color: #94a3b8; font-style: italic; padding: 12px 0; }
-.err-table   { width: 100%; border-collapse: collapse; font-size: 10pt; }
-.err-table th { background: #fef2f2; color: #991b1b; font-weight: 700;
-                padding: 8px 12px; text-align: left; border: 1px solid #fecaca; }
-.err-table td { padding: 7px 12px; border: 1px solid #fee2e2; vertical-align: top; }
-.err-line  { font-weight: 700; color: #dc2626; white-space: nowrap; width: 60px; }
-.err-ref   { font-family: monospace; font-size: 9.5pt; width: 130px; }
-.err-msg   { color: #7f1d1d; }
-
-/* ── All rows table ── */
-.data-table   { width: 100%; border-collapse: collapse; font-size: 9pt; margin-top: 4px; }
-.data-table th { background: #1B1B1B; color: #fff; font-weight: 700; padding: 7px 10px;
-                 text-align: left; border: 1px solid #1B1B1B; white-space: nowrap; }
-.data-table td { padding: 5px 8px; border: 1px solid #e2e8f0; }
-.td-center     { text-align: center; }
-.row-ok        { background: #f0fdf4; }
-.row-err       { background: #fef2f2; }
-.td-status     { font-weight: 600; text-align: center; white-space: nowrap; }
-.td-status-ok  { color: #166534; }
-.td-status-err { color: #dc2626; }
-.td-status-pend{ color: #92400e; }
-
-/* ── Print ── */
-@media print {
-    @page { margin: 14mm 12mm; size: A4; }
-    .page { padding: 0; max-width: 100%; }
-    .report-header { margin: 0 0 14px; }
-    .data-table { font-size: 8pt; }
-    .data-table th, .data-table td { padding: 4px 6px; }
-    .err-table th, .err-table td { padding: 5px 8px; }
-}
-</style>
-</head>
-<body>
-<!-- Print controls (hidden on print) -->
-<div class="no-print">
-    <button class="btn-print" onclick="window.print()">🖨 Imprimer / Enregistrer en PDF</button>
-    <button class="btn-close" onclick="window.close()">Fermer</button>
-</div>
-
-<div class="page">
-    <!-- Header -->
-    <div class="report-header">
-        <div class="report-title">Rapport d'exécution FLUX</div>
-        <div class="report-sub">Orange Bank · Exporté le ${now}</div>
-    </div>
-
-    <!-- Metadata -->
-    <div class="meta-grid">
-        <div class="meta-label">Fichier</div>
-        <div class="meta-value">${escXml(filename)}</div>
-        <div class="meta-label">Application</div>
-        <div class="meta-value">${escXml(batch.application || '—')}</div>
-        <div class="meta-label">Lot ID</div>
-        <div class="meta-value meta-mono">${escXml(batchId)}</div>
-        <div class="meta-label">Statut</div>
-        <div class="meta-value">${escXml(batch.status || '—')}</div>
-    </div>
-
-    <!-- KPI -->
-    <div class="kpi-row">
-        <div class="kpi-card kpi-total">
-            <div class="kpi-label">Total lignes</div>
-            <div class="kpi-val">${total.toLocaleString('fr-FR')}</div>
-        </div>
-        <div class="kpi-card kpi-ok">
-            <div class="kpi-label">Succès</div>
-            <div class="kpi-val">${success.toLocaleString('fr-FR')}</div>
-        </div>
-        <div class="kpi-card kpi-err">
-            <div class="kpi-label">Échecs</div>
-            <div class="kpi-val">${failure.toLocaleString('fr-FR')}</div>
-        </div>
-    </div>
-
-    <!-- Volume financier -->
-    ${volSection}
-
-    <!-- Anomaly journal -->
-    <h2 class="section-title">Statut technique</h2>
-    ${journalSection}
-
-    <!-- Full rows -->
-    ${allRowsHtml}
-</div>
-</body>
-</html>`;
-
-        // Open in new tab → user prints or saves as PDF
-        const win = window.open('', '_blank');
-        if (!win) {
-            showSnackbar("Autorisez les popups pour ce site afin d'exporter.", 'error');
-            return;
-        }
-        win.document.write(html);
-        win.document.close();
-    } catch (err) {
-        console.error('Export Error:', err);
-        showSnackbar('Erreur export : ' + err.message, 'error');
-    }
-};
-
 window.viewBatchSummary = viewBatchSummary;
-window.downloadExecutionReport = downloadExecutionReport;
 window._stopSummaryPoller = _stopSummaryPoller;
 
 /** Named helper used by layout.html onclick — avoids {;} syntax that breaks Qute */

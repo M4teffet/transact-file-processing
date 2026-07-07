@@ -57,10 +57,10 @@ public class AuditResource {
             append(qs, "performedBy = ?" + (params.size() + 1));
             params.add(performedBy.trim());
         }
-        if (target != null && !target.isBlank()) {
-            append(qs, "target like ?"); // Panache doesn't support $regex easily — prefix match
-            // Fall back to simple contains filter post-query for target
-        }
+        // NB: target is matched case-insensitively AFTER the query (see below),
+        // so it must NOT add a clause/placeholder here — doing so previously left
+        // a dangling '?' with no bound parameter, which broke the parameter
+        // numbering of the from/to date filters and made the whole query throw.
         if (from != null && !from.isBlank()) {
             Instant fromInstant = LocalDate.parse(from).atStartOfDay(ZoneOffset.UTC).toInstant();
             append(qs, "timestamp >= ?" + (params.size() + 1));
@@ -127,6 +127,19 @@ public class AuditResource {
                 "SESSION_POLICY_UPDATED"
         );
         return Response.ok(actions).build();
+    }
+
+    @GET
+    @Path("/performers")
+    @Operation(summary = "Liste des utilisateurs ayant effectué une action (pour les filtres)")
+    public Response getDistinctPerformers() {
+        // Distinct performedBy values — backed by the existing performedBy index.
+        List<String> performers = AdminAuditLog.mongoCollection()
+                .distinct("performedBy", String.class)
+                .into(new java.util.ArrayList<>());
+        performers.removeIf(p -> p == null || p.isBlank());
+        performers.sort(String.CASE_INSENSITIVE_ORDER);
+        return Response.ok(performers).build();
     }
 
     private void append(StringBuilder sb, String clause) {

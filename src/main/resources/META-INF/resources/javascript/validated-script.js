@@ -177,7 +177,7 @@ const _ensureValidatedSearch = () => {
                 <input id="validatedSearchInput" type="text"
                        placeholder="Rechercher…"
                        style="width:240px;padding:5px 10px 5px 28px;font-size:12px;
-                              border:0.5px solid var(--line,#e0e0e0);
+                              border:1px solid var(--line,#e0e0e0);
                               background:var(--color-background-primary,#fff);
                               color:var(--ink-2);outline:none;box-sizing:border-box"/>
             </div>
@@ -195,7 +195,7 @@ const _ensureValidatedSearch = () => {
 const _renderValidatedTbody = () => {
     const tbody = document.getElementById('validatedTbody');
     if (!tbody) return;
-    const TD = `padding:11px 16px;border-bottom:0.5px solid var(--line-soft,#f0f1f3)`;
+    const TD = `padding:11px 16px;border-bottom:1px solid var(--line-soft,#f0f1f3)`;
     const ICON_BTN = `padding:5px;background:none;border:none;cursor:pointer;color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center`;
     const filtered = _filterValidated(validatedBatches, validatedSearchQuery);
     if (!filtered.length) {
@@ -213,7 +213,7 @@ const _validatedRow = (b, TD, ICON_BTN) => {
     const records = b.totalRecords
         ? `<span style="font-size:10px;color:var(--ink-3)">${b.totalRecords.toLocaleString('fr-FR')} lignes</span>`
         : '';
-    return `<tr style="border-bottom:0.5px solid var(--line-soft,#f0f1f3)" data-batch-id="${b.batchId}">
+    return `<tr style="border-bottom:1px solid var(--line-soft,#f0f1f3)" data-batch-id="${b.batchId}">
         <td style="${TD};max-width:300px">
             <div style="font-size:12px;font-weight:700;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${filename}">${short}</div>
             <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
@@ -264,20 +264,19 @@ const renderValidatedBatches = () => {
     _ensureValidatedSearch();
     _ensureValidatedStatusChips();
 
-    const TH = `padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em`;
-    const TD = `padding:11px 16px;border-bottom:0.5px solid var(--line-soft,#f0f1f3)`;
+    const TD = `padding:11px 16px;border-bottom:1px solid var(--line-soft,#f0f1f3)`;
     const ICON_BTN = `padding:5px;background:none;border:none;cursor:pointer;color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center`;
     const filtered = _filterValidated(validatedBatches, validatedSearchQuery);
 
     container.innerHTML = `
         <div style="overflow-x:auto">
-            <table style="min-width:100%;border-collapse:collapse">
+            <table class="data-table" style="min-width:100%;">
                 <thead>
-                    <tr style="border-bottom:0.5px solid var(--line)">
-                        <th style="${TH}">Lot</th>
-                        <th style="${TH}">Date</th>
-                        <th style="${TH}">Statut</th>
-                        <th style="${TH}"></th>
+                    <tr>
+                        <th>Lot</th>
+                        <th>Date</th>
+                        <th>Statut</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody id="validatedTbody">
@@ -296,7 +295,7 @@ const renderValidatedBatches = () => {
         .forEach(b => startProgressPoller(b.batchId, b));
 };
 
-// viewBatchSummary and downloadExecutionReport are defined in shared.js
+// viewBatchSummary is defined in shared.js
 // and exported to window there — no redeclaration needed here.
 
 // Global Exposure

@@ -338,8 +338,8 @@ function showValidationErrorModal(errorData) {
                                 </div>
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 mb-1">
-                                        <span style="font-size:10.5px;font-weight:700;color:var(--status-error-text);text-transform:uppercase;letter-spacing:.06em;">Ligne ${err.line || index + 1}</span>
-                                        ${err.field ? `<span class="mono" style="font-size:10.5px;background:var(--status-error-bg);color:var(--status-error-text);padding:2px 6px;">${err.field}</span>` : ''}
+                                        <span style="font-size:11px;font-weight:700;color:var(--status-error-text);text-transform:uppercase;letter-spacing:.06em;">Ligne ${err.line || index + 1}</span>
+                                        ${err.field ? `<span class="mono" style="font-size:11px;background:var(--status-error-bg);color:var(--status-error-text);padding:2px 6px;">${err.field}</span>` : ''}
                                     </div>
                                     <p style="font-size:.82rem;color:var(--ink-2);line-height:1.5;">${err.message || 'Erreur inconnue'}</p>
                                 </div>
@@ -550,7 +550,7 @@ function initUploadPage() {
     window.downloadTemplate = () => {
         const header = (elements.csvHeaderCode()?.textContent || "").trim();
         if (!header) return;
-        const blob = new Blob([header + "\r\n"], {type: "text/csv;charset=utf-8;"});
+        const blob = new Blob(['\ufeff' + header + "\r\n"], {type: "text/csv;charset=utf-8;"});
         const url = URL.createObjectURL(blob);
         const appName = (elements.appSelect()?.value || "modele").toLowerCase().replace(/[^a-z0-9]+/g, "_");
         const a = document.createElement("a");

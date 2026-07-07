@@ -1,5 +1,5 @@
 {#include layout}
-    {#title}Mes Batches - Orange Bank{/title}
+    {#title}Mes lots - Orange Bank{/title}
 
     {#head}{/head}
 
@@ -8,11 +8,11 @@
 {/aside}
 
 {#default}
-    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:20px">
+    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:var(--section-gap);">
 
         <div class="page-header">
             <div>
-                <h2 class="page-title">Mes Batches</h2>
+                <h2 class="page-title">Mes lots</h2>
                 <p class="page-subtitle">Historique de vos lots importés</p>
             </div>
         </div>
@@ -47,7 +47,7 @@
         <!-- Batch table -->
         <div class="panel">
             <div class="panel-head">
-                <h3><i data-lucide="list"></i>Liste des Batches Uploadés</h3>
+                <h3><i data-lucide="list"></i>Lots importés</h3>
                 <div id="batchSearchAnchor"></div>
             </div>
             <div id="uploadedBatchesContainer"></div>

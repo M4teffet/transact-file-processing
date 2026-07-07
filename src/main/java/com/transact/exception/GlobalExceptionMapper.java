@@ -27,25 +27,65 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
     @Context
     UriInfo uriInfo;
 
+    /**
+     * User-facing French message for framework-level HTTP errors.
+     */
+    private static String friendlyMessage(int status) {
+        return switch (status) {
+            case 400 -> "Requête invalide.";
+            case 401 -> "Identifiants invalides.";
+            case 403 -> "Accès refusé.";
+            case 404 -> "Ressource introuvable.";
+            case 405 -> "Action non autorisée.";
+            case 406, 415 -> "Requête invalide. Réessayez.";
+            case 409 -> "Conflit avec l'état actuel.";
+            case 429 -> "Trop de tentatives. Réessayez plus tard.";
+            default -> "Une erreur est survenue. Réessayez.";
+        };
+    }
+
     @Override
     public Response toResponse(Exception e) {
         String path = uriInfo != null ? uriInfo.getPath() : "unknown";
+
+        // ── TEMPORARY DIAGNOSTIC ─────────────────────────────────────────────
+        // Logs the exact exception reaching this mapper. Check the server console
+        // when reproducing the wrong-password case: it will show the real type,
+        // status and message. Remove this block once the cause is confirmed.
+        int diagStatus = (e instanceof WebApplicationException w) ? w.getResponse().getStatus() : -1;
+        Log.errorf("[DIAG] mapper hit on path=%s  exType=%s  status=%d  msg=%s",
+                path, e.getClass().getName(), diagStatus, e.getMessage());
+        // ─────────────────────────────────────────────────────────────────────
 
         if (e instanceof WebApplicationException wae) {
             Response original = wae.getResponse();
             int status = original.getStatus();
 
-            // If the endpoint already returned an ApiError body, pass it through unchanged
-            if (original.hasEntity() && original.getEntity() instanceof ApiError) {
-                return original;
+            // If the endpoint already returned a structured body (ApiError or a
+            // Map with a "message"), it's a deliberate business response — pass
+            // it through unchanged so its user-facing message is preserved.
+            if (original.hasEntity()) {
+                Object entity = original.getEntity();
+                if (entity instanceof ApiError) {
+                    return original;
+                }
+                if (entity instanceof java.util.Map<?, ?> m && m.containsKey("message")) {
+                    return Response.status(status)
+                            .type(MediaType.APPLICATION_JSON)
+                            .entity(ApiError.of(
+                                    m.containsKey("code") ? String.valueOf(m.get("code")) : ApiError.codeFor(status),
+                                    String.valueOf(m.get("message")), path))
+                            .build();
+                }
             }
 
-            // Prefer the message from the exception over the generic HTTP phrase
-            String message = e.getMessage() != null ? e.getMessage() : ApiError.codeFor(status);
-
+            // Otherwise this is a FRAMEWORK-generated exception (e.g. 406 Not
+            // Acceptable, 415 Unsupported Media Type, 404). Never surface its raw
+            // technical message ("The accept header value did not match…") to the
+            // user — use a clean French message keyed off the status.
             return Response.status(status)
                     .type(MediaType.APPLICATION_JSON)
-                    .entity(ApiError.of(ApiError.codeFor(status), message, path))
+                    .entity(ApiError.of(ApiError.codeFor(status), friendlyMessage(status), path))
                     .build();
         }
 

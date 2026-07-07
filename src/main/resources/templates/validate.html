@@ -10,7 +10,7 @@
 {/aside}
 
 {#default}
-    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:20px" id="validatePage">
+    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:var(--section-gap);" id="validatePage">
 
         <div class="page-header">
             <div>
@@ -19,26 +19,11 @@
             </div>
         </div>
 
-        <div class="panel" id="lastValidatedStrip" style="border-left:3px solid var(--ink-4);">
-            <div class="panel-body" style="padding:.85rem 1.35rem;">
-                <div class="flex items-center justify-between flex-wrap" style="gap:.75rem;">
-                    <div class="flex items-center" style="gap:.65rem;min-width:0;">
-                        <i data-lucide="history" style="width:15px;height:15px;color:var(--ink-3);flex-shrink:0;"></i>
-                        <span style="font-size:.68rem;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;">Dernier lot validé</span>
-                        <span id="lastValidatedFilename"
-                              style="font-size:.8rem;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Chargement…</span>
-                    </div>
-                    <div class="flex items-center" style="gap:.65rem;flex-shrink:0;">
-                        <span id="lastValidatedTime" style="font-size:.72rem;color:var(--ink-3);"></span>
-                        <span id="lastValidatedBadge"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
+            {#include fragments/last-strip stripId = "lastValidatedStrip" label = "Dernier lot validé" prefix = "lastValidated"/}
 
         <div class="panel">
             <div class="panel-head">
-                <h3><i data-lucide="list"></i>Batches à Valider</h3>
+                <h3><i data-lucide="list"></i>Lots à valider</h3>
                 <div id="validateSearchAnchor"></div>
             </div>
             <div id="uploadedBatchesContainer"></div>
@@ -55,7 +40,7 @@
          id="validateConfirmModal"
          onclick="if(event.target===this)cancelValidation()">
         <div class="bg-white w-full mx-4"
-             style="max-width:460px;border-top:4px solid var(--orange);box-shadow:0 24px 60px rgba(0,0,0,.3);">
+             style="max-width:460px;border-top:3px solid var(--orange);box-shadow:0 24px 60px rgba(0,0,0,.3);">
 
             <!-- Header -->
             <div class="px-5 py-3.5 flex items-center gap-2.5" style="border-bottom:1px solid var(--line-soft);">
@@ -82,14 +67,6 @@
                     </div>
                 </div>
 
-                <!-- Threshold-gated typed confirmation — shown only when records > 500 -->
-                <div class="hidden" id="confirmTypedWrap">
-                    <label style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);display:block;margin-bottom:6px;">
-                        Tapez VALIDER pour confirmer ce lot volumineux
-                    </label>
-                    <input type="text" id="confirmTypedInput" class="form-input" autocomplete="off"
-                           placeholder="VALIDER" oninput="onConfirmTypedInput()"/>
-                </div>
             </div>
 
             <!-- Footer -->

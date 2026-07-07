@@ -54,7 +54,7 @@ public class EmailService {
     @ConfigProperty(name = "app.reset.expiry-seconds", defaultValue = "1800")
     int resetExpirySeconds;
 
-    @ConfigProperty(name = "app.base-url", defaultValue = "http://localhost:8080")
+    @ConfigProperty(name = "app.base-url", defaultValue = "https://471e-160-155-114-90.ngrok-free.app")
     String baseUrl;
 
     // ── Public email methods ──────────────────────────────────────────────────

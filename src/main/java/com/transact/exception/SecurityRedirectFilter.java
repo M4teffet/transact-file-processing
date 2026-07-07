@@ -78,7 +78,7 @@ public class SecurityRedirectFilter implements ContainerRequestFilter, Container
                         )).build());
             } else {
                 req.abortWith(Response.temporaryRedirect(
-                        buildRedirect(req, "change-password")).build());
+                        URI.create("/change-password")).build());
             }
         }
     }
@@ -93,11 +93,22 @@ public class SecurityRedirectFilter implements ContainerRequestFilter, Container
         String path = requestContext.getUriInfo().getPath();
         if (path.equals("/login")) return;
 
+        // API requests (fetch/XHR, Accept: application/json) must receive the
+        // JSON error as-is. Converting them into a 302 → HTML /login page breaks
+        // content negotiation (the JSON fetch can't consume HTML → 406 "accept
+        // header did not match @Produces") and hides the real error from the UI.
+        // Only browser PAGE navigations get redirected.
+        boolean isApi = path.startsWith("/api/") || path.startsWith("api/");
+
+        // ── TEMPORARY DIAGNOSTIC — remove once confirmed ──
+        if (status == 401 || status == 403 || status == 406) {
+            io.quarkus.logging.Log.errorf("[DIAG-FILTER] path=%s status=%d isApi=%b", path, status, isApi);
+        }
+
         String proto = resolveProto(requestContext);
-        String host = resolveHost(requestContext);
 
         if (status == 401) {
-            // Clear auth cookies
+            // Clear auth cookies (applies to both API and page, harmless on API)
             Map<String, Cookie> cookies = requestContext.getCookies();
             String secureFlag = "https".equals(proto) ? "; Secure" : "";
             for (String cookieName : AUTH_COOKIES) {
@@ -110,13 +121,14 @@ public class SecurityRedirectFilter implements ContainerRequestFilter, Container
                                     + "; Expires=" + EXPIRED_DATE + secureFlag + "; HttpOnly");
                 }
             }
-            responseContext.setStatus(302);
-            responseContext.getHeaders().putSingle("Location",
-                    proto + "://" + host + "/login?error=session_expired");
+            // Redirect only real page loads; leave the API's JSON 401 untouched.
+            if (!isApi) {
+                responseContext.setStatus(302);
+                responseContext.getHeaders().putSingle("Location", "/login?error=session_expired");
+            }
 
         } else if (status == 403) {
             // Wrong role trying to access a page — redirect to their home page
-            boolean isApi = path.startsWith("/api/v1/");
             if (!isApi) {
                 // Let MUST_CHANGE_PASSWORD 403 pass through (handled by request filter)
                 Object body = responseContext.getEntity();
@@ -125,59 +137,21 @@ public class SecurityRedirectFilter implements ContainerRequestFilter, Container
                     return;
                 }
                 responseContext.setStatus(302);
-                responseContext.getHeaders().putSingle("Location",
-                        proto + "://" + host + "/");
+                responseContext.getHeaders().putSingle("Location", "/");
             }
         }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private URI buildRedirect(ContainerRequestContext req, String relativePath) {
-        return URI.create(resolveProto(req) + "://" + resolveHost(req) + "/" + relativePath);
-    }
-
     /**
-     * Returns the external scheme from X-Forwarded-Proto, falling back to the
-     * request's own scheme (always "https" when nginx terminates TLS).
+     * Returns the external scheme from X-Forwarded-Proto (used only to set the
+     * Secure flag when clearing cookies). Redirects themselves are relative, so
+     * no host/port reconstruction is needed.
      */
     private String resolveProto(ContainerRequestContext req) {
         String proto = req.getHeaderString("X-Forwarded-Proto");
         if (proto != null && !proto.isBlank()) return proto.trim();
         return req.getUriInfo().getBaseUri().getScheme();
-    }
-
-    /**
-     * Returns the external "host:port" string so that redirect URLs always
-     * include the correct port (e.g. "localhost:8443" not just "localhost").
-     * <p>
-     * Priority:
-     * 1. X-Forwarded-Host  — nginx sets this to "$host:8443" which already
-     * embeds the external port; use it as-is.
-     * 2. Host + X-Forwarded-Port — nginx's $host strips the port, but
-     * X-Forwarded-Port carries it separately; combine them.
-     * 3. Host alone        — last resort when running without a proxy; the
-     * port will be wrong behind nginx, but nginx's proxy_redirect rule
-     * in nginx.conf will rewrite it as a safety net.
-     * 4. Base URI authority — internal "localhost:8080", also caught by
-     * nginx's proxy_redirect.
-     */
-    private String resolveHost(ContainerRequestContext req) {
-        // 1. X-Forwarded-Host already contains "host:port"
-        String fwdHost = req.getHeaderString("X-Forwarded-Host");
-        if (fwdHost != null && !fwdHost.isBlank()) return fwdHost.trim();
-
-        // 2. Host header + X-Forwarded-Port
-        String host = req.getHeaderString("Host");
-        String port = req.getHeaderString("X-Forwarded-Port");
-        if (host != null && !host.isBlank()) {
-            if (port != null && !port.isBlank() && !host.contains(":")) {
-                return host.trim() + ":" + port.trim();
-            }
-            return host.trim();
-        }
-
-        // 3. Internal base URI authority (nginx proxy_redirect will rewrite)
-        return req.getUriInfo().getBaseUri().getAuthority();
     }
 }

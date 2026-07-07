@@ -38,6 +38,9 @@ public class OperatingWindowFilter implements ContainerRequestFilter {
     @Inject
     SecurityIdentity identity;
 
+    @org.eclipse.microprofile.config.inject.ConfigProperty(name = "app.internal-ports", defaultValue = "8443,8080")
+    java.util.List<Integer> internalPorts;
+
     @Override
     public void filter(ContainerRequestContext ctx) {
         String path = ctx.getUriInfo().getPath();
@@ -76,10 +79,37 @@ public class OperatingWindowFilter implements ContainerRequestFilter {
     private URI buildRedirect(ContainerRequestContext ctx, String relativePath) {
         String proto = ctx.getHeaderString("X-Forwarded-Proto");
         if (proto == null || proto.isBlank()) proto = ctx.getUriInfo().getBaseUri().getScheme();
-        // Host header already contains host:port (e.g. 10.213.61.117:8443)
+
         String host = ctx.getHeaderString("X-Forwarded-Host");
         if (host == null || host.isBlank()) host = ctx.getHeaderString("Host");
-        if (host == null || host.isBlank()) host = ctx.getUriInfo().getBaseUri().getHost();
+        if (host == null || host.isBlank()) host = ctx.getUriInfo().getBaseUri().getAuthority();
+        if (host != null) {
+            host = host.trim();
+            int comma = host.indexOf(',');
+            if (comma >= 0) host = host.substring(0, comma).trim();
+            host = stripInternalPort(host, proto);
+        }
         return URI.create(proto + "://" + host + "/" + relativePath);
+    }
+
+    /**
+     * Remove the port when it's the scheme default (443/80) or the app's internal
+     * listen port (8443/8080), so an HTTPS tunnel like ngrok — which forwards
+     * https://xxx.ngrok-free.app → https://localhost:8443 — never leaks :8443
+     * into the public redirect URL.
+     */
+    private String stripInternalPort(String host, String proto) {
+        int colon = host.lastIndexOf(':');
+        if (colon < 0 || host.indexOf(':') != colon) return host; // no port / IPv6
+        String name = host.substring(0, colon);
+        int port;
+        try {
+            port = Integer.parseInt(host.substring(colon + 1));
+        } catch (NumberFormatException e) {
+            return host;
+        }
+        int defaultPort = "https".equalsIgnoreCase(proto) ? 443 : 80;
+        if (port == defaultPort || internalPorts.contains(port)) return name;
+        return host;
     }
 }

@@ -86,7 +86,7 @@
                         var hint = $('otpHintMsg');
                         if (hint) hint.textContent = 'Un code à 6 chiffres a été envoyé à votre adresse e-mail.';
                         showStep('step-otp');
-                        startTimer(300);
+                        startTimer(120);
                         var inp = $('otpCode');
                         if (inp) inp.focus();
                         return;

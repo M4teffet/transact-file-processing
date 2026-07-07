@@ -11,7 +11,7 @@
 {/aside}
 
 {#default}
-    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:20px">
+    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:var(--section-gap);">
 
         <div class="page-header">
             <div>
@@ -20,22 +20,7 @@
             </div>
         </div>
 
-        <div class="panel" id="lastBatchStrip" style="border-left:3px solid var(--ink-4);">
-            <div class="panel-body" style="padding:.85rem 1.35rem;">
-                <div class="flex items-center justify-between flex-wrap" style="gap:.75rem;">
-                    <div class="flex items-center" style="gap:.65rem;min-width:0;">
-                        <i data-lucide="history" style="width:15px;height:15px;color:var(--ink-3);flex-shrink:0;"></i>
-                        <span style="font-size:.68rem;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;">Dernier batch</span>
-                        <span id="lastBatchFilename"
-                              style="font-size:.8rem;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Chargement…</span>
-                    </div>
-                    <div class="flex items-center" style="gap:.65rem;flex-shrink:0;">
-                        <span id="lastBatchTime" style="font-size:.72rem;color:var(--ink-3);"></span>
-                        <span id="lastBatchBadge"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
+            {#include fragments/last-strip stripId = "lastBatchStrip" label = "Dernier lot" prefix = "lastBatch"/}
 
         <div class="panel">
             <div class="panel-head">
@@ -68,8 +53,8 @@
             </div>
 
                     <div class="hidden p-4 space-y-4" id="fieldsContent" style="border-top:1px solid var(--line);">
-                        <div class="flex justify-between items-center"
-                             style="padding:10px 14px;background:var(--status-validated-bg);border:1px solid var(--status-validated-border);color:var(--status-validated-text);font-size:.8rem;">
+                        <div class="flex justify-between items-center alert alert-info"
+                             style="padding-top:10px;padding-bottom:10px;">
                     <div class="truncate mr-4">
                         <span style="font-weight:700;">En-tête CSV requis :</span>
                         <code class="mono ml-2 px-2 py-1 text-xs select-all"
@@ -91,7 +76,7 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <h4 style="font-size:.62rem;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;">
+                        <h4 class="micro-label" style="margin-bottom:.5rem;">
                             Champs
                             Obligatoires</h4>
                         <div class="min-h-[120px] p-2"
@@ -99,7 +84,7 @@
                              id="mandatory-fields"></div>
                     </div>
                     <div>
-                        <h4 style="font-size:.62rem;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;">
+                        <h4 class="micro-label" style="margin-bottom:.5rem;">
                             Champs
                             Optionnels</h4>
                         <div class="min-h-[120px] p-2"

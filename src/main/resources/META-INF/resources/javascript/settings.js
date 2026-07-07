@@ -308,7 +308,7 @@ function renderApplicationSchema(data) {
 
     const row = (f, req) => `
         <tr class="${req ? 'bg-orange-50/40' : ''}">
-            <td style="padding:6px 10px;border-bottom:0.5px solid #f1f5f9;white-space:nowrap">
+            <td style="padding:6px 10px;border-bottom:1px solid var(--line-soft);white-space:nowrap">
                 <div style="display:flex;align-items:center;gap:6px">
                     ${req
         ? `<span style="font-size:11px;color:#C65B00;font-weight:700;line-height:1">*</span>`
@@ -316,16 +316,14 @@ function renderApplicationSchema(data) {
                     <span style="font-size:11px;font-family:monospace;color:${req ? '#92400e' : '#4b5563'};font-weight:${req ? '500' : '400'}">${f.fieldName}</span>
                 </div>
             </td>
-            <td style="padding:6px 10px;border-bottom:0.5px solid #f1f5f9;font-size:11px;color:#6b7280">${f.description || f.fieldName}</td>
-            <td style="padding:6px 10px;border-bottom:0.5px solid #f1f5f9">
+            <td style="padding:6px 10px;border-bottom:1px solid var(--line-soft);font-size:11px;color:#6b7280">${f.description || f.fieldName}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--line-soft)">
                 <span style="font-size:10px;font-weight:500;font-family:monospace;
                              background:#f3f4f6;color:#374151;padding:1px 5px;border-radius:3px">${f.type || 'STRING'}</span>
             </td>
-            <td style="padding:6px 10px;border-bottom:0.5px solid #f1f5f9;text-align:center">
+            <td style="padding:6px 10px;border-bottom:1px solid var(--line-soft);text-align:center">
                 ${req
-        ? `<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;
-                                   font-size:10px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;
-                                   background:#fff7ed;color:#c2410c;border:0.5px solid rgba(194,65,12,.25)">Requis</span>`
+        ? `<span class="badge badge-processing">Requis</span>`
         : `<span style="font-size:10px;color:#9ca3af">—</span>`}
             </td>
         </tr>`;
@@ -339,10 +337,10 @@ function renderApplicationSchema(data) {
                 <span style="font-size:10px;color:#9ca3af">·</span>
                 <span style="font-size:10px;color:#6b7280">${optional.length} optionnel${optional.length !== 1 ? 's' : ''}</span>
             </div>
-            <div style="overflow-x:auto;border:0.5px solid #e5e7eb">
+            <div style="overflow-x:auto;border:1px solid var(--line)">
                 <table style="width:100%;border-collapse:collapse">
                     <thead>
-                        <tr style="border-bottom:1px solid #e5e7eb;background:#f9fafb">
+                        <tr style="border-bottom:1px solid var(--line);background:#f9fafb">
                             <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:500;
                                        color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Champ T24</th>
                             <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:500;
@@ -817,19 +815,15 @@ async function secToggleLock(username, lock) {
 
         // Status badge
         if (badge) {
-            badge.style.fontWeight = '700';
             if (!s.enabled) {
                 badge.textContent = 'Désactivée';
-                badge.className = 'text-[10px] tracking-widest uppercase px-2 py-0.5 border';
-                badge.style.cssText += 'background:var(--status-pending-bg);color:var(--status-pending-text);border-color:var(--status-pending-border);';
+                badge.className = 'badge badge-pending';
             } else if (openNow) {
                 badge.textContent = s.adminKeepOpen ? 'Ouvert (maintenu)' : 'Ouvert';
-                badge.className = 'text-[10px] tracking-widest uppercase px-2 py-0.5 border';
-                badge.style.cssText += 'background:var(--status-success-bg);color:var(--status-success-text);border-color:var(--status-success-border);';
+                badge.className = 'badge badge-success';
             } else {
                 badge.textContent = 'Fermé';
-                badge.className = 'text-[10px] tracking-widest uppercase px-2 py-0.5 border';
-                badge.style.cssText += 'background:var(--status-error-bg);color:var(--status-error-text);border-color:var(--status-error-border);';
+                badge.className = 'badge badge-error';
             }
         }
 
@@ -871,6 +865,23 @@ async function secToggleLock(username, lock) {
                 }
             });
         });
+
+        // A11y: keep aria-selected in sync and support arrow-key navigation
+        const tablist = document.getElementById('settings-tabs');
+        const tabs = Array.from(document.querySelectorAll('#settings-tabs [role="tab"]'));
+        const syncAria = () => tabs.forEach(t =>
+            t.setAttribute('aria-selected', t.classList.contains('active') ? 'true' : 'false'));
+        tabs.forEach(t => t.addEventListener('click', () => setTimeout(syncAria, 0)));
+        if (tablist) tablist.addEventListener('keydown', e => {
+            if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+            const i = tabs.indexOf(document.activeElement);
+            if (i === -1) return;
+            e.preventDefault();
+            const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+            next.focus();
+            next.click();
+        });
+        syncAria();
 
         // Toggle listeners (attached once DOM is ready)
         const enabledT = document.getElementById('windowEnabledToggle');

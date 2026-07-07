@@ -10,7 +10,7 @@
 {/aside}
 
 {#default}
-<div class="max-w-7xl mx-auto space-y-8">
+    <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:var(--section-gap);">
 
     <!-- Page header -->
     <div class="page-header">
@@ -22,18 +22,17 @@
         <div class="flex items-center gap-4">
             <!-- Auto-refresh toggle -->
             <div class="flex items-center gap-3">
-                <span class="uppercase"
-                      style="font-size:.7rem;letter-spacing:.1em;color:var(--ink-3);">Auto-refresh</span>
+                <span class="micro-label">Auto-refresh</span>
                 <button aria-pressed="true"
-                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                        class="relative inline-flex h-6 w-11 items-center transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
                         id="toggleAutoRefresh">
-                    <span class="absolute inset-0 rounded-full bg-orange-600 transition-colors"
+                    <span class="absolute inset-0 bg-orange-600 transition-colors"
                           id="autoRefreshBg"></span>
-                    <span class="absolute left-0.5 top-0.5 h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform translate-x-5"
+                    <span class="absolute left-0.5 top-0.5 h-5 w-5 transform bg-white transition-transform translate-x-5"
                           id="autoRefreshKnob"></span>
                 </button>
                 <span class="font-semibold text-orange-600" id="autoRefreshIndicator"
-                      style="font-size:.7rem;letter-spacing:.1em;">ON</span>
+                      style="font-size:var(--text-2xs);letter-spacing:var(--track-micro);">ON</span>
             </div>
 
             <!-- Bouton Actualiser -->
@@ -149,8 +148,7 @@
 
             <div class="space-y-4" id="featuresList"></div>
 
-            <div class="hidden mt-4 p-4 text-red-700 text-sm" id="featuresError"
-                 style="background:var(--status-error-bg);border:1.5px solid var(--status-error-border);color:var(--status-error-text);">
+            <div class="hidden mt-4 alert alert-error" id="featuresError">
                 Impossible de charger les fonctionnalités. Réessayez plus tard.
             </div>
         </div>
@@ -195,11 +193,8 @@
                 </select>
 
                 <!-- Bouton rafraîchir -->
-                <button class="p-2 transition" id="refreshLogsBtn"
-                        onmouseout="this.style.borderColor='var(--line)';this.style.color='var(--ink-3)';"
-                        onmouseover="this.style.borderColor='var(--ink)';this.style.color='var(--ink)';"
-                        style="border:1.5px solid var(--line);color:var(--ink-3);">
-                    <i class="w-4 h-4" data-lucide="refresh-cw"></i>
+                <button class="icon-btn" id="refreshLogsBtn" aria-label="Rafraîchir les logs">
+                    <i data-lucide="refresh-cw"></i>
                 </button>
             </div>
         </div>
@@ -223,8 +218,7 @@
                 <p class="text-xs mt-2">Sélectionnez un batch ou attendez qu'un traitement démarre.</p>
             </div>
 
-            <div class="hidden mt-4 p-4 text-red-700 text-sm" id="processingLogsError"
-                 style="background:var(--status-error-bg);border:1.5px solid var(--status-error-border);color:var(--status-error-text);">
+            <div class="hidden mt-4 alert alert-error" id="processingLogsError">
                 Impossible de charger les logs de traitement.
             </div>
 
@@ -288,29 +282,20 @@
                 if (!res || !res.ok) throw new Error();
                 var d = await res.json();
 
-                var label, color, bg, border;
+                var label, badgeClass;
                 if (!d.enabled) {
                     label = 'Désactivée';
-                    color = 'var(--status-pending-text)';
-                    bg = 'var(--status-pending-bg)';
-                    border = 'var(--status-pending-border)';
+                    badgeClass = 'badge-pending';
                 } else if (d.openNow) {
                     label = d.adminKeepOpen ? 'Ouvert (maintenu)' : 'Ouvert';
-                    color = 'var(--status-success-text)';
-                    bg = 'var(--status-success-bg)';
-                    border = 'var(--status-success-border)';
+                    badgeClass = 'badge-success';
                 } else {
                     label = 'Fermé';
-                    color = 'var(--status-error-text)';
-                    bg = 'var(--status-error-bg)';
-                    border = 'var(--status-error-border)';
+                    badgeClass = 'badge-error';
                 }
 
                 statusEl.innerHTML =
-                    '<span style="display:inline-block;padding:3px 10px;font-size:.68rem;font-weight:700;' +
-                    'letter-spacing:.08em;text-transform:uppercase;' +
-                    'background:' + bg + ';border:1px solid ' + border + ';color:' + color + ';">' +
-                    label + '</span>' +
+                    '<span class="badge ' + badgeClass + '">' + label + '</span>' +
                     (!d.enabled ? '' :
                         '<span style="font-size:.75rem;color:var(--ink-3);margin-left:.5rem;">' +
                         String(d.openHour).padStart(2,'0') + 'h00 – ' +

@@ -5,7 +5,7 @@
 {/aside}
 {#default}
 
-<div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:20px">
+<div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:var(--section-gap);">
 
     <!-- Page header -->
     <div class="page-header">
@@ -18,42 +18,42 @@
                 <i data-lucide="refresh-cw" style="width:13px;height:13px"></i>Actualiser
             </button>
             <button class="btn-flux btn-flux-primary" onclick="exportAudit()">
-                <i data-lucide="download" style="width:13px;height:13px"></i>Exporter CSV
+                <i data-lucide="file-text" style="width:13px;height:13px"></i>Exporter (HTML)
             </button>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="flux-card">
-        <div class="flux-card-header">
-            <i data-lucide="filter" style="width:15px;height:15px;color:var(--orange)"></i>
-            <span class="flux-card-title">Filtres</span>
+    <div class="panel">
+        <div class="panel-head">
+            <h3><i data-lucide="filter"></i> Filtres</h3>
         </div>
-        <div class="flux-card-body">
+        <div class="panel-body">
             <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div>
-                    <label class="flux-label">Type d'action</label>
-                    <select id="auditActionFilter" onchange="loadAudit()" class="flux-select">
+                    <label class="form-label">Type d'action</label>
+                    <select id="auditActionFilter" onchange="loadAudit()" class="form-select">
                         <option value="">Toutes les actions</option>
                     </select>
                 </div>
                 <div>
-                    <label class="flux-label">Effectué par</label>
-                    <input id="auditPerformedBy" oninput="debouncedLoad()" placeholder="Utilisateur…"
-                           class="flux-input"/>
+                    <label class="form-label">Effectué par</label>
+                    <select id="auditPerformedBy" onchange="loadAudit()" class="form-select">
+                        <option value="">Tous les utilisateurs</option>
+                    </select>
                 </div>
                 <div>
-                    <label class="flux-label">Cible</label>
+                    <label class="form-label">Cible</label>
                     <input id="auditTarget" oninput="debouncedLoad()" placeholder="Utilisateur, lot…"
-                           class="flux-input"/>
+                           class="form-input"/>
                 </div>
                 <div>
-                    <label class="flux-label">Du</label>
-                    <input id="auditFrom" type="date" onchange="loadAudit()" class="flux-input"/>
+                    <label class="form-label">Du</label>
+                    <input id="auditFrom" type="date" onchange="loadAudit()" class="form-input"/>
                 </div>
                 <div>
-                    <label class="flux-label">Au</label>
-                    <input id="auditTo" type="date" onchange="loadAudit()" class="flux-input"/>
+                    <label class="form-label">Au</label>
+                    <input id="auditTo" type="date" onchange="loadAudit()" class="form-input"/>
                 </div>
                 <div style="display:flex;align-items:flex-end;gap:6px">
                     <button class="btn-flux" onclick="clearAuditFilters()" style="flex:1;justify-content:center">
@@ -65,28 +65,25 @@
     </div>
 
     <!-- Table -->
-    <div class="flux-card">
-        <div class="flux-card-header" style="justify-content:space-between">
-            <div style="display:flex;align-items:center;gap:8px">
-                <i data-lucide="shield-check" style="width:15px;height:15px;color:var(--orange)"></i>
-                <span class="flux-card-title">Événements</span>
-            </div>
-            <span id="auditCount" style="font-size:11px;color:var(--ink-3)"></span>
+    <div class="panel">
+        <div class="panel-head" style="display:flex;align-items:center;justify-content:space-between">
+            <h3><i data-lucide="shield-check"></i> Événements</h3>
+            <span id="auditCount" style="font-size:var(--text-xs);color:var(--ink-3)"></span>
         </div>
 
         <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse">
+            <table class="data-table">
                 <thead>
-                    <tr style="border-bottom:0.5px solid var(--line);background:var(--surface-2)">
-                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Date</th>
-                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Action</th>
-                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Effectué par</th>
-                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Cible</th>
-                        <th style="padding:9px 16px;text-align:left;font-size:10px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Description</th>
+                    <tr>
+                        <th>Date</th>
+                        <th>Action</th>
+                        <th>Effectué par</th>
+                        <th>Cible</th>
+                        <th>Description</th>
                     </tr>
                 </thead>
                 <tbody id="auditTbody">
-                    <tr><td colspan="5" style="padding:3rem;text-align:center;font-size:12px;color:var(--ink-3)">Chargement…</td></tr>
+                    <tr><td colspan="5" style="padding:0"><div class="state-block state-compact"><svg class="state-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg><span>Chargement…</span></div></td></tr>
                 </tbody>
             </table>
         </div>

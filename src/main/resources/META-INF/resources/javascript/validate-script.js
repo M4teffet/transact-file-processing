@@ -227,23 +227,20 @@ const renderUploadedBatches = () => {
 
 /**
  * ACTION : VALIDATION
+ * Four-eyes control: the AUTHORISER reviews the batch (filename, application,
+ * uploader, record count) in the confirm modal, then approves. The approval
+ * itself is the second pair of eyes — no extra typed step.
  */
-/**
- * Batches over this record count require the authoriser to type "VALIDER"
- * before the confirm button is enabled (README: threshold-gated confirmation).
- */
-const LARGE_BATCH_THRESHOLD = 500;
 let _pendingValidationId = null;
-let _pendingRequiresTypedConfirm = false;
 
 const validateBatchNow = (id) => {
     const batch = uploadedBatches.find(b => b.batchId === id);
     if (!batch) return;
 
     _pendingValidationId = id;
-    _pendingRequiresTypedConfirm = (batch.totalRecords || 0) > LARGE_BATCH_THRESHOLD;
 
-    // Populate modal content
+    // Populate the review modal — the authoriser sees exactly what they are
+    // approving (the second pair of eyes) before it is sent to T24.
     document.getElementById('confirmFilename').textContent   = batch.originalFilename || 'N/A';
     document.getElementById('confirmApp').textContent        = batch.application || 'N/A';
     document.getElementById('confirmUploadedBy').textContent = batch.uploadedBy || 'N/A';
@@ -251,47 +248,17 @@ const validateBatchNow = (id) => {
         ? batch.totalRecords.toLocaleString('fr-FR')
         : '—';
 
-    const typedWrap = document.getElementById('confirmTypedWrap');
-    const typedInput = document.getElementById('confirmTypedInput');
-    if (typedInput) typedInput.value = '';
-    if (typedWrap) typedWrap.classList.toggle('hidden', !_pendingRequiresTypedConfirm);
-    updateConfirmValidateBtnState();
-
     if (typeof openModal === 'function') openModal('validateConfirmModal');
-};
-
-const onConfirmTypedInput = () => updateConfirmValidateBtnState();
-window.onConfirmTypedInput = onConfirmTypedInput;
-
-const updateConfirmValidateBtnState = () => {
-    const btn = document.getElementById('confirmValidateBtn');
-    if (!btn) return;
-    if (!_pendingRequiresTypedConfirm) {
-        btn.disabled = false;
-        btn.style.opacity = '';
-        btn.style.cursor = '';
-        return;
-    }
-    const typedInput = document.getElementById('confirmTypedInput');
-    const matches = (typedInput?.value || '').trim() === 'VALIDER';
-    btn.disabled = !matches;
-    btn.style.opacity = matches ? '' : '.5';
-    btn.style.cursor = matches ? '' : 'not-allowed';
 };
 
 const cancelValidation = () => {
     _pendingValidationId = null;
-    _pendingRequiresTypedConfirm = false;
     if (typeof closeModal === 'function') closeModal('validateConfirmModal');
 };
 
 const confirmValidation = async () => {
     const id = _pendingValidationId;
     if (!id) return;
-
-    // Defense in depth — the button is disabled client-side, but never trust that alone.
-    const typedInput = document.getElementById('confirmTypedInput');
-    if (_pendingRequiresTypedConfirm && (typedInput?.value || '').trim() !== 'VALIDER') return;
 
     const confirmBtn = document.getElementById('confirmValidateBtn');
     const confirmText = document.getElementById('confirmValidateBtnText');

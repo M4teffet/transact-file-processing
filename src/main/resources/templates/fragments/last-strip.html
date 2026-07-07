@@ -1,0 +1,24 @@
+{! Shared "last item" recap strip (upload → last imported lot,
+    validate → last validated lot).
+    Params: stripId (container id), label (uppercase micro label),
+            prefix (id prefix for the three dynamic spans:
+                    {prefix}Filename, {prefix}Time, {prefix}Badge)
+    Usage:  {#include fragments/last-strip stripId="lastBatchStrip"
+             label="Dernier lot" prefix="lastBatch"/}
+!}
+<div class="panel" id="{stripId}" style="border-left:3px solid var(--ink-4);">
+    <div class="panel-body" style="padding:.85rem var(--panel-pad-x);">
+        <div class="flex items-center justify-between flex-wrap" style="gap:.75rem;">
+            <div class="flex items-center" style="gap:.65rem;min-width:0;">
+                <i data-lucide="history" style="width:15px;height:15px;color:var(--ink-3);flex-shrink:0;"></i>
+                <span class="micro-label" style="flex-shrink:0;">{label}</span>
+                <span id="{prefix}Filename"
+                      style="font-size:var(--text-sm);font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Chargement…</span>
+            </div>
+            <div class="flex items-center" style="gap:.65rem;flex-shrink:0;">
+                <span id="{prefix}Time" style="font-size:var(--text-xs);color:var(--ink-3);"></span>
+                <span id="{prefix}Badge"></span>
+            </div>
+        </div>
+    </div>
+</div>

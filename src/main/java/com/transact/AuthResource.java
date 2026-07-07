@@ -48,6 +48,31 @@ public class AuthResource {
     @Inject
     JsonWebToken jwt;
 
+    @jakarta.ws.rs.core.Context
+    jakarta.ws.rs.core.HttpHeaders httpHeaders;
+
+    /**
+     * Build the auth cookie with transport-aware flags so it works both on
+     * plain-HTTP local dev AND behind an HTTPS reverse proxy / tunnel (nginx,
+     * ngrok). Behind HTTPS the browser requires Secure + SameSite=None for the
+     * cookie to be stored and sent back; on plain HTTP those must NOT be set.
+     * The external scheme is taken from X-Forwarded-Proto (set by the proxy).
+     */
+    private jakarta.ws.rs.core.NewCookie buildAuthCookie(String token) {
+        String proto = httpHeaders != null ? httpHeaders.getHeaderString("X-Forwarded-Proto") : null;
+        boolean https = proto != null && proto.trim().equalsIgnoreCase("https");
+        return new jakarta.ws.rs.core.NewCookie.Builder("AuthToken")
+                .value(token)
+                .path("/")
+                .maxAge((int) tokenExpirySeconds)
+                .secure(https)
+                .httpOnly(true)
+                // SameSite=None (needs Secure) behind HTTPS proxies; Lax on plain HTTP.
+                .sameSite(https ? jakarta.ws.rs.core.NewCookie.SameSite.NONE
+                        : jakarta.ws.rs.core.NewCookie.SameSite.LAX)
+                .build();
+    }
+
     @ConfigProperty(name = "mp.jwt.expire-seconds", defaultValue = "3600")
     long tokenExpirySeconds;
 
@@ -211,14 +236,7 @@ public class AuthResource {
                 .expiresAt(Instant.now().plusSeconds(tokenExpirySeconds))
                 .sign();
 
-        jakarta.ws.rs.core.NewCookie authCookie = new jakarta.ws.rs.core.NewCookie.Builder("AuthToken")
-                .value(token)
-                .path("/")
-                .maxAge((int) tokenExpirySeconds)
-                .secure(false)   // true in production (HTTPS)
-                .httpOnly(true)
-                .sameSite(jakarta.ws.rs.core.NewCookie.SameSite.STRICT)
-                .build();
+        jakarta.ws.rs.core.NewCookie authCookie = buildAuthCookie(token);
 
         LOG.infof("[Auth] OTP verified — JWT issued for %s", user.username);
 
