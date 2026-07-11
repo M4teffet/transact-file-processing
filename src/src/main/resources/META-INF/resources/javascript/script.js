@@ -11,7 +11,7 @@ let state = {
     fieldOrder: [],
     mandatoryFields: [],
     optionalFields: [],
-    fullCsvData: { header: [], data: [] },
+    fullCsvData: {header: [], data: []},
     originalBtnHTML: ""
 };
 
@@ -169,9 +169,9 @@ function getDragAfterElement(container, y) {
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+        if (offset < 0 && offset > closest.offset) return {offset: offset, element: child};
         else return closest;
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }, {offset: Number.NEGATIVE_INFINITY}).element;
 }
 
 // Rebuild field lists & summary text
@@ -199,17 +199,21 @@ function toggleFieldsVisibility() {
     const isHidden = content.classList.toggle("hidden");
     chevron.classList.toggle("rotate-180", !isHidden);
 }
+
 window.toggleFieldsVisibility = toggleFieldsVisibility;
 
 // 5. CSV PREVIEW
 function clearCsvPreview() {
     const input = elements.csvInput();
     if (input) input.value = '';
-    state.fullCsvData = { header: [], data: [] };
+    state.fullCsvData = {header: [], data: []};
     elements.previewSection()?.classList.add("hidden");
 
     const sendBtn = elements.sendCsvBtn();
-    if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add("opacity-50"); }
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.classList.add("opacity-50");
+    }
 }
 
 function previewCsv(file) {
@@ -228,7 +232,7 @@ function previewCsv(file) {
             if (lines.length === 0) throw new Error("CSV vide");
             const header = parseCsvRow(lines[0]);
             const data = lines.slice(1).map(parseCsvRow);
-            state.fullCsvData = { header, data };
+            state.fullCsvData = {header, data};
 
             elements.previewHeader().innerHTML = '<tr style="background:var(--canvas);border-bottom:1px solid var(--line)">' + header.map(function (h) {
                 return '<th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;text-align:left;white-space:nowrap">' + h + '</th>';
@@ -252,7 +256,10 @@ function previewCsv(file) {
             }
 
             const sendBtn = elements.sendCsvBtn();
-            if (sendBtn) { sendBtn.disabled = false; sendBtn.classList.remove("opacity-50"); }
+            if (sendBtn) {
+                sendBtn.disabled = false;
+                sendBtn.classList.remove("opacity-50");
+            }
 
         } catch (err) {
             showAppSnackbar("Impossible de lire le CSV : " + err.message, "error");
@@ -301,8 +308,12 @@ function openFullCsvPreview() {
     document.body.appendChild(modal);
 
     modal.querySelector('#closeModal').onclick = () => modal.remove();
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') modal.remove(); }, { once: true });
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') modal.remove();
+    }, {once: true});
 }
 
 // ✅ NEW: Show validation error modal
@@ -382,8 +393,12 @@ function showValidationErrorModal(errorData) {
     const closeModal = () => modal.remove();
     modal.querySelector('#closeErrorModal').onclick = closeModal;
     modal.querySelector('#closeErrorModalBtn').onclick = closeModal;
-    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); }, { once: true });
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    }, {once: true});
 }
 
 // 6. UPLOAD ACTION (UPDATED)
@@ -397,13 +412,15 @@ async function handleUpload() {
 
     const filename = file.name;
     try {
-        const params = new URLSearchParams({ applicationName: app, filename });
+        const params = new URLSearchParams({applicationName: app, filename});
         const checkRes = await secureFetch(`${DEV_API_BASE}/inputter/check-filename?${params}`);
         if (checkRes.ok) {
             const checkData = await checkRes.json();
             if (checkData.exists) return showAppSnackbar(`Le fichier "${filename}" existe déjà.`, "error");
         }
-    } catch (err) { console.warn("Pre-check failed", err); }
+    } catch (err) {
+        console.warn("Pre-check failed", err);
+    }
 
     const formData = new FormData();
     formData.append("file", file);
@@ -413,7 +430,7 @@ async function handleUpload() {
         btn.disabled = true;
         btn.innerHTML = "⏳ Envoi...";
 
-        const res = await secureFetch(`${DEV_API_BASE}/inputter/upload`, { method: "POST", body: formData });
+        const res = await secureFetch(`${DEV_API_BASE}/inputter/upload`, {method: "POST", body: formData});
 
         // ✅ UPDATED: Better error handling
         if (!res.ok) {
@@ -424,7 +441,7 @@ async function handleUpload() {
                 errorData = await res.json();
             } else {
                 const text = await res.text();
-                errorData = { error: text || `Erreur ${res.status}` };
+                errorData = {error: text || `Erreur ${res.status}`};
             }
 
             // ✅ Show modal for validation errors
@@ -525,22 +542,37 @@ function initUploadPage() {
     loadLastBatch();
 
     elements.appSelect()?.addEventListener("change", (e) => {
-        if (e.target.value) { loadFields(e.target.value); clearCsvPreview(); }
-        else { elements.fieldsSection()?.classList.add("hidden"); elements.uploadSection()?.classList.add("hidden"); clearCsvPreview(); }
+        if (e.target.value) {
+            loadFields(e.target.value);
+            clearCsvPreview();
+        } else {
+            elements.fieldsSection()?.classList.add("hidden");
+            elements.uploadSection()?.classList.add("hidden");
+            clearCsvPreview();
+        }
     });
 
     elements.csvInput()?.addEventListener("change", (e) => {
         if (e.target.files.length > 0) previewCsv(e.target.files[0]);
     });
 
-    elements.deleteCsvBtn()?.addEventListener('click', (e) => { e.preventDefault(); clearCsvPreview(); });
-    elements.fullPreviewBtn()?.addEventListener('click', (e) => { e.preventDefault(); openFullCsvPreview(); });
+    elements.deleteCsvBtn()?.addEventListener('click', (e) => {
+        e.preventDefault();
+        clearCsvPreview();
+    });
+    elements.fullPreviewBtn()?.addEventListener('click', (e) => {
+        e.preventDefault();
+        openFullCsvPreview();
+    });
 
     // Drag & Drop CSV
     const zone = elements.csvDropZone();
     if (zone) {
-        ['dragenter','dragover','dragleave','drop'].forEach(name => {
-            zone.addEventListener(name, e => { e.preventDefault(); e.stopPropagation(); });
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
+            zone.addEventListener(name, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
         });
 
         zone.addEventListener("dragover", () => zone.classList.add("bg-orange-50", "border-orange-400"));

@@ -2,7 +2,7 @@
 const API_BASE = "/api/v1";
 
 /**
-// DECODE JWT
+ // DECODE JWT
  */
 const Auth = {
     getPayload() {
@@ -14,7 +14,7 @@ const Auth = {
             const name = "AuthToken=";
             const decodedCookie = decodeURIComponent(document.cookie);
             const ca = decodedCookie.split(';');
-            for(let i = 0; i < ca.length; i++) {
+            for (let i = 0; i < ca.length; i++) {
                 let c = ca[i].trim();
                 if (c.indexOf(name) == 0) {
                     token = c.substring(name.length, c.length);
@@ -71,7 +71,7 @@ function getCountryName(countryCode) {
     }
 
     try {
-        const regionNames = new Intl.DisplayNames(['fr'], { type: 'region' });
+        const regionNames = new Intl.DisplayNames(['fr'], {type: 'region'});
         return regionNames.of(countryCode.toUpperCase()) || countryCode;
     } catch (e) {
         return countryCode;
@@ -259,7 +259,7 @@ const bustCache = (url) => {
 };
 
 /**
-// SNACKBAR (UPDATED)
+ // SNACKBAR (UPDATED)
  */
 const showSnackbar = (msg, type = "info", actionLabel, actionFn) => {
     const container = document.getElementById("snackbar-container");
@@ -290,6 +290,7 @@ const showSnackbar = (msg, type = "info", actionLabel, actionFn) => {
 
     // Dismiss logic
     let dismissed = false;
+
     function dismiss() {
         if (dismissed) return;
         dismissed = true;
@@ -370,7 +371,8 @@ const secureFetch = async (url, options = {}) => {
             window.location.href = "/login?error=session_expired";
 
             // Prevent any further processing in promise chain
-            return new Promise(() => {});
+            return new Promise(() => {
+            });
         }
 
         return response;
@@ -422,7 +424,9 @@ const loadStats = async (mapping) => {
                     // Flash animation on change
                     el.style.transition = 'color .3s';
                     el.style.color = '#FF7900';
-                    setTimeout(() => { el.style.color = ''; }, 600);
+                    setTimeout(() => {
+                        el.style.color = '';
+                    }, 600);
                 }
             }
         });
@@ -743,7 +747,7 @@ const downloadBatchNonNull = async (batchId) => {
         if (!res) return;
         if (!res.ok) throw new Error(`HTTP ${res.status}: Erreur API`);
 
-        const { details } = await res.json();
+        const {details} = await res.json();
 
         if (!details?.length) return showSnackbar("Aucune donnée à télécharger", "error");
 
@@ -797,19 +801,25 @@ const downloadBatchNonNull = async (batchId) => {
 // -----------------------------
 const openModal = (id) => {
     const m = document.getElementById(id);
-    if (m) { m.classList.remove("hidden"); m.classList.add("flex"); }
+    if (m) {
+        m.classList.remove("hidden");
+        m.classList.add("flex");
+    }
 };
 
 const closeModal = (id) => {
     const m = document.getElementById(id);
-    if (m) { m.classList.add("hidden"); m.classList.remove("flex"); }
+    if (m) {
+        m.classList.add("hidden");
+        m.classList.remove("flex");
+    }
 };
 
 const logoutUser = async () => {
     sessionStorage.clear();
     localStorage.clear();
     try {
-        await fetch(`${API_BASE}/logout`, { method: "POST" });
+        await fetch(`${API_BASE}/logout`, {method: "POST"});
     } finally {
         window.location.href = "/login";
     }
@@ -887,7 +897,10 @@ const startStatsPolling = (mapping, intervalSeconds = 15) => {
 
     const stop = () => {
         active = false;
-        if (timer) { clearTimeout(timer); timer = null; }
+        if (timer) {
+            clearTimeout(timer);
+            timer = null;
+        }
         document.removeEventListener('visibilitychange', onVisibility);
     };
 

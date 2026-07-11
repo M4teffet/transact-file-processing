@@ -6,10 +6,10 @@
 {/aside}
 
 {#default}
-    <div class="max-w-6xl mx-auto pb-10">
+<div class="max-w-6xl mx-auto pb-10">
 
     <!-- Page header -->
-        <div class="page-header">
+    <div class="page-header">
         <div>
             <h2 class="page-title">Paramètres</h2>
             <p class="page-subtitle">Référentiels, utilisateurs et configuration</p>
@@ -18,34 +18,34 @@
 
     <!-- Tab navigation -->
     <div class="flex border-b border-gray-200 mb-6 gap-0" id="settings-tabs" role="tablist">
-        <button class="settings-tab active" data-tab="users" id="tab-users" role="tab" aria-selected="true"
-                aria-controls="panel-users">
+        <button aria-controls="panel-users" aria-selected="true" class="settings-tab active" data-tab="users" id="tab-users"
+                role="tab">
             <i class="w-3.5 h-3.5" data-lucide="users"></i> Utilisateurs
         </button>
-        <button class="settings-tab" data-tab="refs" id="tab-refs" role="tab" aria-selected="false"
-                aria-controls="panel-refs">
+        <button aria-controls="panel-refs" aria-selected="false" class="settings-tab" data-tab="refs" id="tab-refs"
+                role="tab">
             <i class="w-3.5 h-3.5" data-lucide="globe"></i> Pays &amp; Départements
         </button>
-        <button class="settings-tab" data-tab="apps" id="tab-apps" role="tab" aria-selected="false"
-                aria-controls="panel-apps">
+        <button aria-controls="panel-apps" aria-selected="false" class="settings-tab" data-tab="apps" id="tab-apps"
+                role="tab">
             <i class="w-3.5 h-3.5" data-lucide="layers"></i> Applications
         </button>
-        <button class="settings-tab" data-tab="security" id="tab-security" role="tab" aria-selected="false"
-                aria-controls="panel-security">
+        <button aria-controls="panel-security" aria-selected="false" class="settings-tab" data-tab="security" id="tab-security"
+                role="tab">
             <i class="w-3.5 h-3.5" data-lucide="shield"></i> Sécurité
         </button>
-        <button class="settings-tab" data-tab="window" id="tab-window" role="tab" aria-selected="false"
-                aria-controls="panel-window">
+        <button aria-controls="panel-window" aria-selected="false" class="settings-tab" data-tab="window" id="tab-window"
+                role="tab">
             <i class="w-3.5 h-3.5" data-lucide="clock"></i> Fenêtre de service
         </button>
-        <button class="settings-tab" data-tab="virsal" id="tab-virsal" role="tab" aria-selected="false"
-                aria-controls="panel-virsal">
+        <button aria-controls="panel-virsal" aria-selected="false" class="settings-tab" data-tab="virsal" id="tab-virsal"
+                role="tab">
             <i class="w-3.5 h-3.5" data-lucide="wallet"></i> Paie
         </button>
     </div>
 
     <!-- ── TAB: USERS ──────────────────────────────────────── -->
-        <div class="settings-panel" id="panel-users" role="tabpanel" aria-labelledby="tab-users">
+    <div aria-labelledby="tab-users" class="settings-panel" id="panel-users" role="tabpanel">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
             <!-- Create user -->
@@ -66,9 +66,9 @@
                             <div class="relative">
                                 <i class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
                                    data-lucide="mail"></i>
-                                <input class="form-input" style="padding-left:2rem;"
-                                       id="userEmail"
+                                <input class="form-input" id="userEmail"
                                        placeholder="prenom.nom@orangebank.com"
+                                       style="padding-left:2rem;"
                                        type="email">
                             </div>
                             <p class="text-[11px] mt-0.5 text-gray-400" id="emailHint">Requis pour MFA et
@@ -124,15 +124,15 @@
             <div class="panel overflow-hidden flex flex-col">
                 <div class="panel-head flex-shrink-0">
                     <h3><i data-lucide="users"></i> Utilisateurs</h3>
-                    <span style="font-size:var(--text-2xs);color:var(--ink-4);" id="users-count-badge"></span>
+                    <span id="users-count-badge" style="font-size:var(--text-2xs);color:var(--ink-4);"></span>
                 </div>
                 <div class="px-3 py-2 border-b border-gray-100 flex-shrink-0">
                     <div class="relative">
                         <i class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none"
                            data-lucide="search"></i>
-                        <input class="form-input form-input-sm" style="padding-left:1.75rem;"
-                               id="userSearchInput" oninput="filterUserList(this.value)"
-                               placeholder="Rechercher…"
+                        <input class="form-input form-input-sm" id="userSearchInput"
+                               oninput="filterUserList(this.value)" placeholder="Rechercher…"
+                               style="padding-left:1.75rem;"
                                type="text">
                     </div>
                 </div>
@@ -144,7 +144,7 @@
     </div>
 
     <!-- ── TAB: PAYS & DEPTS ───────────────────────────────── -->
-        <div class="settings-panel hidden" id="panel-refs" role="tabpanel" aria-labelledby="tab-refs">
+    <div aria-labelledby="tab-refs" class="settings-panel hidden" id="panel-refs" role="tabpanel">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
             <!-- Countries -->
@@ -224,11 +224,11 @@
     </div>
 
     <!-- ── TAB: APPLICATIONS ───────────────────────────────── -->
-        <div class="settings-panel hidden" id="panel-apps" role="tabpanel" aria-labelledby="tab-apps">
-            <div class="panel overflow-hidden">
-                <div class="panel-head">
-                    <h3><i data-lucide="layers"></i> Applications Core Banking</h3>
-                </div>
+    <div aria-labelledby="tab-apps" class="settings-panel hidden" id="panel-apps" role="tabpanel">
+        <div class="panel overflow-hidden">
+            <div class="panel-head">
+                <h3><i data-lucide="layers"></i> Applications Core Banking</h3>
+            </div>
             <div class="grid" style="grid-template-columns:200px 1fr;min-height:300px;">
                 <!-- App list -->
                 <div class="border-r border-gray-100 p-2">
@@ -239,9 +239,9 @@
                     <div>
                         <label class="form-label">Module</label>
                         <input class="form-input"
-                               style="background:var(--canvas);color:var(--ink-3);cursor:not-allowed;"
                                disabled
-                               id="appNameDisplay" placeholder="Sélectionnez un module">
+                               id="appNameDisplay"
+                               placeholder="Sélectionnez un module" style="background:var(--canvas);color:var(--ink-3);cursor:not-allowed;">
                     </div>
                     <div>
                         <label class="form-label">Description</label>
@@ -261,7 +261,7 @@
     </div>
 
     <!-- ── TAB: SÉCURITÉ ─────────────────────────────────────────── -->
-        <div class="settings-panel hidden" id="panel-security" role="tabpanel" aria-labelledby="tab-security">
+    <div aria-labelledby="tab-security" class="settings-panel hidden" id="panel-security" role="tabpanel">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
             <!-- Password Policy -->
@@ -301,8 +301,8 @@
                         <i class="w-3.5 h-3.5" data-lucide="save"></i> Enregistrer la politique
                     </button>
                     <div class="hidden alert alert-success text-center"
-                         style="font-size:var(--text-xs);padding:var(--sp-2);"
-                         id="pol-success">
+                         id="pol-success"
+                         style="font-size:var(--text-xs);padding:var(--sp-2);">
                         ✓ Politique enregistrée avec succès
                     </div>
                 </div>
@@ -312,8 +312,8 @@
             <div class="panel overflow-hidden">
                 <div class="panel-head">
                     <h3><i data-lucide="lock"></i> Gestion des accès</h3>
-                    <button class="p-1 text-gray-400 hover:text-orange-600 transition"
-                            onclick="loadSecurityUserList()" title="Rafraîchir" aria-label="Rafraîchir">
+                    <button aria-label="Rafraîchir"
+                            class="p-1 text-gray-400 hover:text-orange-600 transition" onclick="loadSecurityUserList()" title="Rafraîchir">
                         <i class="w-3.5 h-3.5" data-lucide="refresh-cw"></i>
                     </button>
                 </div>
@@ -328,7 +328,7 @@
         </div>
     </div>
     <!-- ── TAB: FENÊTRE DE SERVICE ────────────────────────── -->
-        <div class="settings-panel hidden" id="panel-window" role="tabpanel" aria-labelledby="tab-window">
+    <div aria-labelledby="tab-window" class="settings-panel hidden" id="panel-window" role="tabpanel">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
             <!-- Configuration card -->
@@ -451,28 +451,75 @@
         </div>
     </div>
 
-        <!-- ── TAB: PAIE (VIREMENT_SALAIRE transit accounts) ── -->
-        <div class="settings-panel hidden" id="panel-virsal" role="tabpanel" aria-labelledby="tab-virsal">
-            <div class="panel overflow-hidden">
-                <div class="panel-head">
-                    <h3><i data-lucide="wallet"></i> Comptes de transit — Virement Salaire</h3>
+    <!-- ── TAB: PAIE (VIREMENT_SALAIRE transit accounts) ── -->
+    <div aria-labelledby="tab-virsal" class="settings-panel hidden" id="panel-virsal" role="tabpanel">
+        <div class="panel overflow-hidden" style="margin-bottom:16px;">
+            <div class="panel-head">
+                <h3><i data-lucide="sliders-horizontal"></i> Paramètres — Virement Salaire</h3>
+            </div>
+            <div class="panel-body">
+                <p style="font-size:.78rem;color:var(--ink-3);margin-bottom:12px;">
+                    Configuration globale (stockée en base, plus aucune propriété fichier).
+                </p>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3" style="max-width:820px;">
+                    <div>
+                        <label class="micro-label" for="vs-billingDefaultMode">Mode par défaut</label>
+                        <select class="form-select" id="vs-billingDefaultMode">
+                            <option value="NONE">Gratuit</option>
+                            <option value="FLAT">Forfaitaire</option>
+                            <option value="STANDARD">Standard</option>
+                        </select>
+                    </div>
+                    <div><label class="micro-label" for="vs-perTransactionFee">Frais/transaction (Y)</label>
+                        <input class="form-select" id="vs-perTransactionFee" min="0" step="1" type="number"></div>
+                    <div><label class="micro-label" for="vs-flatFeeDefault">Forfait par défaut</label>
+                        <input class="form-select" id="vs-flatFeeDefault" min="0" step="1" type="number"></div>
+                    <div><label class="micro-label" for="vs-currency">Devise</label>
+                        <input class="form-select" id="vs-currency" type="text"></div>
+                    <div><label class="micro-label" for="vs-orderingBank">Banque ordonnatrice</label>
+                        <input class="form-select" id="vs-orderingBank" type="text"></div>
+                    <div><label class="micro-label" for="vs-ftTransactionType">Type txn FT</label>
+                        <input class="form-select" id="vs-ftTransactionType" type="text"></div>
+                    <div><label class="micro-label" for="vs-commissionCode">Code commission</label>
+                        <input class="form-select" id="vs-commissionCode" type="text"></div>
+                    <div><label class="micro-label" for="vs-snCountryCode">Pays → endpoint SN</label>
+                        <input class="form-select" id="vs-snCountryCode" type="text"></div>
+                    <div><label class="micro-label" for="vs-maxThreads">Threads max</label>
+                        <input class="form-select" id="vs-maxThreads" min="1" step="1" type="number"></div>
+                    <div><label class="micro-label" for="vs-requestIdMaxLength">Longueur max requestId</label>
+                        <input class="form-select" id="vs-requestIdMaxLength" min="1" step="1" type="number"></div>
                 </div>
-                <div class="panel-body">
-                    <p style="font-size:.78rem;color:var(--ink-3);margin-bottom:12px;">
-                        Compte interne de transit utilisé pour les virements de salaires, défini par société.
-                        La colonne <b>source</b> indique si la valeur vient de la base (DB) ou du fichier de
-                        configuration (CONFIG).
-                    </p>
-                    <div id="virsalList" class="space-y-2"></div>
+                <div style="margin-top:12px;">
+                    <label class="micro-label">Préfixes internes par pays</label>
+                    <div class="flex flex-wrap gap-2" id="vs-prefixes" style="margin-top:6px;"></div>
+                </div>
+                <div class="flex items-center gap-3" style="margin-top:14px;">
+                    <button class="btn-flux btn-flux-primary" id="vs-save" type="button">Enregistrer les paramètres
+                    </button>
+                    <span class="text-xs" id="vs-msg" style="color:var(--ink-4)"></span>
                 </div>
             </div>
         </div>
+        <div class="panel overflow-hidden">
+            <div class="panel-head">
+                <h3><i data-lucide="wallet"></i> Comptes de transit — Virement Salaire</h3>
+            </div>
+            <div class="panel-body">
+                <p style="font-size:.78rem;color:var(--ink-3);margin-bottom:12px;">
+                    Compte interne de transit utilisé pour les virements de salaires, défini par société.
+                </p>
+                <div class="space-y-2" id="virsalList"></div>
+            </div>
+        </div>
+    </div>
 
 </div>
 
 <style>
     .settings-tab {
-        display: inline-flex; align-items: center; gap: 5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
         padding: 8px 16px;
         font-size: var(--text-base);
         font-weight: 400;

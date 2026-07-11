@@ -1035,3 +1035,104 @@ async function secToggleLock(username, lock) {
 
     document.getElementById("tab-virsal")?.addEventListener("click", loadVirsalConfig);
 })();
+
+// ── VIREMENT_SALAIRE : paramètres globaux (DB) ──────────────────────────────
+(function () {
+    const sfetch = window.secureFetch || ((u, o) => fetch(u, Object.assign({credentials: "same-origin"}, o || {})));
+    const $ = (id) => document.getElementById(id);
+    const URL = "/api/v1/virsal-config/settings";
+    let prefixInputs = {};
+
+    async function loadSettings() {
+        try {
+            const res = await sfetch(URL);
+            if (!res || !res.ok) return;
+            const s = await res.json();
+            const set = (id, v) => {
+                const el = $(id);
+                if (el) el.value = (v ?? "");
+            };
+            set("vs-billingDefaultMode", s.billingDefaultMode || "NONE");
+            set("vs-perTransactionFee", s.perTransactionFee ?? 0);
+            set("vs-flatFeeDefault", s.flatFeeDefault ?? 0);
+            set("vs-currency", s.currency);
+            set("vs-orderingBank", s.orderingBank);
+            set("vs-ftTransactionType", s.ftTransactionType);
+            set("vs-commissionCode", s.commissionCode);
+            set("vs-snCountryCode", s.snCountryCode);
+            set("vs-maxThreads", s.maxThreads ?? 2);
+            set("vs-requestIdMaxLength", s.requestIdMaxLength ?? 35);
+
+            const box = $("vs-prefixes");
+            if (box) {
+                box.innerHTML = "";
+                prefixInputs = {};
+                const prefixes = s.internalPrefixes || {};
+                Object.keys(prefixes).forEach((country) => {
+                    const wrap = document.createElement("div");
+                    wrap.className = "flex items-center gap-1";
+                    const lbl = document.createElement("span");
+                    lbl.className = "mono text-xs";
+                    lbl.textContent = country;
+                    const inp = document.createElement("input");
+                    inp.className = "form-select";
+                    inp.style.maxWidth = "120px";
+                    inp.value = prefixes[country] || "";
+                    prefixInputs[country] = inp;
+                    wrap.appendChild(lbl);
+                    wrap.appendChild(inp);
+                    box.appendChild(wrap);
+                });
+            }
+        } catch (e) { /* ignore */
+        }
+    }
+
+    async function saveSettings() {
+        const msg = $("vs-msg");
+        const btn = $("vs-save");
+        const prefixes = {};
+        Object.keys(prefixInputs).forEach((c) => {
+            const v = prefixInputs[c].value.trim();
+            if (v) prefixes[c] = v;
+        });
+        const body = {
+            billingDefaultMode: $("vs-billingDefaultMode").value,
+            perTransactionFee: Number($("vs-perTransactionFee").value || 0),
+            flatFeeDefault: Number($("vs-flatFeeDefault").value || 0),
+            currency: $("vs-currency").value.trim(),
+            orderingBank: $("vs-orderingBank").value.trim(),
+            ftTransactionType: $("vs-ftTransactionType").value.trim(),
+            commissionCode: $("vs-commissionCode").value.trim(),
+            snCountryCode: $("vs-snCountryCode").value.trim(),
+            maxThreads: Number($("vs-maxThreads").value || 2),
+            requestIdMaxLength: Number($("vs-requestIdMaxLength").value || 35),
+            internalPrefixes: prefixes
+        };
+        if (btn) btn.disabled = true;
+        try {
+            const res = await sfetch(URL, {
+                method: "PUT",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) throw new Error("save failed");
+            if (msg) {
+                msg.textContent = "✓ enregistré";
+                msg.style.color = "var(--status-success-text)";
+            }
+        } catch (e) {
+            if (msg) {
+                msg.textContent = "✗ échec";
+                msg.style.color = "#B42318";
+            }
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    document.getElementById("tab-virsal")?.addEventListener("click", loadSettings);
+    document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("vs-save")?.addEventListener("click", saveSettings);
+    });
+})();

@@ -30,8 +30,8 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 
-import java.math.BigDecimal;
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 

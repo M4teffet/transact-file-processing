@@ -1,0 +1,239 @@
+{#include layout}
+
+    {#title}Upload Salaire - Orange Bank{/title}
+
+    {#head}
+
+    {/head}
+
+    {#aside}
+            {#include sidebar-inputter/}
+    {/aside}
+
+    {#default}
+        <div class="max-w-7xl mx-auto" style="display:flex;flex-direction:column;gap:var(--section-gap);">
+
+            <div class="page-header">
+                <div>
+                    <h2 class="page-title">Virement de salaires</h2>
+                    <p class="page-subtitle">Déposez le fichier de paie et soumettez pour validation</p>
+                </div>
+            </div>
+
+                {#include fragments/last-strip stripId = "lastBatchStrip" label = "Dernier lot" prefix = "lastBatch"/}
+
+            <div class="alert alert-info" style="padding:12px 14px;">
+                <div style="font-size:.8rem;line-height:1.5;">
+                    <b>Nom du fichier attendu :</b>
+                    <code class="mono px-2 py-0.5 select-all"
+                          style="background:#fff;border:1px solid var(--status-validated-border);">VIR_DEBITACCTNO_YYYYMMDD_INDEX.csv</code>
+                    — ex. <code class="mono">VIR_CI12345678901234_20260630_001.csv</code>.
+                    Le compte à débiter provient du nom du fichier. Le mode de facturation
+                    (gratuit / forfaitaire / standard) se choisit <b>après l'upload</b>, sur le lot.
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-head">
+                    <h3><i data-lucide="file-cog"></i>Générateur de modèle</h3>
+                </div>
+                <div class="panel-body">
+
+                    <div class="app-select-wrap">
+                        <select class="form-select mb-4" id="appSelect">
+                            <option value="">Chargement...</option>
+                        </select>
+                    </div>
+
+                    <div class="hidden panel mb-6" id="fieldsSection" style="border-color:var(--line);">
+                        <div class="flex items-center justify-between p-4 cursor-pointer transition-colors"
+                             id="fieldsToggleHeader"
+                             style="background:var(--canvas);"
+                             onclick="toggleFieldsVisibility()">
+                            <div class="flex items-center gap-3">
+                                <div style="width:34px;height:34px;background:var(--status-processing-bg);color:var(--status-processing-text);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                    <i class="w-4 h-4" data-lucide="database"></i></div>
+                                <div>
+                                    <h3 class="text-sm" style="font-weight:700;color:var(--ink)">Configuration des
+                                        Champs</h3>
+                                    <p style="font-size:.72rem;color:var(--ink-3)" id="fieldsSummaryText">Chargement des
+                                        métadonnées...</p>
+                                </div>
+                            </div>
+                            <i class="w-5 h-5 transition-transform duration-300" style="color:var(--ink-3)"
+                               data-lucide="chevron-down" id="fieldsChevron"></i>
+                        </div>
+
+                        <div class="hidden p-4 space-y-4" id="fieldsContent" style="border-top:1px solid var(--line);">
+                            <div class="flex justify-between items-center alert alert-info"
+                                 style="padding-top:10px;padding-bottom:10px;">
+                                <div class="truncate mr-4">
+                                    <span style="font-weight:700;">En-tête CSV requis :</span>
+                                    <code class="mono ml-2 px-2 py-1 text-xs select-all"
+                                          style="background:#fff;border:1px solid var(--status-validated-border);"
+                                          id="csv-header">...</code>
+                                </div>
+                                <div class="flex items-center gap-3 flex-shrink-0">
+                                    <button style="font-weight:700;font-size:.72rem;text-decoration:underline;color:var(--status-validated-text);"
+                                            onclick="copyHeader()">Copier
+                                    </button>
+                                    <button class="btn-flux"
+                                            style="padding:.4rem .7rem;font-size:.72rem;"
+                                            onclick="downloadTemplate()" type="button">
+                                        <i class="w-3.5 h-3.5" data-lucide="download"></i>
+                                        Télécharger le modèle CSV
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 class="micro-label" style="margin-bottom:.5rem;">Champs Obligatoires</h4>
+                                    <div class="min-h-[120px] p-2"
+                                         style="border:1.5px dashed var(--ink-4);background:var(--canvas);"
+                                         id="mandatory-fields"></div>
+                                </div>
+                                <div>
+                                    <h4 class="micro-label" style="margin-bottom:.5rem;">Champs Optionnels</h4>
+                                    <div class="min-h-[120px] p-2"
+                                         style="border:1.5px dashed var(--ink-4);background:var(--canvas);"
+                                         id="optional-fields"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="text-center"
+                       style="font-size:.72rem;color:var(--ink-3);font-style:italic;margin-top:.5rem;">
+                        <i class="inline w-3 h-3 mr-1" data-lucide="info"></i> Glissez-déposez les blocs pour ajuster
+                        votre
+                        structure.
+                    </p>
+                </div>
+            </div>
+
+            <div class="hidden panel" id="uploadSection">
+                <div class="panel-head">
+                    <h3><i data-lucide="upload"></i>Importer le fichier CSV</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="p-10 text-center cursor-pointer group transition"
+                         style="border:2px dashed var(--ink-4);background:#FAFAFA;"
+                         id="csvDropZone">
+                        <i class="mx-auto h-9 w-9 mb-3 transition-colors"
+                           style="color:var(--ink-4)" data-lucide="upload-cloud"></i>
+                        <p style="font-size:.86rem;font-weight:700;color:var(--ink)">Glissez ou cliquez pour
+                            sélectionner</p>
+                        <p style="font-size:.72rem;color:var(--ink-3);margin-top:4px;">Format CSV &middot; 1000 lignes
+                            maximum</p>
+                        <input accept=".csv" class="hidden" id="csvInput" type="file">
+                    </div>
+                </div>
+            </div>
+
+            <div class="hidden panel" id="csvPreviewSection">
+                <div class="panel-head">
+                    <h3><i data-lucide="table"></i>Aperçu du Batch</h3>
+                </div>
+                <div class="overflow-x-auto px-6 py-4">
+                    <table class="min-w-full text-xs">
+                        <thead id="previewHeader"></thead>
+                        <tbody id="previewBody"></tbody>
+                    </table>
+                </div>
+                <div class="p-5 flex justify-between items-center gap-3" style="border-top:1px solid var(--line-soft);">
+                    <button class="inline-flex items-center"
+                            style="font-weight:700;font-size:.8rem;color:var(--ink-2);"
+                            id="fullPreviewBtn">
+                        <i class="w-4 h-4 mr-2" data-lucide="maximize-2"></i> Mode Plein Écran
+                    </button>
+                    <div class="flex gap-3">
+                        <button class="btn-flux btn-flux-primary" id="sendCsvBtn" type="button">
+                            <i class="w-4 h-4" data-lucide="send"></i> Soumettre
+                        </button>
+                        <button class="btn-flux" style="border-color:#B42318;color:#B42318;" id="deleteCsvBtn">
+                            <i class="w-4 h-4" data-lucide="trash-2"></i> Annuler
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hidden text-center py-16 panel" id="success">
+                <div class="inline-flex items-center justify-center w-16 h-16 mb-6"
+                     style="border-radius:50%;background:var(--status-success-bg);color:var(--status-success-text);">
+                    <i class="w-8 h-8" data-lucide="check"></i>
+                </div>
+                <h3 style="font-size:1.3rem;font-weight:700;color:var(--ink);margin-bottom:.5rem;">Upload réussi !</h3>
+                <p style="color:var(--ink-3);margin-bottom:1.5rem;">Identifiant du batch : <code
+                            class="mono px-3 py-1.5 text-sm"
+                            style="background:var(--canvas);font-weight:700;color:var(--orange);border:1px solid var(--line);"
+                            id="batchId"></code>
+                </p>
+                <p style="color:var(--ink-3);margin-bottom:1.5rem;font-size:.8rem;">
+                    Choisissez le mode de facturation ci-dessous, puis soumettez pour validation.
+                </p>
+
+                <!-- Facturation (billing) selector -->
+                <div class="panel" id="billingPanel" style="max-width:640px;margin:0 auto 1.5rem;text-align:left;">
+                    <div class="panel-head">
+                        <h3><i data-lucide="receipt"></i>Mode de facturation</h3>
+                    </div>
+                    <div class="panel-body space-y-4">
+                        <div class="flex flex-wrap gap-2" id="billingModes">
+                            <button type="button" class="btn-flux billing-mode-btn" data-mode="NONE">Gratuit</button>
+                            <button type="button" class="btn-flux billing-mode-btn" data-mode="FLAT">Forfaitaire
+                            </button>
+                            <button type="button" class="btn-flux billing-mode-btn" data-mode="STANDARD">Standard
+                            </button>
+                        </div>
+
+                        <div id="flatFeeWrap" class="hidden">
+                            <label class="micro-label" for="flatFeeInput">Frais forfaitaire (XOF)</label>
+                            <input type="number" min="1" step="1" id="flatFeeInput" class="form-select"
+                                   placeholder="ex. 5000" style="max-width:220px;">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 text-sm" id="billingPreview" style="color:var(--ink-2);">
+                            <div>Net à verser (Z)</div>
+                            <div class="text-right mono" id="bpZ">—</div>
+                            <div>Bénéficiaires externes (X)</div>
+                            <div class="text-right mono" id="bpX">—</div>
+                            <div>Frais</div>
+                            <div class="text-right mono" id="bpFees">—</div>
+                            <div style="font-weight:700;color:var(--ink)">Total à débiter (A)</div>
+                            <div class="text-right mono" id="bpA" style="font-weight:700;color:var(--orange)">—</div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="button" class="btn-flux btn-flux-primary" id="confirmBillingBtn" disabled>
+                                <i class="w-4 h-4" data-lucide="check"></i> Enregistrer le mode
+                            </button>
+                        </div>
+                        <p id="billingMsg" class="text-xs" style="color:var(--ink-3);"></p>
+                    </div>
+                </div>
+
+                <button class="btn-flux btn-flux-primary" style="margin:0 auto;" onclick="location.reload()">Charger un
+                    autre fichier
+                </button>
+            </div>
+        </div>
+    {/default}
+
+    {#script}
+        <script>
+            // Lock this page to the payroll application; script.js hides the picker.
+            window.FLUX_LOCKED_APP = 'VIREMENT_SALAIRE';
+        </script>
+        <script src="/javascript/script.js"></script>
+        <script src="/javascript/upload-salary.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            });
+        </script>
+    {/script}
+
+{/include}

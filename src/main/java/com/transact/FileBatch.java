@@ -1,4 +1,4 @@
-package com.transact.processor.model;
+package com.transact;
 
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
